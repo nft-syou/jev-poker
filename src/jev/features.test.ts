@@ -58,6 +58,19 @@ describe("positionOf", () => {
       "BTN",
     ]);
   });
+
+  it("names four- and five-handed positions (button-relative)", () => {
+    const four = snapshotWith([0, 1, 2, 3], 0);
+    expect([1, 2, 3, 0].map((s) => positionOf(s, four))).toEqual(["SB", "BB", "CO", "BTN"]);
+    const five = snapshotWith([0, 1, 2, 3, 4], 0);
+    expect([1, 2, 3, 4, 0].map((s) => positionOf(s, five))).toEqual([
+      "SB",
+      "BB",
+      "UTG",
+      "CO",
+      "BTN",
+    ]);
+  });
 });
 
 describe("preflopStrength", () => {
@@ -103,6 +116,12 @@ describe("detectDraws", () => {
   });
   it("does not call a made straight a draw", () => {
     expect(detectDraws(cards("9c 8d"), cards("7h 6s 5d"))).toEqual([]);
+  });
+  it("ignores a straight draw that lives entirely on the board", () => {
+    expect(detectDraws(cards("2c 2d"), cards("5h 6s 7d 8c"))).toEqual([]);
+  });
+  it("still finds a straight draw on the turn when a hole card is needed", () => {
+    expect(detectDraws(cards("8s 3c"), cards("5h 6s 7d Kc"))).toEqual(["open_ended"]);
   });
 });
 
@@ -169,7 +188,7 @@ describe("buildFeatures", () => {
       persona: { name: "x", description: "y" },
     });
     expect(features.history).toEqual([
-      { street: "preflop", seat: 0, action: "raise to 3", amountBB: 3 },
+      { street: "preflop", seat: 0, action: "raise to 3", committedBB: 3 },
     ]);
     expect(features.table.toCallBB).toBe(2.5);
     expect(features.table.position).toBe("SB");

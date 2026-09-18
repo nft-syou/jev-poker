@@ -32,7 +32,13 @@ export type DecisionFeatures = {
     effectiveStackBB: number;
     stacksBB: { seat: SeatId; stackBB: number; isAllIn: boolean; folded: boolean }[];
   };
-  history: { street: Street; seat: SeatId; action: string; amountBB: number }[];
+  history: {
+    street: Street;
+    seat: SeatId;
+    action: string;
+    /** Chips this action moved into the pot, in BB (for bet/raise the total is in `action`). */
+    committedBB: number;
+  }[];
 };
 
 export const TASK =
@@ -110,7 +116,13 @@ export function detectDraws(hole: readonly Card[], board: readonly Card[]): Draw
     HAND_CATEGORIES.indexOf(made.category) >= HAND_CATEGORIES.indexOf("straight");
   if (!straightOrBetter) {
     const present = new Set<number>(all.map((c) => c.rank));
-    const outs = RANKS.filter((rank) => !present.has(rank) && hasStraight([...present, rank]));
+    const boardPresent = new Set<number>(board.map((c) => c.rank));
+    const boardOnlyOuts = new Set<number>(
+      RANKS.filter((rank) => !boardPresent.has(rank) && hasStraight([...boardPresent, rank])),
+    );
+    const outs = RANKS.filter(
+      (rank) => !present.has(rank) && hasStraight([...present, rank]) && !boardOnlyOuts.has(rank),
+    );
     if (outs.length >= 2) draws.push("open_ended");
     else if (outs.length === 1) draws.push("gutshot");
   }
@@ -180,7 +192,7 @@ export function buildFeatures(input: BuildFeaturesInput): DecisionFeatures {
       street: event.street,
       seat: event.seat,
       action: describeAction(event, toBB),
-      amountBB: toBB(event.amount),
+      committedBB: toBB(event.amount),
     })),
   };
 }
