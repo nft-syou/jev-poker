@@ -36,12 +36,13 @@ TypeSafe API キーが必要。MIT ライセンスの OSS。
 を返さず 400 だった (2026-09-19 検証)。よってブラウザ直叩きは採らず、Cloudflare Pages
 Functions を薄いプロキシとする。
 
-- ブラウザは入力されたキーを `localStorage` に保存し、`POST /api/jev/systemone` に
+- ブラウザは入力されたキーを `localStorage` に保存し、`POST /api/jev/v1/systemone` に
   ヘッダ `X-TypeSafe-Key: <key>` を付けて送る。
 - Function はヘッダを `Authorization: Bearer <key>` に載せ替え、ボディをそのまま
   `https://api.typesafe.ai/v1/systemone` に転送し、ステータス・ボディをそのまま返す。
-- Function はキーとボディをログしない。許可するのは `POST /api/jev/systemone` と
-  `GET /api/jev/models` のみ。それ以外は 404。
+- Function はキーとボディをログしない。許可するのは `POST /api/jev/v1/systemone` と
+  `GET /api/jev/v1/models` のみ。それ以外は 404。
+  (パスが `/v1/...` なのは SDK が `baseURL + "/v1/systemone"` を叩くため。)
 - キーが無いリクエストは 401 を返す (上流に到達させない)。
 - 検討して却下した案: (B) ブラウザ直叩き。CORS で動かない可能性が高い。
   (C) ホスト側で 1 本のキーを Secret 保持。「プレイにはキー必要」と逆で運営者が全額負担。
@@ -226,7 +227,7 @@ interface Persona {
 
 ## 8. プロキシ (`functions/api/jev/[[path]].ts`)
 
-- `POST systemone`, `GET models` のみ許可。他は 404。
+- `POST /v1/systemone`, `GET /v1/models` のみ許可。他は 404。
 - `X-TypeSafe-Key` が無ければ 401 (JSON `{ error: "missing_api_key" }`)。
 - 上流へ: メソッド、`Content-Type`、ボディをそのまま。`Authorization: Bearer <key>`。
 - 上流から: ステータス、`Content-Type`、ボディをそのまま。

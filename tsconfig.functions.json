@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["functions", "src/proxy"]
+  "include": ["functions", "src/proxy/handler.ts"]
 }
