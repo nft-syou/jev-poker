@@ -295,3 +295,29 @@ a {
   font-weight: 700;
   color: #ffd54f;
 }
+.persona-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.persona {
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+}
+.field.wide {
+  grid-column: 1 / -1;
+}
+textarea {
+  font: inherit;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2f4a3b;
+  background: #16261d;
+  color: inherit;
+}
+button.danger {
+  border-color: #ff8a80;
+  color: #ff8a80;
+}

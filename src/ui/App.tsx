@@ -5,6 +5,7 @@ import { loadPersonas, type Persona, saveCustomPersonas } from "../jev/personas"
 import { ApiKeyModal } from "./ApiKeyModal";
 import { GameScreen } from "./GameScreen";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { PersonaEditor } from "./PersonaEditor";
 import { Setup } from "./Setup";
 import {
   clearApiKey,
@@ -52,8 +53,7 @@ export function App() {
     saveSettings(next);
   };
 
-  // Unused until Task 16 wires up the personas screen.
-  const _changePersonas = (next: Persona[]) => {
+  const changePersonas = (next: Persona[]) => {
     setPersonas(next);
     try {
       saveCustomPersonas(next, localStorage);
@@ -93,7 +93,14 @@ export function App() {
             onOpenKey={() => setKeyModalOpen(true)}
           />
         )}
-        {screen === "personas" && <div>personas (Task 16)</div>}
+        {screen === "personas" && (
+          <PersonaEditor
+            personas={personas}
+            language={language}
+            onChange={changePersonas}
+            onBack={() => setScreen("setup")}
+          />
+        )}
         {screen === "table" && (
           <GameScreen
             settings={settings}
