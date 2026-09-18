@@ -84,6 +84,11 @@ async function main(): Promise<void> {
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
       },
+      onDecision: (record) => {
+        if (record.error === undefined || warnedFailOpen) return;
+        warnedFailOpen = true;
+        process.stderr.write(`warning: Jev decision failed open: ${record.error}\n`);
+      },
     });
 
     const result: BenchResult = {
@@ -109,15 +114,26 @@ async function main(): Promise<void> {
     results.push(result);
 
     await mkdir(RESULTS_DIR, { recursive: true });
-    const label = opts.label ?? `${matchup.opponent}-${matchup.format}`;
-    const file = `${RESULTS_DIR}${resultFileName(result, label)}`;
-    await writeFile(file, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+    // `resultFileName` adds the matchup itself; `--label` (or null) is all it needs.
+    const file = `${RESULTS_DIR}${resultFileName(result, opts.label)}`;
+    // Write then rename, so an interrupted run never leaves a truncated JSON behind.
+    await writeFile(`${file}.tmp`, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+    await rename(`${file}.tmp`, file);
     process.stderr.write(`[${tag}] wrote ${file}\n`);
 
     if (controller.signal.aborted) break;
   }
 
   process.stdout.write(`${resultsToMarkdown(results)}\n`);
+
+  // After the table, so the warnings are the last thing on the screen.
+  for (const r of results) {
+    const { failOpen } = r.summary.jev;
+    if (failOpen === 0) continue;
+    process.stderr.write(
+      `warning: ${r.config.opponent}/${r.config.format}: ${failOpen} decisions failed open\n`,
+    );
+  }
 }
 
 main().catch((err: unknown) => {
