@@ -24,6 +24,15 @@ describe("handleJevProxy", () => {
     expect((await handleJevProxy(get, "v1/systemone", {}, fetch)).status).toBe(405);
   });
 
+  it("treats prototype property names as unknown paths", async () => {
+    const { fetch, calls } = fakeFetch(new Response("{}"));
+    for (const route of ["constructor", "toString", "hasOwnProperty", "__proto__"]) {
+      const response = await handleJevProxy(post({ "x-typesafe-key": "k" }), route, {}, fetch);
+      expect(response.status, route).toBe(404);
+    }
+    expect(calls).toHaveLength(0);
+  });
+
   it("requires the key header and never contacts upstream without it", async () => {
     const { fetch, calls } = fakeFetch(new Response("{}"));
     const response = await handleJevProxy(

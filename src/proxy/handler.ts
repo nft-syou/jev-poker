@@ -28,7 +28,7 @@ export async function handleJevProxy(
   fetchImpl: typeof fetch = fetch,
 ): Promise<Response> {
   const route = path.replace(/^\/+|\/+$/g, "");
-  const method = ROUTES[route];
+  const method = Object.hasOwn(ROUTES, route) ? ROUTES[route] : undefined;
   if (method === undefined) return json(404, { error: "not_found" });
   if (request.method !== method) return json(405, { error: "method_not_allowed" });
 
