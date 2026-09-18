@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { AuthenticationError } from "@typesafe-ai/sdk";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
 import { createMockBackend } from "../jev/mock-backend";
 import { PRESET_PERSONAS } from "../jev/personas";
@@ -20,6 +21,15 @@ const cpuOnly: Settings = {
     { name: "C", kind: "cpu", personaId: "rock" },
   ],
 };
+
+/** Mock whose every call fails the way a rejected API key does. */
+function authFailingBackend(): JevBackend {
+  return {
+    kind: "typesafe",
+    systemOne: () =>
+      Promise.reject(new AuthenticationError(401, { error: "bad key" }, new Headers(), "bad key")),
+  };
+}
 
 /** Mock that answers after 40ms and rejects as soon as the caller aborts. */
 function slowBackend(seen: { aborts: number }): JevBackend {
@@ -144,6 +154,34 @@ describe("useGame", () => {
     // Well past the backend's 40ms: the aborted decision must not reach `table.act`.
     await new Promise((r) => setTimeout(r, 200));
     expect(result.current.state.log.length).toBe(before);
+    unmount();
+  });
+
+  it("pauses on an auth failure, notifies, and resumes when a new backend arrives", async () => {
+    const onAuthFailed = vi.fn();
+    const personas = [...PRESET_PERSONAS];
+    const { result, rerender, unmount } = renderHook(
+      ({ backend }: { backend: JevBackend }) =>
+        useGame({ settings: cpuOnly, personas, backend, onAuthFailed, seed: 11 }),
+      { initialProps: { backend: authFailingBackend() } },
+    );
+    await waitFor(
+      () => {
+        expect(onAuthFailed).toHaveBeenCalledTimes(1);
+        expect(result.current.state.paused).toBe(true);
+      },
+      { timeout: 5000 },
+    );
+    // The auth path must stop before touching the table: blinds are posted, nothing is acted.
+    expect(result.current.state.log.some((e) => e.event.type === "ActionTaken")).toBe(false);
+    expect(result.current.state.handsPlayed).toBe(0);
+
+    rerender({ backend: createMockBackend() });
+    await waitFor(() => expect(result.current.state.paused).toBe(false), { timeout: 5000 });
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(1), {
+      timeout: 5000,
+    });
+    expect(onAuthFailed).toHaveBeenCalledTimes(1);
     unmount();
   });
 });
