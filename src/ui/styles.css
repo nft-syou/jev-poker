@@ -7,3 +7,118 @@
 body {
   margin: 0;
 }
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.muted {
+  color: #9fb3a6;
+  margin: 4px 0;
+}
+.error {
+  color: #ff8a80;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+button,
+select,
+input {
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2f4a3b;
+  background: #16261d;
+  color: inherit;
+}
+button {
+  background: #2e8b57;
+  border-color: #2e8b57;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.secondary {
+  background: transparent;
+}
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #7fd1a0;
+  text-decoration: underline;
+}
+table.seats {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+table.seats th,
+table.seats td {
+  padding: 6px;
+  text-align: left;
+}
+table.seats input,
+table.seats select {
+  width: 100%;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.modal {
+  background: #16261d;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 480px;
+  width: 100%;
+}
+.modal input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+a {
+  color: #7fd1a0;
+}
