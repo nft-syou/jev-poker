@@ -26,6 +26,8 @@ export interface RunOptions {
   backend: JevBackend;
   signal?: AbortSignal;
   onHand?: (done: number, total: number) => void;
+  /** Test seam: replaces `playHand` for a single hand. Production callers leave this unset. */
+  playHandImpl?: (args: PlayHandArgs) => Promise<HandRecord>;
 }
 
 export interface PlayHandArgs {
@@ -133,6 +135,9 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
  * Play `seeds × rotations(format)` independent hands with at most
  * `concurrency` in flight. Aborting stops new hands from starting; the ones
  * already running are awaited and the result is flagged `partial`.
+ *
+ * A hand that throws rejects the whole match with the original error, and stops
+ * any further hands from being started.
  */
 export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[]; partial: boolean }> {
   const { opponent, format, seeds, baseSeed, persona, backend, signal, onHand } = opts;
@@ -145,24 +150,34 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
 
   const total = jobs.length;
   const hands: HandRecord[] = [];
+  const play = opts.playHandImpl ?? playHand;
   let nextJob = 0;
   let done = 0;
+  // Set by the first worker whose hand throws, so the others stop claiming jobs
+  // instead of burning API calls for a match that has already rejected.
+  let failed = false;
 
   const worker = async (): Promise<void> => {
     for (;;) {
-      if (signal?.aborted === true) return;
+      if (failed || signal?.aborted === true) return;
       const index = nextJob++;
       const job = jobs[index];
       if (job === undefined) return;
-      const record = await playHand({
-        seedIndex: job.seedIndex,
-        rotation: job.rotation,
-        opponent,
-        format,
-        baseSeed,
-        persona,
-        backend,
-      });
+      let record: HandRecord;
+      try {
+        record = await play({
+          seedIndex: job.seedIndex,
+          rotation: job.rotation,
+          opponent,
+          format,
+          baseSeed,
+          persona,
+          backend,
+        });
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
       hands.push(record);
       done += 1;
       onHand?.(done, total);

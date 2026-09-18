@@ -74,6 +74,30 @@ describe('runMatch', () => {
     const r = await runMatch({ ...base, format: 'hu', seeds: 50, signal: ctrl.signal, onHand: (done) => { if (done >= 4) ctrl.abort(); } });
     expect(r.partial).toBe(true); expect(r.hands.length).toBeLessThan(100); expect(r.hands.length).toBeGreaterThanOrEqual(4);
   });
+  it('stops scheduling hands once one fails, and rejects with that error', async () => {
+    let started = 0;
+    const boom = new Error('backend exploded');
+    const tick = (): Promise<void> => new Promise((res) => setTimeout(res, 0));
+    const r = runMatch({
+      ...base,
+      format: 'hu',
+      seeds: 20,
+      concurrency: 2,
+      // Only ONE job fails, so a worker that ignored the failure would happily
+      // grind through the other 38 while the match has already rejected.
+      playHandImpl: async (args) => {
+        started += 1;
+        await tick();
+        if (args.seedIndex === 1 && args.rotation === 0) throw boom;
+        return playHand(args);
+      },
+    });
+    await expect(r).rejects.toBe(boom);
+    // Give any still-running worker ample time to claim more jobs.
+    for (let i = 0; i < 50; i++) await tick();
+    // 40 jobs were planned; only the handful in flight around the failure may start.
+    expect(started).toBeLessThan(10);
+  });
   it('reports progress up to the total', async () => {
     const seen: [number, number][] = [];
     const r = await runMatch({ ...base, format: 'hu', seeds: 3, onHand: (done, total) => seen.push([done, total]) });
