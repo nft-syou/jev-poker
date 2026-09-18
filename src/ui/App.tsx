@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18next, { detectLanguage, initI18n, type Language } from "../i18n";
 import { loadPersonas, type Persona, saveCustomPersonas } from "../jev/personas";
 import { ApiKeyModal } from "./ApiKeyModal";
+import { GameScreen } from "./GameScreen";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Setup } from "./Setup";
 import {
@@ -25,7 +26,7 @@ export function App() {
   const { t } = useTranslation();
   const [language, setLanguage] = useState<Language>(initialLanguage);
   const [apiKey, setApiKey] = useState<string | null>(() => loadApiKey());
-  const [keyError] = useState<string | null>(null);
+  const [keyError, setKeyError] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(apiKey === null);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas());
@@ -34,6 +35,11 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  const onAuthFailed = useCallback(() => {
+    setKeyError(t("apiKey.invalid"));
+    setKeyModalOpen(true);
+  }, [t]);
 
   const changeLanguage = (next: Language) => {
     setLanguage(next);
@@ -88,7 +94,15 @@ export function App() {
           />
         )}
         {screen === "personas" && <div>personas (Task 16)</div>}
-        {screen === "table" && <div>table (Task 15)</div>}
+        {screen === "table" && (
+          <GameScreen
+            settings={settings}
+            personas={personas}
+            apiKey={apiKey}
+            onLeave={() => setScreen("setup")}
+            onAuthFailed={onAuthFailed}
+          />
+        )}
       </main>
 
       <ApiKeyModal

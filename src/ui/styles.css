@@ -122,3 +122,176 @@ table.seats select {
 a {
   color: #7fd1a0;
 }
+.table-screen {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .table-screen {
+    grid-template-columns: 1fr;
+  }
+}
+.table-header {
+  justify-content: space-between;
+}
+.badge {
+  background: #2f4a3b;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+.felt {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: radial-gradient(ellipse at center, #1f6b45, #123d28 70%);
+  border-radius: 50% / 45%;
+  border: 8px solid #3a2a1a;
+  margin: 24px 0;
+}
+.seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  padding: 6px;
+  border: 2px solid transparent;
+  font-size: 0.85rem;
+}
+.seat.acting {
+  border-color: #ffd54f;
+}
+.seat.folded {
+  opacity: 0.5;
+}
+.seat-cards {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  min-height: 44px;
+}
+.seat-name {
+  font-weight: 600;
+}
+.seat-bet {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffd54f;
+  color: #222;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+.seat-status {
+  min-height: 1.2em;
+  color: #ffd54f;
+}
+.dealer-button {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  font-size: 0.7rem;
+  line-height: 18px;
+  margin-right: 4px;
+}
+.board {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.board-cards {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.pot {
+  margin-top: 8px;
+  font-weight: 600;
+}
+.card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 44px;
+  border-radius: 4px;
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.card.red {
+  color: #c62828;
+}
+.card.back {
+  background: repeating-linear-gradient(45deg, #345, #345 4px, #123 4px, #123 8px);
+}
+.card.empty {
+  background: rgba(255, 255, 255, 0.08);
+}
+.your-turn {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #ffd54f;
+  border-radius: 10px;
+}
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}
+.action-bar input[type="number"] {
+  width: 90px;
+}
+.action-bar input[type="range"] {
+  flex: 1;
+  min-width: 120px;
+}
+.history {
+  background: #10201a;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 80vh;
+  overflow: auto;
+  font-size: 0.85rem;
+}
+.history ol {
+  padding-left: 18px;
+  margin: 0;
+}
+.history li.hand-start {
+  margin-top: 10px;
+  font-weight: 600;
+}
+.decision summary {
+  cursor: pointer;
+  color: #7fd1a0;
+}
+.prob-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 40px;
+  gap: 6px;
+  align-items: center;
+}
+.prob-row .bar {
+  display: block;
+  height: 8px;
+  background: #2e8b57;
+  border-radius: 4px;
+}
+.prob-row .chosen {
+  font-weight: 700;
+  color: #ffd54f;
+}
