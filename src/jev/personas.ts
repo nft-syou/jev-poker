@@ -105,7 +105,15 @@ export function loadPersonas(
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return presets;
-    const custom = parsed.filter(isPersona).map((p) => ({ ...p, isPreset: false }));
+    const seenIds = new Set(presets.map((p) => p.id));
+    const custom = parsed
+      .filter(isPersona)
+      .map((p) => ({ ...p, isPreset: false }))
+      .filter((p) => {
+        if (seenIds.has(p.id)) return false;
+        seenIds.add(p.id);
+        return true;
+      });
     return [...presets, ...custom];
   } catch {
     return presets;

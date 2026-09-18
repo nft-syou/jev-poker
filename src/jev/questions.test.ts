@@ -35,6 +35,17 @@ describe("questions", () => {
       }),
     ).toEqual(["check_or_call", "bet_or_raise"]);
     expect(
+      Object.keys(
+        buildQuestions({
+          canFold: false,
+          canCheck: true,
+          callAmount: null,
+          minRaiseTo: 10,
+          maxRaiseTo: 90,
+        }).action.criteria,
+      ),
+    ).toEqual(["check_or_call", "bet_or_raise"]);
+    expect(
       legalLabels({
         canFold: true,
         canCheck: false,
@@ -42,6 +53,17 @@ describe("questions", () => {
         minRaiseTo: null,
         maxRaiseTo: null,
       }),
+    ).toEqual(["fold", "check_or_call"]);
+    expect(
+      Object.keys(
+        buildQuestions({
+          canFold: true,
+          canCheck: false,
+          callAmount: 30,
+          minRaiseTo: null,
+          maxRaiseTo: null,
+        }).action.criteria,
+      ),
     ).toEqual(["fold", "check_or_call"]);
   });
 });

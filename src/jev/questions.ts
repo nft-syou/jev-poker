@@ -32,6 +32,8 @@ export function buildQuestions(legal: LegalActions) {
   return {
     action: choice(
       "What should the acting player do now?",
+      // Only legal labels exist at runtime; the full-record type keeps the SDK's answer
+      // typing usable. Consumers MUST treat `answers.action.probabilities` as Partial.
       criteria as Record<ActionLabel, string>,
     ),
     sizing: score(

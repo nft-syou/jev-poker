@@ -80,4 +80,14 @@ describe("personas", () => {
       description: PRESET_PERSONAS[0]?.description.en,
     });
   });
+
+  it("drops stored personas whose id collides with a preset or an earlier custom", () => {
+    const clash = { ...duplicatePersona(PRESET_PERSONAS[0] as never, "rock") };
+    const a = duplicatePersona(PRESET_PERSONAS[1] as never, "same");
+    const b = duplicatePersona(PRESET_PERSONAS[2] as never, "same");
+    const storage = memoryStorage({ [PERSONA_STORAGE_KEY]: JSON.stringify([clash, a, b]) });
+    const loaded = loadPersonas(storage);
+    expect(loaded.map((p) => p.id)).toEqual([...PRESET_PERSONAS.map((p) => p.id), "same"]);
+    expect(loaded[loaded.length - 1]?.description).toEqual(a.description);
+  });
 });
