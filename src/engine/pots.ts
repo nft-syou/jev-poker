@@ -28,7 +28,12 @@ export function buildPots(contributed: Map<SeatId, number>, folded: Set<SeatId>)
   const merged: Pot[] = [];
   for (const pot of rawPots) {
     const last = merged[merged.length - 1];
-    if (last && arraysEqual(last.eligible, pot.eligible)) {
+    if (pot.eligible.length === 0) {
+      // No one is eligible for this layer (e.g. every contributor at this level folded).
+      // The chips can't be awarded on their own; fold them into the previous pot.
+      if (!last) throw new Error('buildPots: no eligible seats for contributed chips and no prior pot to absorb them');
+      last.amount += pot.amount;
+    } else if (last && arraysEqual(last.eligible, pot.eligible)) {
       last.amount += pot.amount;
     } else {
       merged.push({ amount: pot.amount, eligible: [...pot.eligible] });
@@ -44,6 +49,7 @@ export function awardPots(
 ): { seat: SeatId; amount: number; potIndex: number }[] {
   const results: { seat: SeatId; amount: number; potIndex: number }[] = [];
   pots.forEach((pot, potIndex) => {
+    if (pot.eligible.length === 0) throw new Error(`awardPots: pot ${potIndex} has no eligible seats`);
     let maxRank = -Infinity;
     for (const seat of pot.eligible) {
       const r = ranking(seat);

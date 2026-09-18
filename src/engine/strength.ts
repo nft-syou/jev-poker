@@ -1,10 +1,7 @@
-import type { Card, Rank } from './cards.js';
-import { CATEGORY_ORDER, evaluate7, type HandCategory } from './evaluate.js';
+import { rankToChar, type Card } from './cards.js';
+import { CATEGORY_ORDER, evaluate7, straightHigh, type HandCategory } from './evaluate.js';
 
 export type PreflopStrength = 'premium' | 'strong' | 'medium' | 'weak' | 'trash';
-
-const RANK_CHARS = '23456789TJQKA';
-const rankChar = (r: Rank): string => RANK_CHARS[r - 2]!;
 
 const PREMIUM = ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'AKo'];
 const STRONG = ['TT', '99', 'AQs', 'AQo', 'AJs', 'KQs', 'ATs', 'KJs'];
@@ -30,9 +27,9 @@ function preflopKey(hole: readonly Card[]): string {
   if (!a || !b) throw new Error('preflopKey needs 2 hole cards');
   const hi = a.rank >= b.rank ? a : b;
   const lo = a.rank >= b.rank ? b : a;
-  if (hi.rank === lo.rank) return rankChar(hi.rank) + rankChar(lo.rank);
+  if (hi.rank === lo.rank) return rankToChar(hi.rank) + rankToChar(lo.rank);
   const suited = hi.suit === lo.suit;
-  return rankChar(hi.rank) + rankChar(lo.rank) + (suited ? 's' : 'o');
+  return rankToChar(hi.rank) + rankToChar(lo.rank) + (suited ? 's' : 'o');
 }
 
 export function preflopStrength(hole: readonly Card[]): PreflopStrength {
@@ -44,13 +41,6 @@ export function madeHand(hole: readonly Card[], board: readonly Card[]): HandCat
 }
 
 export type Draw = 'flush_draw' | 'open_ended' | 'gutshot';
-
-function straightHigh(distinctDesc: number[]): number | null {
-  const set = new Set(distinctDesc);
-  for (const hi of distinctDesc) if ([hi - 1, hi - 2, hi - 3, hi - 4].every((r) => set.has(r))) return hi;
-  if ([14, 5, 4, 3, 2].every((r) => set.has(r))) return 5;
-  return null;
-}
 
 export function draws(hole: readonly Card[], board: readonly Card[]): Draw[] {
   if (board.length !== 3 && board.length !== 4) return [];

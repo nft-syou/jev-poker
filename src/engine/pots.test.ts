@@ -17,6 +17,13 @@ describe('buildPots', () => {
       { amount: 230, eligible: [0, 1] },
     ]);
   });
+  it('folds an empty-eligible layer into the previous pot instead of losing chips', () => {
+    // seat 0 folded after contributing 100; seat 1 only put in 50, so the top 50 of
+    // seat 0's contribution has no eligible seat and must merge into the seat-1 pot.
+    expect(buildPots(new Map([[0, 100], [1, 50]]), new Set([0]))).toEqual([
+      { amount: 150, eligible: [1] },
+    ]);
+  });
 });
 describe('awardPots', () => {
   it('splits ties and gives odd chip by order', () => {
@@ -31,5 +38,9 @@ describe('awardPots', () => {
     expect(awardPots(pots, rank, [0, 1, 2])).toEqual([
       { seat: 0, amount: 150, potIndex: 0 }, { seat: 2, amount: 300, potIndex: 1 },
     ]);
+  });
+  it('throws when a pot has no eligible seats', () => {
+    const pots = [{ amount: 50, eligible: [] }];
+    expect(() => awardPots(pots, () => 1, [0, 1])).toThrow();
   });
 });

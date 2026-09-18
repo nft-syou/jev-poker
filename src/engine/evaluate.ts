@@ -3,7 +3,7 @@ export type HandCategory = 'high_card'|'pair'|'two_pair'|'three_of_a_kind'|'stra
 export const CATEGORY_ORDER: readonly HandCategory[] = ['high_card','pair','two_pair','three_of_a_kind','straight','flush','full_house','four_of_a_kind','straight_flush'];
 export interface HandValue { category: HandCategory; ranks: number[]; score: number }
 
-function straightHigh(distinctDesc: number[]): number | null {
+export function straightHigh(distinctDesc: number[]): number | null {
   const set = new Set(distinctDesc);
   for (const hi of distinctDesc) if ([hi-1,hi-2,hi-3,hi-4].every((r) => set.has(r))) return hi;
   if ([14,5,4,3,2].every((r) => set.has(r))) return 5;
