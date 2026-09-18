@@ -45,9 +45,14 @@ export function buildPots(
 
   let leftover = 0;
   for (const [, contributed] of contributions) leftover += Math.max(0, contributed - previous);
-  const last = pots[pots.length - 1];
-  if (leftover > 0 && last !== undefined) {
-    pots[pots.length - 1] = { amount: last.amount + leftover, eligible: last.eligible };
+  if (leftover > 0) {
+    const last = pots[pots.length - 1];
+    if (last !== undefined) {
+      pots[pots.length - 1] = { amount: last.amount + leftover, eligible: last.eligible };
+    } else {
+      const eligibleSeats = [...eligible].sort((a, b) => a - b);
+      pots.push({ amount: leftover, eligible: eligibleSeats });
+    }
   }
   return pots;
 }
@@ -55,8 +60,7 @@ export function buildPots(
 /** Awards each pot to its best eligible hand(s). Odd chips go to the earliest seat in `oddChipOrder`. */
 export function awardPots(
   pots: readonly Pot[],
-  // biome-ignore lint/suspicious/noShadowRestrictedNames: parameter name is part of the public interface
-  valueOf: (seat: SeatId) => HandValue,
+  scoreOf: (seat: SeatId) => HandValue,
   oddChipOrder: readonly SeatId[],
 ): Award[] {
   const awards: Award[] = [];
@@ -69,7 +73,7 @@ export function awardPots(
       let best = Number.NEGATIVE_INFINITY;
       winners = [];
       for (const seat of pot.eligible) {
-        const score = valueOf(seat).score;
+        const score = scoreOf(seat).score;
         if (score > best) {
           best = score;
           winners = [seat];

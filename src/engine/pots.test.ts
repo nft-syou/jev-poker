@@ -75,6 +75,17 @@ describe("buildPots", () => {
     ]);
     expect(pots.reduce((sum, p) => sum + p.amount, 0)).toBe(230);
   });
+
+  it("keeps folded players' chips when no eligible player contributed", () => {
+    const pots = buildPots(
+      new Map([
+        [0, 0],
+        [1, 30],
+      ]),
+      new Set([0]),
+    );
+    expect(pots).toEqual([{ amount: 30, eligible: [0] }]);
+  });
 });
 
 describe("awardPots", () => {
@@ -83,11 +94,10 @@ describe("awardPots", () => {
     [1, hand("Kh Kd 2c 3d 9s Js Qs")], // pair of kings
     [2, hand("Ac Ks 2c 3d 9s Js Qs")], // high card
   ]);
-  // biome-ignore lint/suspicious/noShadowRestrictedNames: variable name matches the function parameter
-  const valueOf = (seat: number) => values.get(seat) as ReturnType<typeof hand>;
+  const scoreOf = (seat: number) => values.get(seat) as ReturnType<typeof hand>;
 
   it("gives the whole pot to the best hand", () => {
-    const awards = awardPots([{ amount: 90, eligible: [0, 1, 2] }], valueOf, [1, 2, 0]);
+    const awards = awardPots([{ amount: 90, eligible: [0, 1, 2] }], scoreOf, [1, 2, 0]);
     expect(awards).toEqual([{ seat: 0, amount: 90, potIndex: 0 }]);
   });
 
@@ -97,7 +107,7 @@ describe("awardPots", () => {
         { amount: 150, eligible: [0, 1, 2] },
         { amount: 100, eligible: [1, 2] },
       ],
-      valueOf,
+      scoreOf,
       [1, 2, 0],
     );
     expect(awards).toEqual([
