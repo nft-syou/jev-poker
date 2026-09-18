@@ -37,6 +37,11 @@ describe('stats', () => {
   it('meanCi', () => {
     const r = meanCi([1, 1, 1, 1]);
     expect(r).toEqual({ mean: 1, lo: 1, hi: 1 });
+    // mean 2, sample sd sqrt(4.5) = 2.1213, half = 1.96 * 2.1213 / sqrt(2) = 2.94
+    const two = meanCi([0.5, 3.5]);
+    expect(two.mean).toBeCloseTo(2, 1);
+    expect(two.lo).toBeCloseTo(-0.94, 1);
+    expect(two.hi).toBeCloseTo(4.94, 1);
   });
 
   it('summarize groups mirrored hands per seed', () => {
@@ -45,6 +50,9 @@ describe('stats', () => {
     expect(s.jev.n).toBe(2);
     expect(s.jev.hands).toBe(4);
     expect(s.jev.bb100).toBeCloseTo(200);
+    // Same CI as meanCi([0.5, 3.5]), scaled to 100 hands.
+    expect(s.jev.ci95[0]).toBeCloseTo(-94.0, 1);
+    expect(s.jev.ci95[1]).toBeCloseTo(494.0, 1);
     expect(s.jev.decisions).toBe(4);
     expect(s.jev.apiCalls).toBe(4);
     expect(s.jev.failOpen).toBe(0);
