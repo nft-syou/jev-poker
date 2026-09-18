@@ -8,11 +8,18 @@ describe("engine boundary", () => {
     const dir = fileURLToPath(new URL(".", import.meta.url));
     const files = readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
     expect(files.length).toBeGreaterThan(5);
-    const importPattern = /^\s*(?:import|export)\b[^'"]*?\bfrom\s+["']([^"']+)["']/gm;
+    // `from "x"` anywhere (also matches `export * from`, `export { a } from`, and multi-line imports)
+    const fromPattern = /\bfrom\s+["']([^"']+)["']/g;
+    // side-effect imports: `import "x";`
+    const sideEffectPattern = /^\s*import\s+["']([^"']+)["']/gm;
+    // dynamic imports: `import("x")`
+    const dynamicPattern = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
     for (const file of files) {
       const source = readFileSync(join(dir, file), "utf8");
-      for (const match of source.matchAll(importPattern)) {
-        const specifier = match[1] ?? "";
+      const specifiers = [fromPattern, sideEffectPattern, dynamicPattern].flatMap((pattern) =>
+        [...source.matchAll(pattern)].map((match) => match[1] ?? ""),
+      );
+      for (const specifier of specifiers) {
         expect(specifier, `${file} imports ${specifier}`).toMatch(/^\.\/[a-z-]+$/);
       }
     }
