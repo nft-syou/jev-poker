@@ -43,9 +43,21 @@ describe('compressState omissions', () => {
     expect(s.table.toCallBB).toBe(0);
     expect(s.table.potBB).toBe(12.5);
     expect(s.table.stacksBB).toEqual([
-      { seat: 0, stackBB: 90, isAllIn: false },
-      { seat: 1, stackBB: 50, isAllIn: false },
-      { seat: 2, stackBB: 0, isAllIn: true },
+      { seat: 0, stackBB: 90, isAllIn: false, folded: false },
+      { seat: 1, stackBB: 50, isAllIn: false, folded: false },
+      { seat: 2, stackBB: 0, isAllIn: true, folded: false },
+    ]);
+  });
+  it('marks a folded seat', () => {
+    const stacks = [
+      { seat: 0, stack: 9000, isAllIn: false, folded: false },
+      { seat: 1, stack: 5000, isAllIn: false, folded: true },
+    ];
+    const s = compressState({ ...base, stacks }, legal, getPersona('rock'));
+    expect(s.table.playersInHand).toBe(1);
+    expect(s.table.stacksBB).toEqual([
+      { seat: 0, stackBB: 90, isAllIn: false, folded: false },
+      { seat: 1, stackBB: 50, isAllIn: false, folded: true },
     ]);
   });
   it('tolerates an empty stack list', () => {

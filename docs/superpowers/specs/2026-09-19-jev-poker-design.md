@@ -149,7 +149,7 @@ interface LegalActions {
     position: "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO",
     playersInHand, playersToAct,
     potBB, toCallBB, potOddsPct, effectiveStackBB,
-    stacksBB: [{ seat, stackBB, isAllIn }],
+    stacksBB: [{ seat, stackBB, isAllIn, folded }],
   },
   history: [ { street, seat, action, amountBB } ]   // 今ハンドのみ
 }

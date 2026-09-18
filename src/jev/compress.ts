@@ -29,6 +29,8 @@ export interface JevSeat {
   seat: SeatId;
   stackBB: number;
   isAllIn: boolean;
+  /** A folded seat is still listed, so the model can tell "0 bb, all-in" from "out of the hand". */
+  folded: boolean;
 }
 
 export interface JevTable {
@@ -105,7 +107,12 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     toCallBB: bb(view.toCall, bigBlind),
     potOddsPct: view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0,
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
-    stacksBB: view.stacks.map((s) => ({ seat: s.seat, stackBB: bb(s.stack, bigBlind), isAllIn: s.isAllIn })),
+    stacksBB: view.stacks.map((s) => ({
+      seat: s.seat,
+      stackBB: bb(s.stack, bigBlind),
+      isAllIn: s.isAllIn,
+      folded: s.folded,
+    })),
   };
 
   const history: JevHistoryEntry[] = view.history.map((h) => ({

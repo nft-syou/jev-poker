@@ -40,16 +40,19 @@ exports[`compressState > matches snapshot shape 1`] = `
     "potOddsPct": 25,
     "stacksBB": [
       {
+        "folded": false,
         "isAllIn": false,
         "seat": 0,
         "stackBB": 90,
       },
       {
+        "folded": false,
         "isAllIn": false,
         "seat": 1,
         "stackBB": 50,
       },
       {
+        "folded": false,
         "isAllIn": true,
         "seat": 2,
         "stackBB": 0,
