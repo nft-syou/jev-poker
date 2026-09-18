@@ -1,0 +1,85 @@
+import { describe, expect, it } from 'vitest';
+import { createMockBackend } from '../src/jev/backend.js';
+import { getPersona } from '../src/jev/personas.js';
+import { expandMatchups, rotations, seatCount } from './matchups.js';
+import { playHand, runMatch } from './runner.js';
+
+const persona = getPersona('tag');
+describe('expandMatchups', () => {
+  it('all × all = 6', () => expect(expandMatchups('all', 'all')).toHaveLength(6));
+  it('single', () => expect(expandMatchups('rules', 'hu')).toEqual([{ opponent: 'rules', format: 'hu' }]));
+  it('is opponent-major', () =>
+    expect(expandMatchups('all', 'all')).toEqual([
+      { opponent: 'random', format: 'hu' },
+      { opponent: 'random', format: '6max' },
+      { opponent: 'caller', format: 'hu' },
+      { opponent: 'caller', format: '6max' },
+      { opponent: 'rules', format: 'hu' },
+      { opponent: 'rules', format: '6max' },
+    ]));
+  it('seat and rotation counts', () => {
+    expect(seatCount('hu')).toBe(2);
+    expect(seatCount('6max')).toBe(6);
+    expect(rotations('hu')).toBe(2);
+    expect(rotations('6max')).toBe(6);
+  });
+});
+describe('playHand', () => {
+  it('is zero-sum and same deck across rotations', async () => {
+    const a = await playHand({ seedIndex: 3, rotation: 0, opponent: 'caller', format: 'hu', baseSeed: 1, persona, backend: createMockBackend() });
+    const b = await playHand({ seedIndex: 3, rotation: 1, opponent: 'caller', format: 'hu', baseSeed: 1, persona, backend: createMockBackend() });
+    expect(a.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
+    expect(a.jevSeat).toBe(0); expect(b.jevSeat).toBe(1);
+    expect(a.decisions.length).toBeGreaterThan(0);
+    expect(b.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
+  });
+  it('6-max has 6 seats', async () => {
+    const r = await playHand({ seedIndex: 0, rotation: 5, opponent: 'random', format: '6max', baseSeed: 1, persona, backend: createMockBackend() });
+    expect(r.net).toHaveLength(6); expect(r.jevSeat).toBe(5);
+    expect(r.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
+  });
+  it('keeps chips zero-sum over a whole 6-max cycle', async () => {
+    const m = await runMatch({ opponent: 'rules', format: '6max', seeds: 4, baseSeed: 5, concurrency: 4, persona, backend: createMockBackend() });
+    for (const h of m.hands) expect(h.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
+  });
+  it('is deterministic for the same arguments', async () => {
+    const args = { seedIndex: 7, rotation: 1, opponent: 'rules' as const, format: 'hu' as const, baseSeed: 4, persona };
+    const a = await playHand({ ...args, backend: createMockBackend() });
+    const b = await playHand({ ...args, backend: createMockBackend() });
+    expect(b.net).toEqual(a.net);
+    expect(b.decisions.map((d) => d.action)).toEqual(a.decisions.map((d) => d.action));
+  });
+  it('reports showdown and preflop aggression fields', async () => {
+    const r = await playHand({ seedIndex: 11, rotation: 0, opponent: 'caller', format: '6max', baseSeed: 9, persona, backend: createMockBackend() });
+    expect(typeof r.wentToShowdown).toBe('boolean');
+    if (!r.wentToShowdown) expect(r.jevWonShowdown).toBeNull();
+    else expect(typeof r.jevWonShowdown).toBe('boolean');
+    expect(typeof r.jevVpip).toBe('boolean');
+    expect(typeof r.jevPfr).toBe('boolean');
+    expect(r.oppVpip).toBeGreaterThanOrEqual(0);
+    expect(r.oppVpip).toBeLessThanOrEqual(1);
+    expect(r.oppPfr).toBeGreaterThanOrEqual(0);
+    expect(r.oppPfr).toBeLessThanOrEqual(1);
+  });
+});
+describe('runMatch', () => {
+  const base = { opponent: 'rules' as const, seeds: 5, baseSeed: 2, concurrency: 3, persona, backend: createMockBackend() };
+  it('runs seeds × rotations', async () => {
+    const hu = await runMatch({ ...base, format: 'hu' }); expect(hu.hands).toHaveLength(10); expect(hu.partial).toBe(false);
+    const six = await runMatch({ ...base, format: '6max' }); expect(six.hands).toHaveLength(30);
+    expect(hu.hands.map((h) => [h.seedIndex, h.rotation])).toEqual([[0,0],[0,1],[1,0],[1,1],[2,0],[2,1],[3,0],[3,1],[4,0],[4,1]]);
+  });
+  it('stops early when aborted', async () => {
+    const ctrl = new AbortController();
+    const r = await runMatch({ ...base, format: 'hu', seeds: 50, signal: ctrl.signal, onHand: (done) => { if (done >= 4) ctrl.abort(); } });
+    expect(r.partial).toBe(true); expect(r.hands.length).toBeLessThan(100); expect(r.hands.length).toBeGreaterThanOrEqual(4);
+  });
+  it('reports progress up to the total', async () => {
+    const seen: [number, number][] = [];
+    const r = await runMatch({ ...base, format: 'hu', seeds: 3, onHand: (done, total) => seen.push([done, total]) });
+    expect(r.hands).toHaveLength(6);
+    expect(seen).toHaveLength(6);
+    expect(seen.map((s) => s[0])).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(seen.every((s) => s[1] === 6)).toBe(true);
+  });
+});
