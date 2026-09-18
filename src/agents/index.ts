@@ -1,10 +1,12 @@
 import { CallerAgent } from './caller.js';
 import { RandomAgent } from './random.js';
+import { RulesAgent } from './rules.js';
 import type { Agent, BaselineId } from './types.js';
 
 export type { Agent, BaselineId } from './types.js';
 export { RandomAgent } from './random.js';
 export { CallerAgent } from './caller.js';
+export { RulesAgent } from './rules.js';
 
 export function createAgent(id: BaselineId, seed: number): Agent {
   switch (id) {
@@ -13,6 +15,6 @@ export function createAgent(id: BaselineId, seed: number): Agent {
     case 'caller':
       return new CallerAgent();
     case 'rules':
-      throw new Error('rules agent not implemented');
+      return new RulesAgent(seed);
   }
 }

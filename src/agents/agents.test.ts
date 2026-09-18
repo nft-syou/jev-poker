@@ -3,7 +3,7 @@ import { Rng } from '../engine/rng.js';
 import { createAgent } from './index.js';
 import { isLegal, randomView } from './testutil.js';
 
-describe.each(['random', 'caller'] as const)('%s agent', (id) => {
+describe.each(['random', 'caller', 'rules'] as const)('%s agent', (id) => {
   it('always returns a legal action', async () => {
     const rng = new Rng(11); const agent = createAgent(id, 5);
     for (let i = 0; i < 500; i++) { const { view, legal } = randomView(rng); const a = await agent.decide(view, legal); expect(isLegal(a, legal), JSON.stringify({ a, legal })).toBe(true); }
@@ -17,10 +17,5 @@ describe('caller', () => {
   it('never folds or raises', async () => {
     const rng = new Rng(1); const agent = createAgent('caller', 0);
     for (let i = 0; i < 200; i++) { const { view, legal } = randomView(rng); const a = await agent.decide(view, legal); expect(['check', 'call']).toContain(a.type); }
-  });
-});
-describe('rules agent (not yet implemented)', () => {
-  it('throws when created', () => {
-    expect(() => createAgent('rules', 0)).toThrow(/not implemented/);
   });
 });
