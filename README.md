@@ -31,14 +31,14 @@ Functions プロキシ。
 
 **EN:**
 
-- Node >= 20
+- Node 20+ (developed on 24)
 - `pnpm install`
 - `pnpm test`
 - `pnpm typecheck`
 
 **JA:**
 
-- Node >= 20
+- Node 20+ (開発は 24 で実施)
 - `pnpm install`
 - `pnpm test`
 - `pnpm typecheck`
@@ -152,4 +152,4 @@ committed file) and is never sent anywhere other than the TypeSafe API.
 
 ## License / ライセンス
 
-MIT
+MIT — see [`LICENSE`](LICENSE).
