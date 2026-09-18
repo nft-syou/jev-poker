@@ -196,6 +196,8 @@ interface JevBackend { kind: 'typesafe' | 'mock'; systemOne(req, opts?): Promise
 - `mock`: 決定論的 (ハンド強度から確率を作る)。テストと開発用。
   本番 UI にはキー無しで遊ぶ導線を置かない。
 
+`JevAgent` は `src/agents/types.ts` の `Agent` インターフェースを実装する (ベンチマーク spec §3)。
+
 ## 6. 人格 (`src/jev/personas.ts`)
 
 ```ts
@@ -223,6 +225,8 @@ interface Persona {
   当サイトのサーバーには保存されない」旨を表示。削除ボタン付き。
 - 状態管理は React の `useReducer` + エンジンのイベント購読。外部ライブラリ不要。
 - i18n: 全文字列を `locales/*.json` に置く。初期言語はブラウザ言語、切替は設定に保存。
+
+席の CPU 種別に `jev` のほか `random` / `caller` / `rules` を選べる (キー無しで動く CPU)。
 
 ## 8. プロキシ (`functions/api/jev/[[path]].ts`)
 
