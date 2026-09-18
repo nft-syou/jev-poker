@@ -111,7 +111,7 @@ export class Table {
   }
 
   view(seat: SeatId): PlayerView {
-    if (!this.hand) throw new Error('no hand in progress');
+    if (!this.hand || this.hand.isOver) throw new Error('no hand in progress');
     return { ...this.hand.view(seat), position: positionOf(seat, this._button, this.dealtSeats) };
   }
 

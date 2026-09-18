@@ -38,4 +38,11 @@ describe('Table', () => {
     expect(t.stacks().every((s) => s.stack > 0)).toBe(true);
     expect(types).toContain('SeatRebought');
   });
+  it('view throws when no hand is in progress', () => {
+    expect(() => new Table(cfg(2)).view(0)).toThrow();
+    const t = new Table(cfg(2));
+    const h = t.startHand();
+    while (!h.isOver) h.act(h.toAct!, { type: 'fold' });
+    expect(() => t.view(0)).toThrow();
+  });
 });
