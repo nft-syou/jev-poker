@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import type { JevBackend } from "../jev/backend";
 import { createMockBackend } from "../jev/mock-backend";
 import { PRESET_PERSONAS } from "../jev/personas";
 import { DEFAULT_SETTINGS, type Settings } from "./storage";
@@ -19,6 +20,25 @@ const cpuOnly: Settings = {
     { name: "C", kind: "cpu", personaId: "rock" },
   ],
 };
+
+/** Mock that answers after 40ms and rejects as soon as the caller aborts. */
+function slowBackend(seen: { aborts: number }): JevBackend {
+  const inner = createMockBackend();
+  return {
+    kind: "mock",
+    systemOne: (request, options) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          void inner.systemOne(request).then(resolve, reject);
+        }, 40);
+        options?.signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          seen.aborts++;
+          reject(new Error("aborted"));
+        });
+      }),
+  };
+}
 
 describe("useGame", () => {
   it("plays hands automatically with only CPUs", async () => {
@@ -40,7 +60,12 @@ describe("useGame", () => {
     expect(decided.length).toBeGreaterThan(0);
     expect(decided.every((e) => e.event.type === "ActionTaken")).toBe(true);
     const total = result.current.state.seats.reduce((sum, s) => sum + s.stack, 0);
-    expect(total).toBe(3 * cpuOnly.startingStack);
+    // Cash tables rebuy busted seats, which adds chips; account for every rebuy so far.
+    const rebought = result.current.state.log
+      .map((e) => e.event)
+      .filter((e) => e.type === "SeatRebought")
+      .reduce((sum, e) => sum + (e.type === "SeatRebought" ? e.amount : 0), 0);
+    expect(total).toBe(3 * cpuOnly.startingStack + rebought);
     unmount();
   });
 
@@ -97,6 +122,28 @@ describe("useGame", () => {
     await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThan(frozen), {
       timeout: 5000,
     });
+    unmount();
+  });
+  it("aborts the in-flight Jev request on pause and never acts on it", async () => {
+    const seen = { aborts: 0 };
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: slowBackend(seen),
+        onAuthFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.thinkingSeat).not.toBeNull(), {
+      timeout: 5000,
+    });
+    const before = result.current.state.log.length;
+    act(() => result.current.togglePause());
+    expect(seen.aborts).toBe(1);
+    // Well past the backend's 40ms: the aborted decision must not reach `table.act`.
+    await new Promise((r) => setTimeout(r, 200));
+    expect(result.current.state.log.length).toBe(before);
     unmount();
   });
 });

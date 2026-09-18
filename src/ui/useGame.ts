@@ -12,7 +12,7 @@ import type {
   SeatKind,
 } from "../engine/types";
 import type { JevBackend } from "../jev/backend";
-import { type DecisionRecord, decideAction, fallbackAction } from "../jev/decide";
+import { type DecisionRecord, decideAction } from "../jev/decide";
 import { type ActionTakenEvent, buildFeatures } from "../jev/features";
 import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
 import type { Settings, Speed } from "./storage";
@@ -104,6 +104,13 @@ function reducer(state: GameState, msg: Msg): GameState {
 
 interface Run {
   alive: boolean;
+  /** Aborted together with `alive`, so an in-flight Jev request is dropped at once. */
+  abort: AbortController;
+}
+
+function stopRun(run: Run): void {
+  run.alive = false;
+  run.abort.abort();
 }
 
 function sleep(ms: number): Promise<void> {
@@ -139,8 +146,9 @@ export function useGame(options: UseGameOptions): GameController {
   });
 
   const tableRef = useRef<Table | null>(null);
-  const rngRef = useRef<Rng>(createRng(options.seed ?? randomSeed()));
-  const runRef = useRef<Run>({ alive: false });
+  const rngRef = useRef<Rng | null>(null);
+  if (rngRef.current === null) rngRef.current = createRng(options.seed ?? randomSeed());
+  const runRef = useRef<Run | null>(null);
   const pausedRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
   const pendingRef = useRef<DecisionRecord | null>(null);
@@ -161,89 +169,96 @@ export function useGame(options: UseGameOptions): GameController {
   const loop = useCallback(
     async (run: Run) => {
       const table = tableRef.current;
-      if (table === null) return;
-      while (run.alive && !pausedRef.current) {
-        const hand = table.currentHand;
-        if (hand === null || hand.isComplete) {
-          if (hand !== null) {
-            await sleep(BETWEEN_HANDS_MS[speedRef.current]);
-            if (!run.alive || pausedRef.current) return;
-          }
-          try {
+      const rng = rngRef.current;
+      if (table === null || rng === null) return;
+      // The whole body is guarded: a throw from the engine or the feature builder must surface
+      // as `gameOver` instead of an unhandled rejection from `void loop(run)`.
+      try {
+        while (run.alive && !pausedRef.current) {
+          const hand = table.currentHand;
+          if (hand === null || hand.isComplete) {
+            if (hand !== null) {
+              await sleep(BETWEEN_HANDS_MS[speedRef.current]);
+              if (!run.alive || pausedRef.current) return;
+            }
             table.startHand();
-          } catch (error) {
-            dispatch({
-              type: "gameOver",
-              error: error instanceof Error ? error.message : String(error),
-            });
+            sync();
+            continue;
+          }
+          const seat = hand.actingSeat;
+          if (seat === null) return;
+          const tableSeat = table.seats.find((s) => s.id === seat);
+          if (tableSeat === undefined || tableSeat.kind === "human") {
+            sync();
+            return; // resumed by humanAct
+          }
+          if (backend === null) {
+            // No API key means no Jev, and CPUs must not play on a fallback forever.
+            dispatch({ type: "gameOver", error: "no backend" });
             return;
           }
-          sync();
-          continue;
-        }
-        const seat = hand.actingSeat;
-        if (seat === null) return;
-        const tableSeat = table.seats.find((s) => s.id === seat);
-        if (tableSeat === undefined || tableSeat.kind === "human") {
-          sync();
-          return; // resumed by humanAct
-        }
-        dispatch({ type: "thinking", seat });
-        const snapshot = hand.snapshot();
-        const legal = hand.legalActions(seat);
-        const persona =
-          personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
-        const record: DecisionRecord =
-          backend === null
-            ? {
-                seat,
-                action: fallbackAction(legal),
-                jev: null,
-                error: "no backend",
-                errorKind: "other",
-                fallback: true,
-                latencyMs: 0,
-              }
-            : await decideAction({
-                backend,
-                seat,
-                features: buildFeatures({
-                  snapshot,
-                  seat,
-                  actions: actionsRef.current,
-                  persona: personaPrompt(persona),
-                }),
-                legal,
-                snapshot,
-                variance: persona.variance,
-                rng: rngRef.current,
-                model: settings.model,
-              });
-        if (!run.alive) return;
-        if (record.errorKind === "auth") {
-          pausedRef.current = true;
-          dispatch({ type: "paused", paused: true });
+          dispatch({ type: "thinking", seat });
+          const snapshot = hand.snapshot();
+          const legal = hand.legalActions(seat);
+          const persona =
+            personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
+          const record: DecisionRecord = await decideAction({
+            backend,
+            seat,
+            features: buildFeatures({
+              snapshot,
+              seat,
+              actions: actionsRef.current,
+              persona: personaPrompt(persona),
+            }),
+            legal,
+            snapshot,
+            variance: persona.variance,
+            rng,
+            model: settings.model,
+            signal: run.abort.signal,
+          });
+          // A stale or paused run may still receive the (aborted) record; never act on it.
+          if (!run.alive || pausedRef.current) return;
+          if (record.errorKind === "auth") {
+            pausedRef.current = true;
+            stopRun(run);
+            dispatch({ type: "paused", paused: true });
+            dispatch({ type: "thinking", seat: null });
+            onAuthFailed();
+            return;
+          }
+          pendingRef.current = record;
+          table.act(seat, record.action);
           dispatch({ type: "thinking", seat: null });
-          onAuthFailed();
-          return;
+          sync();
+          const delay = ACTION_DELAY_MS[speedRef.current];
+          if (delay > 0) await sleep(delay);
         }
-        pendingRef.current = record;
-        table.act(seat, record.action);
-        dispatch({ type: "thinking", seat: null });
-        sync();
-        const delay = ACTION_DELAY_MS[speedRef.current];
-        if (delay > 0) await sleep(delay);
+      } catch (error) {
+        if (run.alive) {
+          dispatch({
+            type: "gameOver",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
       }
     },
     [backend, onAuthFailed, personas, settings.model, sync],
   );
 
+  const stopCurrentRun = useCallback(() => {
+    const run = runRef.current;
+    if (run !== null) stopRun(run);
+  }, []);
+
   const startLoop = useCallback(() => {
-    runRef.current.alive = false;
-    const run: Run = { alive: true };
+    stopCurrentRun();
+    const run: Run = { alive: true, abort: new AbortController() };
     runRef.current = run;
     void loop(run);
-  }, [loop]);
+  }, [loop, stopCurrentRun]);
 
   // Create the table once per mount. Settings changes require leaving the table.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only effect
@@ -266,7 +281,7 @@ export function useGame(options: UseGameOptions): GameController {
     sync();
     startLoop();
     return () => {
-      runRef.current.alive = false;
+      stopCurrentRun();
       off();
       tableRef.current = null;
     };
@@ -296,8 +311,9 @@ export function useGame(options: UseGameOptions): GameController {
     const next = !pausedRef.current;
     pausedRef.current = next;
     dispatch({ type: "paused", paused: next });
-    if (!next) startLoop();
-  }, [startLoop]);
+    if (next) stopCurrentRun();
+    else startLoop();
+  }, [startLoop, stopCurrentRun]);
 
   const humanSeats = useMemo(
     () => settings.seats.flatMap((s, id) => (s.kind === "human" ? [id] : [])),

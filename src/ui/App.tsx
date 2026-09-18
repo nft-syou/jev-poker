@@ -112,11 +112,13 @@ export function App() {
         onSave={(key) => {
           saveApiKey(key);
           setApiKey(key);
+          setKeyError(null);
           setKeyModalOpen(false);
         }}
         onRemove={() => {
           clearApiKey();
           setApiKey(null);
+          setKeyError(null);
           setScreen("setup");
         }}
         onClose={() => setKeyModalOpen(false)}

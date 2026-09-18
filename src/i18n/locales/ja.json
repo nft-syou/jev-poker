@@ -48,6 +48,7 @@
     "pot": "ポット",
     "hand": "ハンド #{{number}}",
     "dealer": "D",
+    "hiddenCard": "裏向きのカード",
     "thinking": "考え中…",
     "allIn": "オールイン",
     "folded": "フォールド",

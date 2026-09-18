@@ -48,6 +48,7 @@
     "pot": "Pot",
     "hand": "Hand #{{number}}",
     "dealer": "D",
+    "hiddenCard": "Hidden card",
     "thinking": "Thinking…",
     "allIn": "All in",
     "folded": "Folded",
