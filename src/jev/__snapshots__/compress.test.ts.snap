@@ -1,0 +1,62 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`compressState > matches snapshot shape 1`] = `
+{
+  "hand": {
+    "board": "Qh Jh 2c",
+    "draws": [
+      "flush_draw",
+      "gutshot",
+    ],
+    "holeCards": "Ah Kh",
+    "madeHand": "high_card",
+    "preflopStrength": "premium",
+    "street": "flop",
+  },
+  "history": [
+    {
+      "action": "raise",
+      "amountBB": 3,
+      "seat": 1,
+      "street": "preflop",
+    },
+  ],
+  "importantContext": [
+    "Only legal actions are offered.",
+    "Amounts are in big blinds.",
+    "You cannot see other players' hole cards.",
+    "Stay in character as the persona.",
+  ],
+  "persona": {
+    "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",
+    "name": "TAG",
+  },
+  "table": {
+    "effectiveStackBB": 50,
+    "playersInHand": 3,
+    "playersToAct": 1,
+    "position": "BTN",
+    "potBB": 12,
+    "potOddsPct": 25,
+    "stacksBB": [
+      {
+        "isAllIn": false,
+        "seat": 0,
+        "stackBB": 90,
+      },
+      {
+        "isAllIn": false,
+        "seat": 1,
+        "stackBB": 50,
+      },
+      {
+        "isAllIn": true,
+        "seat": 2,
+        "stackBB": 0,
+      },
+    ],
+    "toCallBB": 4,
+  },
+  "task": "Decide the next poker action for the acting player in No-Limit Texas Hold'em.",
+}
+`;
