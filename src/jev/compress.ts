@@ -84,7 +84,7 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
   const maxOther = otherStacks.length > 0 ? Math.max(...otherStacks) : 0;
 
   const showMade = view.board.length >= 3 && view.holeCards.length + view.board.length >= 5;
-  const showDraws = view.board.length === 3 || view.board.length === 4;
+  const showDraws = showMade && (view.board.length === 3 || view.board.length === 4);
 
   const hand: JevHand = {
     street: view.street,
