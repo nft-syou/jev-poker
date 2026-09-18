@@ -148,12 +148,14 @@ export class JevAgent implements Agent {
   }
 
   async decide(view: PlayerView, legal: LegalActions): Promise<Action> {
-    const state = compressState(view, legal, this.persona);
-    const questions = buildQuestions(legal);
     const apiCall = this.backend.kind === 'typesafe';
     const t0 = performance.now();
 
     try {
+      // Inside the try: building the state can throw too (e.g. a malformed view),
+      // and that must fail open rather than stall the table.
+      const state = compressState(view, legal, this.persona);
+      const questions = buildQuestions(legal);
       const { answers, model } = await this.backend.systemOne(state, questions);
       const { action, choice, sizingScore } = answersToAction(
         answers,

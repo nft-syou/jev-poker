@@ -62,7 +62,7 @@ const PREFLOP_T: Record<PreflopStrength, number> = {
 
 /** A crude hand strength in [0, 1], used only by the mock backend. */
 function strengthOf(hand: JevHand): number {
-  if (hand.madeHand === undefined) return PREFLOP_T[hand.preflopStrength ?? 'trash'];
+  if (hand.madeHand === undefined) return PREFLOP_T[hand.preflopStrength];
   const index = CATEGORY_ORDER.indexOf(hand.madeHand);
   const drawBonus = (hand.draws?.length ?? 0) > 0 ? 0.15 : 0;
   return Math.min(1, index / (CATEGORY_ORDER.length - 1) + drawBonus);

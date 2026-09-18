@@ -94,6 +94,19 @@ describe('JevAgent records', () => {
     expect(total).toBeCloseTo(1);
   });
 
+  it('fails open when building the state throws', async () => {
+    const records: import('./agent.js').DecisionRecord[] = [];
+    const agent = new JevAgent({ persona: getPersona('tag'), backend: createMockBackend(), seed: 1, onDecision: (r) => records.push(r) });
+    // No hole cards: `preflopStrength` throws inside `compressState`, before any backend call.
+    expect(await agent.decide({ ...view, holeCards: [] }, legal)).toEqual({ type: 'fold' });
+    expect(await agent.decide({ ...view, holeCards: [], toCall: 0 }, { ...legal, canFold: false, canCheck: true, callAmount: null })).toEqual({ type: 'check' });
+    expect(records).toHaveLength(2);
+    expect(records[0]?.error).toBeDefined();
+    expect(records[0]).toMatchObject({ apiCall: false, choice: 'fold', sizingScore: null, bluffIntent: null });
+    expect(records[1]?.error).toBeDefined();
+    expect(records[1]?.choice).toBe('check_or_call');
+  });
+
   it('counts a failed typesafe request as an api call', async () => {
     const records: import('./agent.js').DecisionRecord[] = [];
     const backend = { kind: 'typesafe' as const, systemOne: () => Promise.reject(new Error('offline')) };

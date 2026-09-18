@@ -22,7 +22,7 @@ export interface JevHand {
   madeHand?: HandCategory;
   /** Present only on the flop and the turn, where a draw can still come in. */
   draws?: Draw[];
-  preflopStrength?: PreflopStrength;
+  preflopStrength: PreflopStrength;
 }
 
 export interface JevSeat {
@@ -83,8 +83,10 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
   const otherStacks = live.filter((s) => s.seat !== view.seat).map((s) => s.stack);
   const maxOther = otherStacks.length > 0 ? Math.max(...otherStacks) : 0;
 
-  const showMade = view.board.length >= 3 && view.holeCards.length + view.board.length >= 5;
-  const showDraws = showMade && (view.board.length === 3 || view.board.length === 4);
+  // A seat always holds exactly two hole cards; `preflopStrength` throws otherwise,
+  // and `JevAgent` fails open on that. `madeHand`/`draws` depend only on the board.
+  const showMade = view.board.length >= 3;
+  const showDraws = view.board.length === 3 || view.board.length === 4;
 
   const hand: JevHand = {
     street: view.street,
@@ -92,7 +94,7 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     board: cards(view.board),
     ...(showMade ? { madeHand: madeHand(view.holeCards, view.board) } : {}),
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
-    ...(view.holeCards.length === 2 ? { preflopStrength: preflopStrength(view.holeCards) } : {}),
+    preflopStrength: preflopStrength(view.holeCards),
   };
 
   const table: JevTable = {
