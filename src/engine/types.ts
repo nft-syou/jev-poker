@@ -17,7 +17,17 @@ export interface LegalActions {
   canFold: boolean;
   canCheck: boolean;
   callAmount: number | null;
+  /** Smallest legal raise-to amount, or `null` when raising is not allowed at all. */
   minRaiseTo: number | null;
+  /**
+   * Largest legal raise-to amount (the seat's whole stack), or `null`.
+   *
+   * Invariant: `minRaiseTo !== null` implies `maxRaiseTo !== null`. The converse
+   * does **not** hold — `maxRaiseTo` can be a number while `minRaiseTo` is
+   * `null` (e.g. a seat that has already acted and faces an incomplete all-in
+   * raise: it may call, but no raise is legal). So agents must gate raises
+   * **and all-ins-as-a-raise** on `minRaiseTo`, never on `maxRaiseTo`.
+   */
   maxRaiseTo: number | null;
 }
 

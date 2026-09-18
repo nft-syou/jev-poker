@@ -1,6 +1,6 @@
 import { newDeck } from '../engine/cards.js';
 import { Rng } from '../engine/rng.js';
-import type { Action, LegalActions, PlayerView, Position, SeatState, Street } from '../engine/types.js';
+import type { Action, HistoryEntry, LegalActions, PlayerView, Position, SeatState, Street } from '../engine/types.js';
 
 export function isLegal(action: Action, legal: LegalActions): boolean {
   switch (action.type) {
@@ -50,13 +50,30 @@ export function randomView(rng: Rng): { view: PlayerView; legal: LegalActions } 
   const toCallZero = rng.next() < 0.5;
   const toCall = toCallZero ? 0 : bigBlind + rng.int(2000);
 
-  const hasMinRaise = rng.next() >= 0.2;
+  // 80%: a raise is allowed. 15%: `minRaiseTo === null` with a non-null
+  // `maxRaiseTo` — the engine-real case where the seat has already acted and
+  // faces an incomplete raise, so it may call but not raise. 5%: neither.
+  const raiseRoll = rng.next();
+  const hasMinRaise = raiseRoll >= 0.2;
   const minRaiseTo = hasMinRaise ? (toCall === 0 ? bigBlind : toCall + bigBlind) : null;
-  const maxRaiseTo = hasMinRaise ? 10000 : null;
+  const maxRaiseTo = hasMinRaise || raiseRoll < 0.15 ? 10000 : null;
 
   const legal: LegalActions = toCall === 0
     ? { canFold: false, canCheck: true, callAmount: null, minRaiseTo, maxRaiseTo }
     : { canFold: true, canCheck: false, callAmount: toCall, minRaiseTo, maxRaiseTo };
+
+  // 20%: somebody has already raised preflop, which is what drives the 3-bet
+  // branches of `RulesAgent` (`raisedPreflop` / `lastRaiseTo`).
+  const history: HistoryEntry[] = [];
+  if (rng.next() < 0.2) {
+    const opener = (seat + 1) % numSeats;
+    if (rng.next() < 0.5) history.push({ street: 'preflop', seat: opener, action: { type: 'call' } });
+    history.push({
+      street: 'preflop',
+      seat: opener,
+      action: { type: 'raise', amount: 2 * bigBlind + rng.int(9) * bigBlind },
+    });
+  }
 
   const view: PlayerView = {
     seat,
@@ -68,7 +85,7 @@ export function randomView(rng: Rng): { view: PlayerView; legal: LegalActions } 
     toCall,
     bigBlind,
     position,
-    history: [],
+    history,
   };
 
   return { view, legal };
