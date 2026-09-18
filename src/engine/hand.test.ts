@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Hand } from './hand.js';
 import { Rng } from './rng.js';
-import type { TableEvent } from './types.js';
+import type { Action, TableEvent } from './types.js';
 
 function mk(stacks: number[], seed = 1, button = 0) {
   const events: TableEvent[] = [];
@@ -112,14 +112,33 @@ describe('Hand betting details', () => {
     const { hand } = mk([10000, 10000]);
     hand.act(0, { type: 'call' }); hand.act(1, { type: 'check' });
     expect(hand.legalActions(1)).toEqual({ canFold: false, canCheck: true, callAmount: null, minRaiseTo: 100, maxRaiseTo: 9900 });
-    expect(() => hand.act(1, { type: 'raise', amount: 100 })).toThrow(); // no bet outstanding
     expect(() => hand.act(1, { type: 'bet', amount: 50 })).toThrow();    // under the minimum
+    expect(() => hand.act(1, { type: 'bet', amount: 9901 })).toThrow();  // over the stack
     hand.act(1, { type: 'bet', amount: 100 });
     expect(hand.legalActions(0)).toEqual({ canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 200, maxRaiseTo: 9900 });
   });
-  it('rejects bet when facing a bet and raise when there is none', () => {
-    const { hand } = mk([10000, 10000]);
-    expect(() => hand.act(0, { type: 'bet', amount: 300 })).toThrow();
+  it('accepts bet and raise interchangeably and records the canonical verb', () => {
+    const { hand, events } = mk([10000, 10000, 10000]);
+    hand.act(0, { type: 'call' }); hand.act(1, { type: 'call' });
+    hand.act(2, { type: 'bet', amount: 400 });   // BB option: a bet stands, so this is a raise
+    expect(hand.view(0).history.at(-1)).toEqual({ street: 'preflop', seat: 2, action: { type: 'raise', amount: 400 } });
+    hand.act(0, { type: 'call' }); hand.act(1, { type: 'call' });
+    expect(hand.street).toBe('flop');
+    hand.act(1, { type: 'raise', amount: 200 }); // nothing to raise over, so this is a bet
+    expect(hand.view(0).history.at(-1)).toEqual({ street: 'flop', seat: 1, action: { type: 'bet', amount: 200 } });
+    const taken = events.filter((e) => e.type === 'ActionTaken') as { action: Action }[];
+    expect(taken.at(-1)!.action).toEqual({ type: 'bet', amount: 200 });
+  });
+  it('rejects an all-in that a short all-in did not reopen', () => {
+    const { hand } = mk([10000, 10000, 350]);
+    hand.act(0, { type: 'raise', amount: 300 });
+    hand.act(1, { type: 'call' });
+    hand.act(2, { type: 'allin' });                      // to 350: not a full raise
+    expect(hand.legalActions(0).minRaiseTo).toBe(null);
+    expect(() => hand.act(0, { type: 'allin' })).toThrow();
+    expect(() => hand.act(0, { type: 'raise', amount: 700 })).toThrow();
+    hand.act(0, { type: 'call' });                       // calling is still fine
+    expect(hand.toAct).toBe(1);
   });
   it('rejects folding when checking is free', () => {
     const { hand } = mk([10000, 10000]);
@@ -147,15 +166,17 @@ describe('Hand betting details', () => {
     expect(hand.legalActions(1).minRaiseTo).toBe(550);    // seat 1 has not acted: full reopen
     expect(hand.legalActions(3).minRaiseTo).toBe(null);   // seat 3 already acted
   });
-  it('treats a big blind shorter than the blind as all-in for less', () => {
-    const { hand } = mk([10000, 60]);
+  it('closes raising when no opponent can act', () => {
+    const { hand } = mk([10000, 60]);   // the big blind is all-in for less than the blind
     expect(hand.toAct).toBe(0);
-    expect(hand.legalActions(0)).toEqual({ canFold: true, canCheck: false, callAmount: 50, minRaiseTo: 200, maxRaiseTo: 10000 });
+    expect(hand.legalActions(0)).toEqual({ canFold: true, canCheck: false, callAmount: 10, minRaiseTo: null, maxRaiseTo: null });
+    expect(() => hand.act(0, { type: 'raise', amount: 200 })).toThrow();
+    expect(() => hand.act(0, { type: 'allin' })).toThrow();
     hand.act(0, { type: 'call' });
     expect(hand.isOver).toBe(true);
     expect(hand.board).toHaveLength(5);
     expect(hand.finalStacks().reduce((a, s) => a + s.stack, 0)).toBe(10060);
-    expect(hand.finalStacks()[0]!.stack).toBeGreaterThanOrEqual(9940);  // uncalled 40 returned
+    expect(hand.finalStacks()[0]!.stack).toBeGreaterThanOrEqual(9940);
   });
 });
 
@@ -164,7 +185,10 @@ describe('Hand pots and showdown', () => {
     const { hand, events } = mk([300, 1200, 5000]);
     hand.act(0, { type: 'allin' });
     hand.act(1, { type: 'allin' });
-    hand.act(2, { type: 'allin' });
+    // both opponents are already all-in: seat 2 can only settle the call
+    expect(() => hand.act(2, { type: 'allin' })).toThrow();
+    expect(hand.legalActions(2)).toEqual({ canFold: true, canCheck: false, callAmount: 1100, minRaiseTo: null, maxRaiseTo: null });
+    hand.act(2, { type: 'call' });
     expect(hand.isOver).toBe(true);
     expect(hand.wentToShowdown).toBe(true);
     expect(hand.board).toHaveLength(5);
@@ -281,7 +305,9 @@ describe('Hand invariants (randomised play)', () => {
           const type = view.toCall > 0 || view.street === 'preflop' ? 'raise' : 'bet';
           choices.push(() => hand.act(seat!, { type, amount }));
         }
-        choices.push(() => hand.act(seat!, { type: 'allin' }));
+        // all-in is legal as a raise, or as an all-in for less than (or exactly) a call
+        if (la.minRaiseTo !== null || view.toCall === stack) choices.push(() => hand.act(seat!, { type: 'allin' }));
+        expect(choices.length).toBeGreaterThan(0);
         rng.pick(choices)();
       }
 

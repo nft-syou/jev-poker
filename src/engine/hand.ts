@@ -83,16 +83,19 @@ export class Hand {
     const committed = this.committed.get(seat) ?? 0;
     const toCall = Math.max(0, this.currentBet - committed);
     const maxRaiseTo = committed + stack;
+    // Betting needs an opponent who can still act; with everyone else folded or
+    // all-in there is nothing to bet or raise into, only a call to settle.
+    const contested = this.liveActors().length >= 2;
     // A player who already acted since the last full raise may only call or fold
     // (they are facing an incomplete all-in raise, which does not reopen betting).
-    const canRaise = stack > toCall && !this.actedSinceRaise.has(seat);
+    const canRaise = contested && stack > toCall && !this.actedSinceRaise.has(seat);
     const fullRaiseTo = this.currentBet + Math.max(this.lastRaiseSize, this.blinds.big);
     return {
       canFold: toCall > 0,
       canCheck: toCall === 0,
       callAmount: toCall > 0 ? Math.min(toCall, stack) : null,
       minRaiseTo: canRaise ? Math.min(fullRaiseTo, maxRaiseTo) : null,
-      maxRaiseTo,
+      maxRaiseTo: contested ? maxRaiseTo : null,
     };
   }
 
@@ -100,6 +103,9 @@ export class Hand {
     if (this.over) throw new Error('hand is already over');
     if (seat !== this.actor) throw new Error(`seat ${seat} cannot act: it is seat ${String(this.actor)}'s turn`);
     const la = this.legalActions(seat);
+    const committed = this.committed.get(seat) ?? 0;
+    const toCall = Math.max(0, this.currentBet - committed);
+    let recorded: Action = action;
     switch (action.type) {
       case 'fold':
         if (!la.canFold) throw new Error('cannot fold: checking is free');
@@ -114,19 +120,22 @@ export class Hand {
         break;
       case 'bet':
       case 'raise': {
-        if (action.type === 'bet' && this.currentBet !== 0) throw new Error('cannot bet while facing a bet: use raise');
-        if (action.type === 'raise' && this.currentBet === 0) throw new Error('cannot raise without a bet: use bet');
+        // `bet` and `raise` are interchangeable; the amount is always a raise-to
+        // total for the street and the recorded verb is normalised below.
         if (la.minRaiseTo === null || la.maxRaiseTo === null) throw new Error(`seat ${seat} cannot ${action.type} here`);
         if (!Number.isInteger(action.amount)) throw new Error('amount must be a whole number of chips');
         if (action.amount < la.minRaiseTo || action.amount > la.maxRaiseTo) {
           throw new Error(`${action.type} to ${action.amount} outside [${la.minRaiseTo}, ${la.maxRaiseTo}]`);
         }
-        this.wager(seat, action.amount - (this.committed.get(seat) ?? 0));
+        recorded = { type: this.currentBet === 0 ? 'bet' : 'raise', amount: action.amount };
+        this.wager(seat, action.amount - committed);
         break;
       }
       case 'allin': {
         const stack = this.stacks.get(seat) ?? 0;
         if (stack <= 0) throw new Error('cannot go all-in without chips');
+        // Legal either as a raise, or as an all-in for less than (or exactly) a call.
+        if (la.minRaiseTo === null && stack > toCall) throw new Error(`seat ${seat} cannot go all-in here`);
         this.wager(seat, stack);
         break;
       }
@@ -134,8 +143,8 @@ export class Hand {
         throw new Error(`unknown action: ${JSON.stringify(action)}`);
     }
     this.actedSinceRaise.add(seat);
-    this.entries.push({ street: this.streetName, seat, action: { ...action } });
-    this.emit({ type: 'ActionTaken', seat, action, street: this.streetName });
+    this.entries.push({ street: this.streetName, seat, action: { ...recorded } });
+    this.emit({ type: 'ActionTaken', seat, action: { ...recorded }, street: this.streetName });
 
     const contenders = this.order.filter((s) => !this.folded.has(s));
     if (contenders.length === 1) { this.endByFold(contenders[0]!); return; }
@@ -188,9 +197,9 @@ export class Hand {
     for (const [seat, amount] of [[sb, this.blinds.small], [bb, this.blinds.big]] as const) {
       this.committed.set(seat, (this.committed.get(seat) ?? 0) + post(seat, amount));
     }
-    // A big blind that is all-in for less than the full blind does not lower the
-    // amount to call; the excess simply comes back through the side pots.
-    this.currentBet = Math.max(this.blinds.big, ...this.order.map((s) => this.committed.get(s) ?? 0));
+    // Blinds are capped by stack, so a big blind that is all-in for less than the
+    // full blind sets a correspondingly smaller amount to call.
+    this.currentBet = Math.max(0, ...this.order.map((s) => this.committed.get(s) ?? 0));
     this.lastRaiseSize = this.blinds.big;
     if (posts.length > 0) this.emit({ type: 'BlindsPosted', posts });
     return bb;
