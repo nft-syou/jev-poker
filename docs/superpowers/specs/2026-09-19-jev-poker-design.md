@@ -1,7 +1,7 @@
 # jev-poker 設計書 / Design Spec
 
 日付: 2026-09-19
-状態: 設計承認済み。spec 本文はユーザーレビュー待ち
+状態: 実装済み (実装計画: docs/superpowers/plans/2026-09-19-jev-poker.md)
 
 ## 1. 目的
 
@@ -152,7 +152,9 @@ interface LegalActions {
     potBB, toCallBB, potOddsPct, effectiveStackBB,
     stacksBB: [{ seat, stackBB, isAllIn }],
   },
-  history: [ { street, seat, action, amountBB } ]   // 今ハンドのみ
+  history: [ { street, seat, action, committedBB } ]   // 今ハンドのみ
+  // committedBB: このアクションでポットに投入したチップ (BB 換算)。
+  // 「raise to X」の合計額は action の文字列側に入る。
 }
 ```
 
