@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const FORBIDDEN = ['react', 'react-dom', '@typesafe-ai/sdk', '../jev', '../agents', '../../bench'];
 
 describe('engine boundary', () => {
-  it('imports nothing outside src/engine and node builtins', () => {
+  it('imports only relative paths inside src/engine (node builtins are forbidden too)', () => {
     const dir = join(__dirname);
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     for (const f of files) {

@@ -316,7 +316,7 @@ describe('Hand invariants (randomised play)', () => {
       expect(final.every((s) => s.stack >= 0)).toBe(true);
       expect(hand.toAct).toBeNull();
       expect(hand.street).toBe('showdown');
-      expect(hand.board.length).toBe(hand.wentToShowdown ? 5 : hand.board.length);
+      if (hand.wentToShowdown) expect(hand.board).toHaveLength(5);
       const ended = events.filter((e) => e.type === 'HandEnded');
       expect(ended).toHaveLength(1);
       const awarded = events.filter((e) => e.type === 'PotAwarded') as { amount: number }[];

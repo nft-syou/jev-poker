@@ -13,7 +13,15 @@ describe('compressState', () => {
     expect(s.history).toEqual([{ street: 'preflop', seat: 1, action: 'raise', amountBB: 3 }]);
     expect(s).toMatchSnapshot();
   });
-  it('never includes other hole cards', () => expect(JSON.stringify(compressState(view, legal, getPersona('tag')))).not.toMatch(/stacks.*holeCards/));
+  it('never includes other hole cards', () => {
+    // Structural check: every card-looking token in the serialised state must be
+    // one of the acting seat's hole cards or a board card. Seats 1 and 2 hold
+    // cards too, and nothing about them may leak in.
+    const json = JSON.stringify(compressState(view, legal, getPersona('tag')));
+    const tokens = json.match(/\b[2-9TJQKA][cdhs]\b/g) ?? [];
+    expect(tokens.length).toBeGreaterThan(0);
+    expect([...new Set(tokens)].sort()).toEqual(['2c', 'Ah', 'Jh', 'Kh', 'Qh']);
+  });
 });
 
 describe('compressState omissions', () => {
