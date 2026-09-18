@@ -108,6 +108,45 @@ describe("Hand setup", () => {
         ],
       }),
     ).toThrow(/no chips/);
+    expect(() =>
+      threeHanded({
+        seats: [
+          { seat: 0, stack: 100 },
+          { seat: 0, stack: 100 },
+        ],
+      }),
+    ).toThrow(/unique/);
+  });
+
+  it("posts partial blinds and antes, marking players all in", () => {
+    const hand = threeHanded({
+      seats: [
+        { seat: 0, stack: 100 },
+        { seat: 1, stack: 3 },
+        { seat: 2, stack: 1 },
+      ],
+      blinds: { small: 5, big: 10, ante: 1 },
+    });
+    const posted = hand.events.find((e) => e.type === "BlindsPosted");
+    expect(posted).toEqual({
+      type: "BlindsPosted",
+      posts: [
+        { seat: 0, kind: "ante", amount: 1 },
+        { seat: 1, kind: "ante", amount: 1 },
+        { seat: 2, kind: "ante", amount: 1 },
+        { seat: 1, kind: "small", amount: 2 },
+        { seat: 2, kind: "big", amount: 0 },
+      ],
+    });
+    // Seats 1 and 2 are all in from the blinds/ante alone, leaving fewer than 2 live
+    // players, so the hand runs itself out immediately without seat 0 acting.
+    expect(hand.isComplete).toBe(true);
+    const snap = hand.snapshot();
+    const p1 = snap.players.find((p) => p.seat === 1);
+    const p2 = snap.players.find((p) => p.seat === 2);
+    expect(p1).toMatchObject({ contributed: 3, allIn: true });
+    expect(p2).toMatchObject({ contributed: 1, allIn: true });
+    expect(snap.pot).toBe(5);
   });
 });
 
@@ -271,6 +310,34 @@ describe("Hand betting", () => {
     hand.act(0, { type: "raise", amount: 15 });
     // A shove for less does not reopen the min-raise size: the next min raise is still 20.
     expect(hand.legalActions(1).minRaiseTo).toBe(25);
+  });
+
+  it("does not reopen raising after a short all-in that is not a full raise", () => {
+    const hand = threeHanded({
+      seats: [
+        { seat: 0, stack: 100 },
+        { seat: 1, stack: 100 },
+        { seat: 2, stack: 40 },
+      ],
+    });
+    hand.act(0, { type: "raise", amount: 30 }); // minRaise becomes 20
+    hand.act(1, { type: "call" });
+    hand.act(2, { type: "allin" }); // to 40: increment 10 < 20, not a full raise
+    expect(hand.actingSeat).toBe(0);
+    expect(hand.legalActions(0)).toEqual<LegalActions>({
+      canFold: true,
+      canCheck: false,
+      callAmount: 10,
+      minRaiseTo: null,
+      maxRaiseTo: null,
+    });
+    expect(() => hand.act(0, { type: "raise", amount: 60 })).toThrow(/not allowed/);
+    hand.act(0, { type: "call" });
+    expect(hand.legalActions(1).minRaiseTo).toBeNull();
+    hand.act(1, { type: "call" });
+    // Everyone matched; the flop is dealt and raising is open again.
+    expect(hand.street).toBe("flop");
+    expect(hand.legalActions(1).minRaiseTo).toBe(10);
   });
 });
 

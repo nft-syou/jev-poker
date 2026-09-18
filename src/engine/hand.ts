@@ -61,12 +61,18 @@ export class Hand {
   private toAct: SeatId[] = [];
   private acting: SeatId | null = null;
   private complete = false;
+  /** Seats that may only call or fold this street because a short (incomplete) all-in
+   *  raise came after their turn; a full raise clears this. */
+  private cannotRaise = new Set<SeatId>();
 
   constructor(options: HandOptions) {
     if (options.seats.length < 2) throw new Error("a hand needs at least 2 players");
     if (options.deck.length !== 52) throw new Error("deck must have exactly 52 cards");
     if (!options.seats.some((s) => s.seat === options.button)) {
       throw new Error(`button seat ${options.button} is not in the hand`);
+    }
+    if (new Set(options.seats.map((s) => s.seat)).size !== options.seats.length) {
+      throw new Error("seat ids must be unique");
     }
     for (const s of options.seats) {
       if (!Number.isInteger(s.stack) || s.stack <= 0)
@@ -93,7 +99,12 @@ export class Hand {
     });
     this.currentBet = options.blinds.big;
     this.toAct = this.rotateAfter(bigBlindSeat).filter((seat) => this.isLive(seat));
-    this.advance();
+    const liveCount = this.players.filter((p) => this.isLive(p.seat)).length;
+    if (liveCount < 2) {
+      this.runOut();
+    } else {
+      this.advance();
+    }
   }
 
   get isComplete(): boolean {
@@ -116,7 +127,9 @@ export class Hand {
     const maxRaiseTo = player.streetBet + player.stack;
     let minRaiseTo: number | null =
       this.currentBet === 0 ? this.bigBlind : this.currentBet + this.minRaise;
-    if (player.stack <= toCall) {
+    if (this.cannotRaise.has(seat)) {
+      minRaiseTo = null;
+    } else if (player.stack <= toCall) {
       minRaiseTo = null;
     } else if (maxRaiseTo < minRaiseTo) {
       minRaiseTo = maxRaiseTo;
@@ -181,7 +194,23 @@ export class Hand {
         const kind = this.currentBet === 0 ? "bet" : "raise";
         committed = this.commit(player, target - player.streetBet, true);
         const increment = target - this.currentBet;
-        if (increment > this.minRaise) this.minRaise = increment;
+        if (increment >= this.minRaise) {
+          this.minRaise = increment;
+          this.cannotRaise.clear();
+        } else {
+          // Incomplete (short all-in) raise: it does not reopen the action. Seats
+          // that already acted this street may only call or fold; seats still
+          // waiting their turn keep their normal options.
+          for (const other of this.players) {
+            if (
+              other.seat !== seat &&
+              this.isLive(other.seat) &&
+              !this.toAct.includes(other.seat)
+            ) {
+              this.cannotRaise.add(other.seat);
+            }
+          }
+        }
         this.currentBet = target;
         this.toAct = this.rotateAfter(seat).filter((s) => s !== seat && this.isLive(s));
         normalized = { type: kind, amount: target };
@@ -308,13 +337,16 @@ export class Hand {
     this.dealNextStreet();
     const liveCount = this.players.filter((p) => this.isLive(p.seat)).length;
     if (liveCount < 2) {
-      // `dealNextStreet` mutates `currentStreet`, but TS's control-flow analysis does not
-      // re-widen it after the method call, so it needs an explicit cast here.
-      while ((this.currentStreet as Street) !== "river") this.dealNextStreet();
-      this.showdown();
+      this.runOut();
       return;
     }
     this.acting = this.toAct[0] ?? null;
+  }
+
+  /** Deals every remaining street with no further betting, then goes to showdown. */
+  private runOut(): void {
+    while (this.currentStreet !== "river") this.dealNextStreet();
+    this.showdown();
   }
 
   private dealNextStreet(): void {
@@ -322,6 +354,7 @@ export class Hand {
     for (const player of this.players) player.streetBet = 0;
     this.currentBet = 0;
     this.minRaise = this.bigBlind;
+    this.cannotRaise.clear();
     const count = this.currentStreet === "flop" ? 3 : 1;
     for (let i = 0; i < count; i++) this.board.push(this.draw());
     this.toAct = this.rotateAfter(this.button).filter((seat) => this.isLive(seat));
