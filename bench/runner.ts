@@ -16,6 +16,13 @@ const STARTING_STACK = 10_000;
 /** Seed offset for the Jev seat, keeping its stream distinct from any baseline seat. */
 const JEV_SEED_TAG = 99;
 
+/**
+ * How many Jev decisions are inspected before deciding a backend is broken.
+ * If every one of them failed open, the matchup is aborted: a whole run of
+ * fallback actions measures the fallback, not Jev, and still costs API calls.
+ */
+const FAIL_FAST_DECISIONS = 10;
+
 export interface RunOptions {
   opponent: Opponent;
   format: Format;
@@ -26,6 +33,8 @@ export interface RunOptions {
   backend: JevBackend;
   signal?: AbortSignal;
   onHand?: (done: number, total: number) => void;
+  /** Called once per Jev decision, as the hand that produced it finishes. */
+  onDecision?: (record: DecisionRecord) => void;
   /** Test seam: replaces `playHand` for a single hand. Production callers leave this unset. */
   playHandImpl?: (args: PlayHandArgs) => Promise<HandRecord>;
 }
@@ -38,6 +47,8 @@ export interface PlayHandArgs {
   baseSeed: number;
   persona: Persona;
   backend: JevBackend;
+  /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
+  onEvent?: (event: TableEvent) => void;
 }
 
 /**
@@ -81,15 +92,13 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const table = new Table(config);
   const vpip = new Set<SeatId>();
   const pfr = new Set<SeatId>();
-  const potWinners = new Set<SeatId>();
   const unsubscribe = table.on((e: TableEvent) => {
+    args.onEvent?.(e);
     if (e.type === 'ActionTaken' && e.street === 'preflop') {
       const t = e.action.type;
       // Blind posts are not `ActionTaken`, so any call/bet/raise/allin here is voluntary.
       if (t === 'call' || t === 'bet' || t === 'raise' || t === 'allin') vpip.add(e.seat);
       if (t === 'bet' || t === 'raise' || t === 'allin') pfr.add(e.seat);
-    } else if (e.type === 'PotAwarded') {
-      potWinners.add(e.seat);
     }
   });
 
@@ -119,7 +128,8 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       jevSeat,
       net,
       wentToShowdown: hand.wentToShowdown,
-      jevWonShowdown: hand.wentToShowdown ? potWinners.has(jevSeat) : null,
+      // "Won" means Jev finished the hand ahead: a chop or a lost side pot is not a win.
+      jevWonShowdown: hand.wentToShowdown ? (net[jevSeat] ?? 0) > 0 : null,
       jevVpip: vpip.has(jevSeat),
       jevPfr: pfr.has(jevSeat),
       oppVpip: fraction(vpip),
@@ -137,10 +147,12 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
  * already running are awaited and the result is flagged `partial`.
  *
  * A hand that throws rejects the whole match with the original error, and stops
- * any further hands from being started.
+ * any further hands from being started. The same happens when the first
+ * `FAIL_FAST_DECISIONS` Jev decisions all failed open: the backend is
+ * systematically broken, so the match rejects instead of burning the budget.
  */
 export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[]; partial: boolean }> {
-  const { opponent, format, seeds, baseSeed, persona, backend, signal, onHand } = opts;
+  const { opponent, format, seeds, baseSeed, persona, backend, signal, onHand, onDecision } = opts;
   const rotationCount = rotations(format);
 
   const jobs: { seedIndex: number; rotation: number }[] = [];
@@ -156,6 +168,9 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
   // Set by the first worker whose hand throws, so the others stop claiming jobs
   // instead of burning API calls for a match that has already rejected.
   let failed = false;
+  // The first `FAIL_FAST_DECISIONS` decisions, in hand-completion order.
+  const firstDecisions: DecisionRecord[] = [];
+  let failFastChecked = false;
 
   const worker = async (): Promise<void> => {
     for (;;) {
@@ -179,6 +194,19 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
         throw err;
       }
       hands.push(record);
+      for (const decision of record.decisions) {
+        onDecision?.(decision);
+        if (!failFastChecked && firstDecisions.length < FAIL_FAST_DECISIONS) firstDecisions.push(decision);
+      }
+      if (!failFastChecked && firstDecisions.length >= FAIL_FAST_DECISIONS) {
+        failFastChecked = true;
+        if (firstDecisions.every((d) => d.error !== undefined)) {
+          failed = true;
+          throw new Error(
+            `Jev backend failing on every decision (first ${FAIL_FAST_DECISIONS}): ${firstDecisions[0]?.error ?? ''}`,
+          );
+        }
+      }
       done += 1;
       onHand?.(done, total);
     }

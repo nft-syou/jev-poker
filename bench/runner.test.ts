@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { cardToString } from '../src/engine/cards.js';
+import type { DecisionRecord } from '../src/jev/agent.js';
 import { createMockBackend } from '../src/jev/backend.js';
 import { getPersona } from '../src/jev/personas.js';
 import { expandMatchups, rotations, seatCount } from './matchups.js';
@@ -25,13 +27,26 @@ describe('expandMatchups', () => {
   });
 });
 describe('playHand', () => {
-  it('is zero-sum and same deck across rotations', async () => {
-    const a = await playHand({ seedIndex: 3, rotation: 0, opponent: 'caller', format: 'hu', baseSeed: 1, persona, backend: createMockBackend() });
-    const b = await playHand({ seedIndex: 3, rotation: 1, opponent: 'caller', format: 'hu', baseSeed: 1, persona, backend: createMockBackend() });
+  it('is zero-sum and deals the same deck across rotations', async () => {
+    const dealt: string[][] = [];
+    const run = async (rotation: number) => {
+      const cards: string[] = [];
+      const r = await playHand({
+        seedIndex: 3, rotation, opponent: 'caller', format: 'hu', baseSeed: 1, persona, backend: createMockBackend(),
+        onEvent: (e) => { if (e.type === 'HoleCardsDealt') cards.push(...e.cards.map(cardToString)); },
+      });
+      dealt.push(cards.sort());
+      return r;
+    };
+    const a = await run(0);
+    const b = await run(1);
     expect(a.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
     expect(a.jevSeat).toBe(0); expect(b.jevSeat).toBe(1);
     expect(a.decisions.length).toBeGreaterThan(0);
     expect(b.net.reduce((x, y) => x + y, 0)).toBeCloseTo(0);
+    // Same deal, Jev in the other seat: the four hole cards dealt are identical.
+    expect(dealt[0]).toHaveLength(4);
+    expect(dealt[1]).toEqual(dealt[0]);
   });
   it('6-max has 6 seats', async () => {
     const r = await playHand({ seedIndex: 0, rotation: 5, opponent: 'random', format: '6max', baseSeed: 1, persona, backend: createMockBackend() });
@@ -52,8 +67,8 @@ describe('playHand', () => {
   it('reports showdown and preflop aggression fields', async () => {
     const r = await playHand({ seedIndex: 11, rotation: 0, opponent: 'caller', format: '6max', baseSeed: 9, persona, backend: createMockBackend() });
     expect(typeof r.wentToShowdown).toBe('boolean');
-    if (!r.wentToShowdown) expect(r.jevWonShowdown).toBeNull();
-    else expect(typeof r.jevWonShowdown).toBe('boolean');
+    // `jevWonShowdown` is "Jev finished the hand ahead", not "Jev was awarded a pot".
+    expect(r.jevWonShowdown).toBe(r.wentToShowdown ? (r.net[r.jevSeat] ?? 0) > 0 : null);
     expect(typeof r.jevVpip).toBe('boolean');
     expect(typeof r.jevPfr).toBe('boolean');
     expect(r.oppVpip).toBeGreaterThanOrEqual(0);
@@ -98,6 +113,57 @@ describe('runMatch', () => {
     // 40 jobs were planned; only the handful in flight around the failure may start.
     expect(started).toBeLessThan(10);
   });
+  const errored = (error: string | undefined): DecisionRecord => ({
+    street: 'preflop',
+    choice: 'check_or_call',
+    action: { type: 'call' },
+    probabilities: { fold: 0, check_or_call: 1, bet_or_raise: 0 },
+    sizingScore: null,
+    bluffIntent: null,
+    latencyMs: 1,
+    apiCall: true,
+    ...(error === undefined ? {} : { error }),
+  });
+  const fake = (seedIndex: number, rotation: number, decisions: DecisionRecord[]) => ({
+    seedIndex, rotation, jevSeat: rotation, net: [0, 0], wentToShowdown: false, jevWonShowdown: null,
+    jevVpip: false, jevPfr: false, oppVpip: 0, oppPfr: 0, decisions,
+  });
+
+  it('aborts the match when the first 10 decisions all failed open', async () => {
+    let started = 0;
+    const r = runMatch({
+      ...base,
+      format: 'hu',
+      seeds: 50,
+      concurrency: 2,
+      playHandImpl: async (args) => {
+        started += 1;
+        return fake(args.seedIndex, args.rotation, [errored('backend down'), errored('backend down')]);
+      },
+    });
+    await expect(r).rejects.toThrow('Jev backend failing on every decision (first 10): backend down');
+    const tick = (): Promise<void> => new Promise((res) => setTimeout(res, 0));
+    for (let i = 0; i < 50; i++) await tick();
+    expect(started).toBeLessThan(15); // of 100 planned hands
+  });
+
+  it('does not abort when only some decisions failed open', async () => {
+    const r = await runMatch({
+      ...base,
+      format: 'hu',
+      seeds: 10,
+      playHandImpl: async (args) =>
+        fake(args.seedIndex, args.rotation, [errored(args.rotation === 0 ? 'flaky' : undefined), errored(undefined)]),
+    });
+    expect(r.hands).toHaveLength(20);
+  });
+
+  it('reports every decision through onDecision', async () => {
+    const seen: DecisionRecord[] = [];
+    await runMatch({ ...base, format: 'hu', seeds: 2, onDecision: (d) => seen.push(d) });
+    expect(seen.length).toBeGreaterThan(0);
+  });
+
   it('reports progress up to the total', async () => {
     const seen: [number, number][] = [];
     const r = await runMatch({ ...base, format: 'hu', seeds: 3, onHand: (done, total) => seen.push([done, total]) });

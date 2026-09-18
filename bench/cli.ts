@@ -69,6 +69,9 @@ async function main(): Promise<void> {
         : createMockBackend();
 
     const startedAt = new Date().toISOString();
+    // One loud warning per matchup: a fail-open means the table saw the fallback
+    // action, not a Jev decision, so the numbers below are diluted.
+    let warnedFailOpen = false;
     const { hands, partial } = await runMatch({
       opponent: matchup.opponent,
       format: matchup.format,
