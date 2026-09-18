@@ -56,6 +56,7 @@ jev-poker/
   src/ui/            React コンポーネント、状態管理、観戦モード
   src/i18n/          i18next 初期化、locales/ja.json、locales/en.json
   src/main.tsx       エントリ
+  src/proxy/handler.ts   プロキシの純ロジック (functions/ から import、単体テスト対象)
   functions/api/jev/[[path]].ts   Pages Functions プロキシ
   docs/superpowers/specs/          設計書
   LICENSE            MIT
@@ -113,6 +114,8 @@ interface LegalActions {
 - `table.startHand()` → `hand.legalActions(seat)` → `hand.act(seat, action)` の API。
   `act` は不正なアクションを投げる (UI/エージェント側が `legalActions` で先に整形する)。
 - 街の終了判定: 全アクティブプレイヤーの投入額が揃い、かつ最後のアグレッサーまで一周。
+- フルレイズ未満のショートオールインは、既にアクション済みのプレイヤーのレイズ権を
+  再オープンしない (コール/フォールドのみ)。
 - オールイン・サイドポット: 投入額ごとに層を分けて分配。端数チップはボタン左から配る。
 - ショーダウン: 7 枚から最良 5 枚役を評価 (21 通りの 5 枚組合せを全探索)。
 - キャッシュゲーム: スタック 0 の席はハンド終了時に `startingStack` で自動リバイ。
@@ -221,6 +224,8 @@ interface Persona {
 - `Table`: 席・カード・ポット・ボード。人間の手番ならアクションバー (Fold / Check-Call /
   Bet-Raise + 額スライダー)。CPU の手番は「思考中」表示。
 - 観戦モード (全席 CPU): 再生速度 (0.5x / 1x / 2x / 最速) と一時停止。
+  再生速度はプレイ中でもテーブルヘッダのセレクタから変更でき、テーブルを作り直すことなく
+  次の待ち時間から反映される。
 - ハンド履歴パネル: 各アクション。CPU は Jev の確率分布とブラフ意図を展開表示。
 - キー入力モーダル: 初回 / 401 時。「キーはこのブラウザの localStorage のみに保存され、
   当サイトのサーバーには保存されない」旨を表示。削除ボタン付き。
@@ -250,8 +255,9 @@ interface Persona {
 ## 10. デプロイ・運用
 
 - Cloudflare Pages: ビルド `pnpm build`、出力 `dist/`、Functions は `functions/` を自動検出。
-- ローカル: `pnpm dev` は Vite のみ (Jev 呼び出しは失敗する)。Functions 込みは
-  `pnpm dev:pages` (= `wrangler pages dev`) で起動する。
+- ローカル: `pnpm dev` は Vite の dev proxy が `/api/jev` を `api.typesafe.ai` に転送し、
+  Function と同じヘッダ載せ替えを行うので Jev 呼び出しも動く。Functions 込みの確認は
+  `pnpm dev:pages` (= `wrangler pages dev`)。
 - GitHub Actions: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`。
 - README: 概要、デモ手順、キーの取得と扱い、アーキテクチャ図、貢献方法 (英日併記)。
 

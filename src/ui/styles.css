@@ -77,20 +77,6 @@ button.link {
   color: #7fd1a0;
   text-decoration: underline;
 }
-table.seats {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0;
-}
-table.seats th,
-table.seats td {
-  padding: 6px;
-  text-align: left;
-}
-table.seats input,
-table.seats select {
-  width: 100%;
-}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -111,6 +97,20 @@ table.seats select {
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0;
+}
+table.seats {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+table.seats th,
+table.seats td {
+  padding: 6px;
+  text-align: left;
+}
+table.seats input,
+table.seats select {
+  width: 100%;
 }
 .visually-hidden {
   position: absolute;
