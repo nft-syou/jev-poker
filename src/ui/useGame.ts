@@ -76,9 +76,13 @@ type Msg =
   | { type: "sync"; snapshot: HandSnapshot | null; seats: GameSeat[]; handsPlayed: number }
   | { type: "thinking"; seat: SeatId | null }
   | { type: "paused"; paused: boolean }
-  | { type: "gameOver"; error: string | null };
+  | { type: "gameOver"; error: string | null }
+  | { type: "reset" };
 
 const MAX_LOG = 400;
+
+/** `GameState.error` marker for "there is no API key"; the UI localizes it. */
+export const NO_BACKEND_ERROR = "no backend";
 
 function reducer(state: GameState, msg: Msg): GameState {
   switch (msg.type) {
@@ -99,6 +103,8 @@ function reducer(state: GameState, msg: Msg): GameState {
       return { ...state, paused: msg.paused };
     case "gameOver":
       return { ...state, gameOver: true, error: msg.error, thinkingSeat: null };
+    case "reset":
+      return { ...state, gameOver: false, error: null };
   }
 }
 
@@ -150,6 +156,10 @@ export function useGame(options: UseGameOptions): GameController {
   if (rngRef.current === null) rngRef.current = createRng(options.seed ?? randomSeed());
   const runRef = useRef<Run | null>(null);
   const pausedRef = useRef(false);
+  /** Set when the loop stopped itself because Jev rejected the key. */
+  const authPausedRef = useRef(false);
+  /** Set when the loop gave up because there was no backend to ask. */
+  const noBackendRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
   const pendingRef = useRef<DecisionRecord | null>(null);
   const speedRef = useRef<Speed>(settings.speed);
@@ -194,7 +204,8 @@ export function useGame(options: UseGameOptions): GameController {
           }
           if (backend === null) {
             // No API key means no Jev, and CPUs must not play on a fallback forever.
-            dispatch({ type: "gameOver", error: "no backend" });
+            noBackendRef.current = true;
+            dispatch({ type: "gameOver", error: NO_BACKEND_ERROR });
             return;
           }
           dispatch({ type: "thinking", seat });
@@ -222,6 +233,7 @@ export function useGame(options: UseGameOptions): GameController {
           if (!run.alive || pausedRef.current) return;
           if (record.errorKind === "auth") {
             pausedRef.current = true;
+            authPausedRef.current = true;
             stopRun(run);
             dispatch({ type: "paused", paused: true });
             dispatch({ type: "thinking", seat: null });
@@ -286,6 +298,28 @@ export function useGame(options: UseGameOptions): GameController {
       tableRef.current = null;
     };
   }, []);
+
+  // A fresh backend (the user fixed the API key) revives a table that stopped for want of a
+  // working one. React only re-runs this when the backend identity changes, and both guards
+  // are refs that are false until the loop itself trips them, so the initial mount — and any
+  // later backend swap on a healthy table — starts nothing extra.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: must fire on a new backend only
+  useEffect(() => {
+    if (backend === null) return;
+    if (authPausedRef.current) {
+      authPausedRef.current = false;
+      noBackendRef.current = false;
+      pausedRef.current = false;
+      dispatch({ type: "paused", paused: false });
+      startLoop();
+      return;
+    }
+    if (noBackendRef.current) {
+      noBackendRef.current = false;
+      dispatch({ type: "reset" });
+      startLoop();
+    }
+  }, [backend]);
 
   const humanAct = useCallback(
     (action: Action) => {

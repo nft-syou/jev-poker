@@ -58,6 +58,7 @@
     "leave": "テーブルを離れる",
     "spectating": "観戦モード",
     "gameOver": "ゲーム終了",
+    "noBackend": "API キーが無いため Jev に問い合わせできません。",
     "jevError": "Jev が判断できませんでした ({{error}})。CPU は安全な手を選びました。"
   },
   "actions": {

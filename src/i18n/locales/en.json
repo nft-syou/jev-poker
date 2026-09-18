@@ -58,6 +58,7 @@
     "leave": "Leave table",
     "spectating": "Spectator mode",
     "gameOver": "Game over",
+    "noBackend": "No API key: the table cannot ask Jev.",
     "jevError": "Jev could not decide ({{error}}); the CPU played safe."
   },
   "actions": {

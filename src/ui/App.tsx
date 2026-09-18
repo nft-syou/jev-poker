@@ -20,6 +20,9 @@ import {
 
 type Screen = "setup" | "table" | "personas";
 
+/** Preset a seat falls back to when its persona is deleted. */
+const FALLBACK_PERSONA_ID = "tag";
+
 const initialLanguage = detectLanguage(loadLanguage(), globalThis.navigator?.language);
 initI18n(initialLanguage);
 
@@ -59,6 +62,15 @@ export function App() {
       saveCustomPersonas(next, localStorage);
     } catch {
       // storage unavailable
+    }
+    // A seat left pointing at a deleted persona would silently fall back at the table;
+    // point it at the default preset instead, and persist the correction.
+    const ids = new Set(next.map((p) => p.id));
+    const seats = settings.seats.map((seat) =>
+      ids.has(seat.personaId) ? seat : { ...seat, personaId: FALLBACK_PERSONA_ID },
+    );
+    if (seats.some((seat, i) => seat !== settings.seats[i])) {
+      changeSettings({ ...settings, seats });
     }
   };
 
@@ -106,6 +118,7 @@ export function App() {
             settings={settings}
             personas={personas}
             apiKey={apiKey}
+            onSettingsChange={changeSettings}
             onLeave={() => setScreen("setup")}
             onAuthFailed={onAuthFailed}
           />
@@ -128,7 +141,10 @@ export function App() {
           setKeyError(null);
           setScreen("setup");
         }}
-        onClose={() => setKeyModalOpen(false)}
+        onClose={() => {
+          setKeyError(null);
+          setKeyModalOpen(false);
+        }}
       />
     </div>
   );

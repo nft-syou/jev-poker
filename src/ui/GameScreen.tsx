@@ -9,11 +9,19 @@ interface Props {
   settings: Settings;
   personas: readonly Persona[];
   apiKey: string | null;
+  onSettingsChange: (settings: Settings) => void;
   onLeave: () => void;
   onAuthFailed: () => void;
 }
 
-export function GameScreen({ settings, personas, apiKey, onLeave, onAuthFailed }: Props) {
+export function GameScreen({
+  settings,
+  personas,
+  apiKey,
+  onSettingsChange,
+  onLeave,
+  onAuthFailed,
+}: Props) {
   const backend: JevBackend | null = useMemo(
     () =>
       apiKey === null
@@ -26,5 +34,12 @@ export function GameScreen({ settings, personas, apiKey, onLeave, onAuthFailed }
     [apiKey, settings.model],
   );
   const game = useGame({ settings, personas, backend, onAuthFailed });
-  return <TableView game={game} onLeave={onLeave} />;
+  return (
+    <TableView
+      game={game}
+      speed={settings.speed}
+      onSpeedChange={(speed) => onSettingsChange({ ...settings, speed })}
+      onLeave={onLeave}
+    />
+  );
 }

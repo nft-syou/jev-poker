@@ -1,17 +1,22 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionBar } from "./ActionBar";
 import { CardView } from "./CardView";
 import { HistoryPanel } from "./HistoryPanel";
 import { SeatView } from "./SeatView";
-import type { GameController } from "./useGame";
+import { SPEEDS, type Speed } from "./storage";
+import { type GameController, NO_BACKEND_ERROR } from "./useGame";
 
 interface Props {
   game: GameController;
+  speed: Speed;
+  onSpeedChange: (speed: Speed) => void;
   onLeave: () => void;
 }
 
-export function TableView({ game, onLeave }: Props) {
+export function TableView({ game, speed, onSpeedChange, onLeave }: Props) {
   const { t } = useTranslation();
+  const speedId = useId();
   const { state } = game;
   const snapshot = state.snapshot;
   const names = new Map(state.seats.map((s) => [s.id, s.name]));
@@ -26,7 +31,22 @@ export function TableView({ game, onLeave }: Props) {
       <div className="table-header row">
         <span>{snapshot !== null && t("table.hand", { number: snapshot.handNumber + 1 })}</span>
         {game.spectator && <span className="badge">{t("table.spectating")}</span>}
-        <button type="button" className="secondary" onClick={game.togglePause}>
+        <label className="visually-hidden" htmlFor={speedId}>
+          {t("setup.speed")}
+        </label>
+        <select id={speedId} value={speed} onChange={(e) => onSpeedChange(e.target.value as Speed)}>
+          {SPEEDS.map((s) => (
+            <option key={s} value={s}>
+              {t(`setup.speed_${s}`)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="secondary"
+          onClick={game.togglePause}
+          disabled={state.gameOver}
+        >
           {state.paused ? t("table.resume") : t("table.pause")}
         </button>
         <button type="button" className="secondary" onClick={onLeave}>
@@ -81,7 +101,8 @@ export function TableView({ game, onLeave }: Props) {
       )}
       {state.gameOver && (
         <p className="error">
-          {t("table.gameOver")} {state.error}
+          {t("table.gameOver")}{" "}
+          {state.error === NO_BACKEND_ERROR ? t("table.noBackend") : state.error}
         </p>
       )}
 
