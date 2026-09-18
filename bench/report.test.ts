@@ -97,8 +97,14 @@ describe('report', () => {
     expect(pickLatest([a, b])).toEqual([b, a]);
   });
 
-  it('builds a result file name from startedAt and label', () => {
-    expect(resultFileName(mk({}), 'random-hu')).toBe('2026-09-19T00-00-00-000Z-random-hu.json');
+  it('builds a result file name from startedAt and the matchup', () => {
+    expect(resultFileName(mk({}), null)).toBe('2026-09-19T00-00-00-000Z-random-hu.json');
+    expect(resultFileName(mk({ opponent: 'rules', format: '6max' }), null)).toBe('2026-09-19T00-00-00-000Z-rules-6max.json');
+  });
+
+  it('keeps the matchup in the name when a label is given', () => {
+    expect(resultFileName(mk({}), 'smoke')).toBe('2026-09-19T00-00-00-000Z-smoke-random-hu.json');
+    expect(resultFileName(mk({ opponent: 'caller' }), 'smoke')).toBe('2026-09-19T00-00-00-000Z-smoke-caller-hu.json');
   });
 });
 

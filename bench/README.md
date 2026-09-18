@@ -30,7 +30,7 @@ pnpm bench --help
 | `--backend` | `typesafe` / `mock` | `typesafe` | `mock` は API を呼ばず決定論的に答える |
 | `--concurrency` | 正の整数 | `4` | 同時に進めるハンド数 |
 | `--base-seed` | 正の整数 | `1` | デッキ生成の基準シード。同じ値なら同じ配牌 |
-| `--label` | 任意の文字列 | `<opponent>-<format>` | 結果ファイル名の末尾 |
+| `--label` | 任意の文字列 | なし | 結果ファイル名に挟むタグ。マッチ名は常に残るので、全マッチ共通のラベルでも衝突しない |
 | `--model` | モデル名 | SDK の既定 | SDK に渡す model |
 
 `--flag value` と `--flag=value` のどちらでも書ける。未知のフラグ、不正な値、0 以下の
@@ -76,8 +76,13 @@ pnpm bench --help
 
 ## 結果 JSON
 
-- 置き場所: `bench/results/<startedAt>-<label>.json` (例
-  `2026-09-19T10-00-00-000Z-random-hu.json`)。1 マッチ 1 ファイル。
+- 置き場所: `bench/results/<startedAt>-<opponent>-<format>.json` (例
+  `2026-09-19T10-00-00-000Z-random-hu.json`)。1 マッチ 1 ファイル。`--label smoke` を
+  付けた場合は `<startedAt>-smoke-<opponent>-<format>.json` (例
+  `2026-09-19T10-00-00-000Z-smoke-random-hu.json`) になり、**マッチ名は常に残る**ので
+  `--opponent all` でもファイル名が衝突しない。
+- 書き込みは `<file>.tmp` に出してから `rename` する (アトミック)。途中で落ちても
+  壊れかけの JSON が残ることはない。
 - 中身は `BenchResult` (spec §6.2): `config` (相手・形式・シード・人格・バックエンド・
   `sdkVersion`・`gitCommit` など)、`summary`、そして全ハンドの記録 `hands` (Jev の
   判断ログ `decisions` を含む)。
@@ -96,13 +101,19 @@ pnpm bench:report                              # results/ 内の全 JSON
 pnpm bench:report bench/results/a.json b.json  # ファイル指定
 ```
 
+> **Windows PowerShell**: PowerShell はグロブ (`bench/results/*.json`) を展開しないので、
+> ワイルドカードをそのまま渡しても動かない。引数なしの形 (`pnpm bench:report`) を使うか、
+> `pnpm bench:report (Get-ChildItem bench/results/*.json).FullName` のように展開して渡す。
+
 同じ (相手, 形式, 人格) の組み合わせが複数あるときは `finishedAt` が最新のものだけを表にする。
 
 ## Ctrl-C の挙動
 
 - **1 回目**: 新しいハンドの開始を止め、実行中のハンドだけ待ってから、そこまでの結果を
   `partial: true` で JSON に書き出して終了する。以降のマッチは実行しない。
-- **2 回目**: 即座に終了する (終了コード 130)。書き出しは行われない。
+- **2 回目**: その場で即座に終了する (終了コード 130)。実行中だったマッチの JSON は
+  **書き出されない** (ファイルごと存在しない)。書き込みは一時ファイル + `rename` なので、
+  中途半端に切り詰められたファイルが残ることはない。それ以前のマッチのファイルは無事。
 
 ## バックエンドが壊れているとき (fail-fast)
 

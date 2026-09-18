@@ -69,6 +69,11 @@ After one or more runs, re-aggregate the saved results into a table with:
 pnpm bench:report
 ```
 
+Results are saved as `bench/results/<startedAt>-<opponent>-<format>.json`, with `--label`
+inserted before the matchup when given. On Windows PowerShell, note that the shell does not
+expand globs such as `bench/results/*.json`: use the no-argument form above, or pass explicit
+paths (`pnpm bench:report (Get-ChildItem bench/results/*.json).FullName`).
+
 As a rough estimate (see benchmark spec §9), `--opponent all --format all` with the default
 100 seeds makes on the order of 3,000–8,000 Jev calls; at roughly 1–2 seconds per call and
 concurrency 4, a full run takes on the order of 20–70 minutes. Actual cost and time depend on
@@ -97,6 +102,11 @@ pnpm bench --opponent all --format all --seeds 100 --backend mock
 ```sh
 pnpm bench:report
 ```
+
+結果は `bench/results/<startedAt>-<opponent>-<format>.json` に保存される (`--label` を
+付けるとマッチ名の前に挟まる)。Windows PowerShell では `bench/results/*.json` のような
+グロブがシェルで展開されないので、引数なしの形を使うか、明示的なパスを渡すこと
+(`pnpm bench:report (Get-ChildItem bench/results/*.json).FullName`)。
 
 目安として (ベンチマーク spec §9 参照)、既定の 100 シードで `--opponent all --format all`
 を実行すると Jev の呼び出しはおよそ 3,000〜8,000 回になり、1 呼び出し 1〜2 秒・同時実行数 4

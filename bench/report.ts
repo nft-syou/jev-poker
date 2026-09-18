@@ -21,7 +21,7 @@ export const USAGE = `Usage: pnpm bench [options]
   --backend  typesafe|mock             default typesafe (typesafe requires TYPESAFE_API_KEY)
   --concurrency N                      default 4
   --base-seed N                        default 1
-  --label <text>                       result file suffix, default "<opponent>-<format>"
+  --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
   --model <name>                       model passed to the SDK, default the SDK's own
   --help, -h                           print this message
 
@@ -109,9 +109,16 @@ export function pickLatest(results: BenchResult[]): BenchResult[] {
   return [...best.values()].sort(compare);
 }
 
-/** `2026-09-19T00-00-00-000Z-random-hu.json` — colons and dots are not portable in file names. */
-export function resultFileName(result: BenchResult, label: string): string {
-  return `${result.startedAt.replace(/[:.]/g, '-')}-${label}.json`;
+/**
+ * `2026-09-19T00-00-00-000Z-random-hu.json`, or with a user label
+ * `2026-09-19T00-00-00-000Z-smoke-random-hu.json` — colons and dots are not
+ * portable in file names. The matchup is always part of the name, so one
+ * `--label` shared by every matchup of a run cannot collide with itself.
+ */
+export function resultFileName(result: BenchResult, label: string | null): string {
+  const { opponent, format } = result.config;
+  const suffix = label === null ? `${opponent}-${format}` : `${label}-${opponent}-${format}`;
+  return `${result.startedAt.replace(/[:.]/g, '-')}-${suffix}.json`;
 }
 
 const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, 'all'];

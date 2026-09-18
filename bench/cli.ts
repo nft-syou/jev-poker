@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { VERSION } from '@typesafe-ai/sdk';
 import { createMockBackend, createTypeSafeBackend, getPersona } from '../src/jev/index.js';
