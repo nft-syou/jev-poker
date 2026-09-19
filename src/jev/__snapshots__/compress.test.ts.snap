@@ -43,6 +43,8 @@ exports[`compressState > matches snapshot shape 1`] = `
     "pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.",
     "Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.",
     "When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.",
+    "Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.",
+    "Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.",
   ],
   "persona": {
     "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",
