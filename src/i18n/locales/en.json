@@ -77,7 +77,6 @@
     "latency": "{{ms}} ms",
     "bluff": "Bluff",
     "sizing": "Sizing",
-    "model": "Model",
     "pot": "Pot",
     "toCall": "To call",
     "bb": "{{value}} BB",

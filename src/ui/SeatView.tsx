@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { HandPlayerSnapshot } from "../engine/types";
 import { CardView } from "./CardView";
@@ -12,6 +12,8 @@ interface Props {
   isThinking: boolean;
   revealCards: boolean;
   style: CSSProperties;
+  /** Rendered inside the seat, which is the positioning context for a decision bubble. */
+  overlay?: ReactNode;
 }
 
 export function SeatView({
@@ -22,6 +24,7 @@ export function SeatView({
   isThinking,
   revealCards,
   style,
+  overlay,
 }: Props) {
   const { t } = useTranslation();
   const folded = player?.folded ?? false;
@@ -54,6 +57,7 @@ export function SeatView({
       {player !== undefined && player.streetBet > 0 && (
         <div className="seat-bet">{player.streetBet}</div>
       )}
+      {overlay}
     </div>
   );
 }

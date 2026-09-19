@@ -1,12 +1,16 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
 import { ActionBar } from "./ActionBar";
 import { CardView } from "./CardView";
+import { DecisionBubble } from "./DecisionBubble";
 import { HistoryPanel } from "./HistoryPanel";
 import { SeatView } from "./SeatView";
+import { ShowcasePanel } from "./ShowcasePanel";
 import { StatsPanel } from "./StatsPanel";
 import { SPEEDS, type Speed } from "./storage";
+import { Ticker } from "./Ticker";
 import { type GameController, NO_BACKEND_ERROR } from "./useGame";
 
 interface Props {
@@ -16,11 +20,18 @@ interface Props {
   language: Language;
   onSpeedChange: (speed: Speed) => void;
   onLeave: () => void;
+  /** Persona name per seat, for the recording overlays; the seat's own name otherwise. */
+  personaNames?: Record<SeatId, string>;
+  /** Model the table asks for, shown when no decision has named one yet. */
+  model?: string;
 }
 
 type Panel = "table" | "stats" | "log";
 
 const PHONE_QUERY = "(max-width: 720px)";
+
+/** How long a decision keeps its bubble over the seat that made it. */
+const BUBBLE_MS = 2500;
 
 function matchesPhone(): boolean {
   // jsdom (and any non-browser host) has no matchMedia; treat those as wide screens.
@@ -43,11 +54,37 @@ function usePhone(): boolean {
   return phone;
 }
 
-export function TableView({ game, speed, startingStack, language, onSpeedChange, onLeave }: Props) {
+export function TableView({
+  game,
+  speed,
+  startingStack,
+  language,
+  onSpeedChange,
+  onLeave,
+  personaNames,
+  model,
+}: Props) {
   const { t } = useTranslation();
   const speedId = useId();
   const phone = usePhone();
   const [panel, setPanel] = useState<Panel>("table");
+  /** Recording mode: the table alone, narrated. Kept here, and only for this sitting. */
+  const [showcase, setShowcase] = useState(false);
+
+  // The body carries the mode, so the chrome outside this component can step aside too.
+  useEffect(() => {
+    if (!showcase) return;
+    document.body.classList.add("showcase");
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowcase(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("showcase");
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [showcase]);
+
   const { state } = game;
   const snapshot = state.snapshot;
   const names = new Map(state.seats.map((s) => [s.id, s.name]));
@@ -61,17 +98,22 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
   const radiusY = phone ? 42 : 40;
 
   // On a phone one panel shows at a time; on a wide screen the felt is always up and the
-  // side column carries whichever of the two panels the tab switch selected.
-  const showFelt = !phone || panel === "table";
-  const showStats = panel === "stats";
-  const showLog = phone ? panel === "log" : panel !== "stats";
+  // side column carries whichever of the two panels the tab switch selected. Recording mode
+  // takes the side column for itself.
+  const showFelt = !phone || panel === "table" || showcase;
+  const showStats = !showcase && panel === "stats";
+  const showLog = !showcase && (phone ? panel === "log" : panel !== "stats");
+  const last = state.lastDecision;
+  const nameOf = (seat: SeatId) => personaNames?.[seat] ?? names.get(seat) ?? `#${seat}`;
 
   return (
-    <section className="table-screen">
+    <section className={showcase ? "table-screen showcase-mode" : "table-screen"}>
       <div className="table-main">
         <div className="table-header row">
           <span>{snapshot !== null && t("table.hand", { number: snapshot.handNumber + 1 })}</span>
-          {game.spectator && !phone && <span className="badge">{t("table.spectating")}</span>}
+          {game.spectator && !phone && !showcase && (
+            <span className="badge">{t("table.spectating")}</span>
+          )}
           <label className="visually-hidden" htmlFor={speedId}>
             {t("setup.speed")}
           </label>
@@ -94,9 +136,25 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
           >
             {state.paused ? t("table.resume") : t("table.pause")}
           </button>
-          <button type="button" className="secondary" onClick={onLeave}>
-            {t("table.leave")}
-          </button>
+          {showcase ? (
+            <button
+              type="button"
+              className="secondary showcase-exit"
+              aria-label={t("showcase.exit")}
+              onClick={() => setShowcase(false)}
+            >
+              ×
+            </button>
+          ) : (
+            <>
+              <button type="button" className="secondary" onClick={() => setShowcase(true)}>
+                {t("showcase.toggle")}
+              </button>
+              <button type="button" className="secondary" onClick={onLeave}>
+                {t("table.leave")}
+              </button>
+            </>
+          )}
         </div>
 
         {showFelt && (
@@ -108,6 +166,21 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
                 top: `${50 + radiusY * Math.sin(angle)}%`,
               };
               const player = snapshot?.players.find((p) => p.seat === seat.id);
+              const thinking = state.thinkingSeat === seat.id;
+              // A seat is narrated while it thinks, and for a moment after it has decided.
+              const decided = last !== null && last.seat === seat.id ? last : null;
+              const bubble =
+                showcase && (thinking || decided !== null) ? (
+                  <DecisionBubble
+                    seat={seat.id}
+                    personaName={nameOf(seat.id)}
+                    thinking={thinking}
+                    decision={decided?.record ?? null}
+                    features={decided?.features ?? null}
+                    bigBlind={snapshot?.bigBlind ?? 0}
+                    visibleUntil={decided === null ? null : decided.at + BUBBLE_MS}
+                  />
+                ) : null;
               return (
                 <SeatView
                   key={seat.id}
@@ -115,9 +188,10 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
                   player={player}
                   isButton={snapshot?.button === seat.id}
                   isActing={snapshot?.actingSeat === seat.id && !snapshot.complete}
-                  isThinking={state.thinkingSeat === seat.id}
+                  isThinking={thinking}
                   revealCards={revealAll || game.humanSeats.includes(seat.id)}
                   style={style}
+                  overlay={bubble}
                 />
               );
             })}
@@ -156,7 +230,15 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
       </div>
 
       <div className="table-side">
-        {!phone && (
+        {showcase && (
+          <ShowcasePanel
+            last={last}
+            personaName={last === null ? "" : nameOf(last.seat)}
+            bigBlind={snapshot?.bigBlind ?? 0}
+            model={model ?? ""}
+          />
+        )}
+        {!showcase && !phone && (
           <div className="row side-tabs">
             <button
               type="button"
@@ -190,7 +272,19 @@ export function TableView({ game, speed, startingStack, language, onSpeedChange,
         {showLog && <HistoryPanel log={state.log} names={names} />}
       </div>
 
-      {phone && (
+      {showcase && (
+        <div className="showcase-bottom">
+          <Ticker
+            stats={state.stats}
+            prefetch={state.prefetch}
+            handsPlayed={state.handsPlayed}
+            maxPot={state.maxPot}
+          />
+          <p className="showcase-corner">{t("showcase.poweredBy")}</p>
+        </div>
+      )}
+
+      {!showcase && phone && (
         <nav className="tab-bar">
           {(["table", "stats", "log"] as const).map((key) => (
             <button

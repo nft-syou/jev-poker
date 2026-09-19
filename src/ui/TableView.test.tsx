@@ -14,6 +14,7 @@ initI18n("en");
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  document.body.classList.remove("showcase");
 });
 
 const SEATS: GameSeat[] = [
@@ -69,7 +70,7 @@ const LEGAL: LegalActions = {
   maxRaiseTo: 198,
 };
 
-function controller(): GameController {
+function controller(overrides: Partial<GameController["state"]> = {}): GameController {
   return {
     state: {
       snapshot: SNAPSHOT,
@@ -84,6 +85,7 @@ function controller(): GameController {
       prefetch: { started: 0, hits: 0, misses: 0 },
       lastDecision: null,
       maxPot: 0,
+      ...overrides,
     },
     humanSeats: [0],
     spectator: false,
@@ -110,10 +112,10 @@ function stubViewport(phone: boolean): void {
   }));
 }
 
-function renderTable() {
+function renderTable(overrides: Partial<GameController["state"]> = {}) {
   return render(
     <TableView
-      game={controller()}
+      game={controller(overrides)}
       speed="normal"
       startingStack={200}
       language="en"
@@ -146,6 +148,44 @@ describe("TableView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Table" }));
     expect(container.querySelector(".felt")).not.toBeNull();
+  });
+
+  it("swaps the side column for the recording layout and leaves it on Escape", () => {
+    stubViewport(false);
+    const { container } = renderTable();
+    expect(document.body.classList.contains("showcase")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Recording mode" }));
+    // The body class is what hides the app chrome around the table.
+    expect(document.body.classList.contains("showcase")).toBe(true);
+    expect(container.querySelector(".showcase-panel")).not.toBeNull();
+    expect(container.querySelector(".ticker")).not.toBeNull();
+    expect(container.querySelector(".felt")).not.toBeNull();
+    expect(screen.getByText("Powered by TypeSafe Jev")).toBeInTheDocument();
+    // Everything that is not the table itself steps aside.
+    expect(screen.queryByRole("heading", { name: "Hand history" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Leave table" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Stats" })).not.toBeInTheDocument();
+    // The speed and pause controls survive, because a recording still needs steering.
+    expect(screen.getByLabelText("Speed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.body.classList.contains("showcase")).toBe(false);
+    expect(container.querySelector(".showcase-panel")).toBeNull();
+    expect(screen.getByRole("button", { name: "Leave table" })).toBeInTheDocument();
+  });
+
+  it("bubbles the thinking seat only while recording", () => {
+    stubViewport(false);
+    const { container } = renderTable({ thinkingSeat: 1 });
+    expect(container.querySelector(".showcase-bubble")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Recording mode" }));
+    const bubble = container.querySelector(".showcase-bubble");
+    expect(bubble).not.toBeNull();
+    expect(bubble?.getAttribute("data-seat")).toBe("1");
+    expect(screen.getByText("Jev thinking…")).toBeInTheDocument();
   });
 
   it("keeps the felt and one side panel on a wide screen", () => {

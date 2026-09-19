@@ -77,7 +77,6 @@
     "latency": "{{ms}} ms",
     "bluff": "ブラフ度",
     "sizing": "サイズ",
-    "model": "モデル",
     "pot": "ポット",
     "toCall": "コール額",
     "bb": "{{value}} BB",
