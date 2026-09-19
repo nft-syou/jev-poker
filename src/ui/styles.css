@@ -123,14 +123,27 @@ a {
   color: #7fd1a0;
 }
 .table-screen {
+  /* One set of knobs for the felt: the media query below shrinks them for phones. */
+  --seat-width: 120px;
+  --seat-font: 0.85rem;
+  --card-width: 32px;
+  --card-height: 44px;
+  --board-card-width: 32px;
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 16px;
+  align-items: start;
 }
 @media (max-width: 900px) {
   .table-screen {
     grid-template-columns: 1fr;
   }
+}
+.side-tabs {
+  margin-bottom: 8px;
+}
+.side-tabs button {
+  flex: 1;
 }
 .table-header {
   justify-content: space-between;
@@ -152,13 +165,13 @@ a {
 .seat {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 120px;
+  width: var(--seat-width);
   text-align: center;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 10px;
   padding: 6px;
   border: 2px solid transparent;
-  font-size: 0.85rem;
+  font-size: var(--seat-font);
 }
 .seat.acting {
   border-color: #ffd54f;
@@ -170,7 +183,7 @@ a {
   display: flex;
   gap: 4px;
   justify-content: center;
-  min-height: 44px;
+  min-height: calc(var(--card-height) + 2px);
 }
 .seat-name {
   font-weight: 600;
@@ -221,8 +234,8 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 44px;
+  width: var(--card-width);
+  height: var(--card-height);
   border-radius: 4px;
   background: #fff;
   color: #000;
@@ -237,6 +250,9 @@ a {
 }
 .card.empty {
   background: rgba(255, 255, 255, 0.08);
+}
+.board-cards .card {
+  width: var(--board-card-width);
 }
 .your-turn {
   margin: 12px 0;
@@ -379,4 +395,60 @@ textarea {
 button.danger {
   border-color: #ff8a80;
   color: #ff8a80;
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  background: #0f1a14;
+  border-top: 1px solid #2f4a3b;
+}
+.tab-bar button {
+  flex: 1;
+  min-height: 44px;
+}
+@media (max-width: 720px) {
+  .table-screen {
+    --seat-width: 88px;
+    --seat-font: 0.75rem;
+    --card-width: 24px;
+    --card-height: 34px;
+    --board-card-width: 28px;
+    gap: 8px;
+    /* Room for the fixed tab bar, plus the phone's own gesture area. */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .felt {
+    aspect-ratio: 3 / 4;
+    margin: 12px 0;
+    border-width: 5px;
+  }
+  .table-header button,
+  .table-header select {
+    min-height: 40px;
+  }
+  .stats,
+  .history {
+    max-height: none;
+  }
+  /* The action bar outranks the tabs: it stays put whichever panel is showing. */
+  .your-turn {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 19;
+    margin: 0;
+    max-height: 45vh;
+    overflow: auto;
+    border-radius: 0;
+    background: #10201a;
+  }
 }

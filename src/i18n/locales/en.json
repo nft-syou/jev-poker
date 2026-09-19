@@ -61,6 +61,11 @@
     "noBackend": "No API key: the table cannot ask Jev.",
     "jevError": "Jev could not decide ({{error}}); the CPU played safe."
   },
+  "tabs": {
+    "table": "Table",
+    "stats": "Stats",
+    "log": "Log"
+  },
   "stats": {
     "title": "Statistics",
     "standings": "Standings",

@@ -86,6 +86,17 @@ describe("App", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/jev/v1/systemone");
     expect(screen.queryByText("Fallback: Jev was unavailable")).not.toBeInTheDocument();
 
+    // The wide layout keeps the felt up and swaps the side column between the two panels.
+    // jsdom has no `matchMedia`, so `TableView` treats it as a wide screen.
+    fireEvent.click(screen.getByRole("button", { name: "Stats" }));
+    expect(screen.getByRole("heading", { name: "Standings" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Hand history" })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "This session" })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Log" }));
+    expect(screen.getByRole("heading", { name: "Hand history" })).toBeInTheDocument();
+
     // Spectator speed control: the table header changes the persisted setting live.
     fireEvent.change(screen.getByLabelText("Speed"), { target: { value: "slow" } });
     await waitFor(() => {

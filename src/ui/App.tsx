@@ -118,6 +118,7 @@ export function App() {
             settings={settings}
             personas={personas}
             apiKey={apiKey}
+            language={language}
             onSettingsChange={changeSettings}
             onLeave={() => setScreen("setup")}
             onAuthFailed={onAuthFailed}
