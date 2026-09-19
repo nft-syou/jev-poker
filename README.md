@@ -119,29 +119,68 @@ CLI の詳細な使い方と結果フォーマットは [`bench/README.md`](benc
 
 最新の結果表はベンチマーク実行後にここへ手動で貼る (`pnpm bench:report` の出力)。
 
-**Run: 2026-09-19** — model `jev-1.13.0`, SDK 0.6.0, code `2af5f01`, `--seeds 100 --concurrency 8`
-(3,455 API calls, 0 fail-open, p95 latency 0.36 s, wall clock ≈ 90 s). Raw data: [`bench/results/`](bench/results/).
+**Run: 2026-09-19** — model `jev-1.13.0`, SDK 0.6.0, code `2af5f01`, all 5 presets, `--seeds 100 --concurrency 8`
+(25,404 API calls in total, 0 fail-open, p95 latency 0.45 s, ≈ 90 s wall clock per persona). Raw data: [`bench/results/`](bench/results/).
+
+#### Persona × matchup (bb/100) / 人格 × 対戦 (bb/100)
+
+| 人格 | random HU | random 6-max | caller HU | caller 6-max | rules HU | rules 6-max | VPIP | 失敗 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rock | +115.3 | +360.8 ✅ | +144.1 ✅ | +47.6 | -17.6 | -18.9 | 7% | 0 |
+| tag | -41.6 | +404.2 ✅ | +405.1 ✅ | +984.8 ✅ | -9.0 | -40.0 | 13% | 0 |
+| lag | +226.8 | +497.5 | +210.2 | +895.3 ✅ | -66.8 | -133.4 | 57% | 0 |
+| maniac | +288.4 | -55.0 | +57.0 | -32.7 | -341.5 | -1230.5 ❌ | 85% | 0 |
+| station | +59.9 | +284.1 | +0.0 | +0.0 | -122.1 ❌ | -731.8 ❌ | 73% | 0 |
+
+✅ = 95% CI above zero / 95% CI が 0 より上, ❌ = 95% CI below zero / 95% CI が 0 より下. VPIP is averaged over the six matchups.
+
+#### Full table (`pnpm bench:report`) / 全結果
 
 | 相手 | 形式 | 人格 | N (群) | ハンド | bb/100 | 95% CI | VPIP | PFR | 失敗 | 平均応答 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| random | HU | lag | 100 | 200 | +226.8 | [-234.0, +687.7] | 55% | 51% | 0 | 0.3s |
+| random | HU | maniac | 100 | 200 | +288.4 | [-389.1, +965.9] | 79% | 75% | 0 | 0.3s |
+| random | HU | rock | 100 | 200 | +115.3 | [-139.1, +369.8] | 8% | 2% | 0 | 0.3s |
+| random | HU | station | 100 | 200 | +59.9 | [-507.2, +626.9] | 66% | 0% | 0 | 0.3s |
 | random | HU | tag | 100 | 200 | -41.6 | [-315.6, +232.5] | 13% | 11% | 0 | 0.3s |
+| random | 6-max | lag | 100 | 600 | +497.5 | [-72.7, +1067.7] | 51% | 39% | 0 | 0.3s |
+| random | 6-max | maniac | 100 | 600 | -55.0 | [-1109.8, +999.7] | 97% | 77% | 0 | 0.3s |
+| random | 6-max | rock | 100 | 600 | +360.8 | [+110.2, +611.4] | 7% | 0% | 0 | 0.3s |
+| random | 6-max | station | 100 | 600 | +284.1 | [-829.6, +1397.7] | 98% | 0% | 0 | 0.3s |
 | random | 6-max | tag | 100 | 600 | +404.2 | [+72.5, +735.9] | 11% | 8% | 0 | 0.3s |
+| caller | HU | lag | 100 | 200 | +210.2 | [-243.7, +664.2] | 60% | 56% | 0 | 0.3s |
+| caller | HU | maniac | 100 | 200 | +57.0 | [-163.2, +277.2] | 89% | 89% | 0 | 0.3s |
+| caller | HU | rock | 100 | 200 | +144.1 | [+6.9, +281.3] | 8% | 2% | 0 | 0.3s |
+| caller | HU | station | 100 | 200 | +0.0 | [+0.0, +0.0] | 50% | 0% | 0 | 0.3s |
 | caller | HU | tag | 100 | 200 | +405.1 | [+155.9, +654.3] | 14% | 13% | 0 | 0.2s |
+| caller | 6-max | lag | 100 | 600 | +895.3 | [+112.8, +1677.8] | 67% | 51% | 0 | 0.3s |
+| caller | 6-max | maniac | 100 | 600 | -32.7 | [-100.6, +35.3] | 96% | 95% | 0 | 0.3s |
+| caller | 6-max | rock | 100 | 600 | +47.6 | [-46.3, +141.4] | 7% | 0% | 0 | 0.3s |
+| caller | 6-max | station | 100 | 600 | +0.0 | [+0.0, +0.0] | 83% | 0% | 0 | 0.3s |
 | caller | 6-max | tag | 100 | 600 | +984.8 | [+338.2, +1631.5] | 13% | 11% | 0 | 0.3s |
+| rules | HU | lag | 100 | 200 | -66.8 | [-208.5, +75.0] | 50% | 45% | 0 | 0.3s |
+| rules | HU | maniac | 100 | 200 | -341.5 | [-683.9, +0.9] | 59% | 59% | 0 | 0.3s |
+| rules | HU | rock | 100 | 200 | -17.6 | [-56.3, +21.2] | 7% | 2% | 0 | 0.3s |
+| rules | HU | station | 100 | 200 | -122.1 | [-210.3, -33.8] | 55% | 0% | 0 | 0.3s |
 | rules | HU | tag | 100 | 200 | -9.0 | [-37.8, +19.8] | 11% | 11% | 0 | 0.3s |
+| rules | 6-max | lag | 100 | 600 | -133.4 | [-274.4, +7.7] | 62% | 51% | 0 | 0.3s |
+| rules | 6-max | maniac | 100 | 600 | -1230.5 | [-1873.8, -587.1] | 92% | 90% | 0 | 0.3s |
+| rules | 6-max | rock | 100 | 600 | -18.9 | [-103.1, +65.3] | 7% | 0% | 0 | 0.3s |
+| rules | 6-max | station | 100 | 600 | -731.8 | [-1082.3, -381.3] | 88% | 0% | 0 | 0.3s |
 | rules | 6-max | tag | 100 | 600 | -40.0 | [-80.4, +0.5] | 14% | 11% | 0 | 0.3s |
 
-**EN:** The `tag` persona clearly beats `caller` in both formats and `random` in 6-max (CI above zero).
-Heads-up against `random` is inconclusive: random all-ins make the variance enormous.
-Against `rules` it is roughly break-even (HU) to slightly losing (6-max, CI touching zero) —
-so "stronger than a rule-based bot" is **not** established by this run. Note the very tight
-VPIP (11–14 %): the persona folds most small-blind hands, which bleeds blinds heads-up.
+**EN:** Every persona beats `caller` and `random` in at least one format, and `tag`/`rock` beat `random` 6-max
+and `caller` heads-up with the CI above zero. **No persona beats the rule-based bot**: `tag` and `rock` are
+break-even against `rules` (CI straddles zero), while `lag`, `maniac` and `station` lose clearly. So "stronger
+than a rule-based bot" is not established by this run. Heads-up against `random` is inconclusive for everyone
+because random all-ins make the variance enormous. `station` vs `caller` is exactly 0.0 by construction: neither
+side ever raises, so mirrored hands cancel perfectly.
 
-**JA:** `tag` 人格は `caller` に両形式で、`random` には 6-max で明確に勝っています (CI が 0 より上)。
-`random` とのヘッズアップは、ランダムなオールインで分散が大きすぎて結論が出ません。
-`rules` に対してはほぼ互角 (HU) からやや負け (6-max、CI が 0 に接触) で、
-「ルールベースより強い」はこの実行では**言えません**。VPIP が 11〜14% と非常にタイトで、
-SB のほとんどを降りてブラインドを失っている点が要因の一つです。
+**JA:** どの人格も `caller` と `random` には少なくとも一方の形式で勝ち、`tag`/`rock` は `random` 6-max と
+`caller` HU で CI が 0 より上です。**ルールベースの `rules` に勝てる人格はありません**。`tag` と `rock` は
+互角 (CI が 0 をまたぐ)、`lag`/`maniac`/`station` は明確に負けています。「ルールベースより強い」はこの実行では
+言えません。`random` とのヘッズアップはランダムなオールインで分散が大きすぎて、どの人格でも結論が出ません。
+`station` vs `caller` がちょうど 0.0 なのは仕様どおりで、両者ともレイズしないためミラーハンドが完全に相殺します。
 
 ## Architecture / アーキテクチャ
 
