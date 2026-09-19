@@ -49,3 +49,51 @@ export function estimateEquity(
   }
   return Math.round((100 * equity) / samples);
 }
+
+/**
+ * Exact current hand strength: the percentage of all possible opponent two-card
+ * holdings that the hero's hand beats right now on this board (ties count half).
+ * Ignores future cards, so it is a "made hand" strength, not equity. Requires a
+ * flop or later; returns `null` before the flop.
+ */
+export function handStrengthPct(hole: readonly Card[], board: readonly Card[]): number | null {
+  if (hole.length !== 2) throw new Error('handStrengthPct needs 2 hole cards');
+  if (board.length < 3 || board.length > 5) return null;
+  const known = new Set([...hole, ...board].map(cardToString));
+  const rest = newDeck().filter((c) => !known.has(cardToString(c)));
+  const hero = evaluate7([...hole, ...board]).score;
+  let ahead = 0;
+  let total = 0;
+  for (let i = 0; i < rest.length; i++) {
+    for (let j = i + 1; j < rest.length; j++) {
+      const v = evaluate7([rest[i]!, rest[j]!, ...board]).score;
+      if (hero > v) ahead += 1;
+      else if (hero === v) ahead += 0.5;
+      total++;
+    }
+  }
+  return Math.round((100 * ahead) / total);
+}
+
+/** Board features that make hands stronger than the hero's category possible. */
+export interface BoardTexture {
+  paired: boolean;
+  /** Three or more cards of one suit on the board. */
+  flushPossible: boolean;
+  /** Three board ranks within a five-rank window (a straight is possible). */
+  straightPossible: boolean;
+}
+
+export function boardTexture(board: readonly Card[]): BoardTexture | null {
+  if (board.length < 3) return null;
+  const ranks = [...new Set(board.map((c) => c.rank))];
+  const paired = ranks.length < board.length;
+  const suitCounts = new Map<string, number>();
+  for (const c of board) suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1);
+  const flushPossible = [...suitCounts.values()].some((n) => n >= 3);
+  const withWheel = ranks.includes(14) ? [...ranks, 1] : ranks;
+  const sorted = [...withWheel].sort((a, b) => a - b);
+  let straightPossible = false;
+  for (let i = 0; i + 2 < sorted.length; i++) if (sorted[i + 2]! - sorted[i]! <= 4) straightPossible = true;
+  return { paired, flushPossible, straightPossible };
+}

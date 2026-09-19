@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCards } from '../engine/cards.js';
+import type { PlayerView } from '../engine/types.js';
 import { compressState } from './compress.js';
 import { getPersona } from './personas.js';
 const view = { seat: 0, street: 'flop' as const, holeCards: parseCards('Ah Kh'), board: parseCards('Qh Jh 2c'), stacks: [{ seat: 0, stack: 9000, isAllIn: false, folded: false }, { seat: 1, stack: 5000, isAllIn: false, folded: false }, { seat: 2, stack: 0, isAllIn: true, folded: false }], pot: 1200, toCall: 400, bigBlind: 100, position: 'BTN' as const, history: [{ street: 'preflop' as const, seat: 1, action: { type: 'raise' as const, amount: 300 } }] };
@@ -67,7 +68,7 @@ describe('compressState omissions', () => {
 });
 
 describe('compressState street aggression', () => {
-  const mk = (history: typeof view.history) => compressState({ ...view, history }, legal, getPersona('tag')).table;
+  const mk = (history: PlayerView['history']) => compressState({ ...view, history }, legal, getPersona('tag')).table;
   it('flags a raised bet on the current street only', () => {
     expect(mk([])).toMatchObject({ raisesThisStreet: 0, myBetWasRaisedThisStreet: false });
     const raisedOnFlop = [

@@ -1,5 +1,5 @@
 import { cardToString, type Card } from '../engine/cards.js';
-import { estimateEquity } from '../engine/equity.js';
+import { boardTexture, estimateEquity, handStrengthPct, type BoardTexture } from '../engine/equity.js';
 import type { HandCategory } from '../engine/evaluate.js';
 import { draws, madeHand, pairKind, preflopStrength, type Draw, type PairKind, type PreflopStrength } from '../engine/strength.js';
 import type { Action, LegalActions, PlayerView, Position, SeatId, Street } from '../engine/types.js';
@@ -13,10 +13,11 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
-  'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises without a strong made hand (two pair or better) or a strong draw getting the right price.',
+  'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
+  'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
   'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
-  'When myBetWasRaisedThisStreet is true, your bet has been raised: re-raise only for value with two pair or better; with a draw call only if the price is right, otherwise fold. Never bluff re-raise and then fold.',
-  'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so one pair or a weak draw should fold.',
+  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Never bluff re-raise and then fold.',
+  'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
   'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
   'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
@@ -36,6 +37,10 @@ export interface JevHand {
   preflopStrength: PreflopStrength;
   /** Monte Carlo showdown equity against random hands for every live opponent, in percent. */
   equityVsRandomPct: number;
+  /** From the flop on: percentage of all possible opponent holdings the current hand beats right now. */
+  beatsPctOfHands?: number;
+  /** From the flop on: whether the board makes full houses, flushes or straights possible. */
+  board_texture?: BoardTexture;
 }
 
 export interface JevSeat {
@@ -120,6 +125,8 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
     preflopStrength: preflopStrength(view.holeCards),
     equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
+    ...(showMade ? { beatsPctOfHands: handStrengthPct(view.holeCards, view.board)! } : {}),
+    ...(showMade ? { board_texture: boardTexture(view.board)! } : {}),
   };
 
   const potOddsPct = view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0;
