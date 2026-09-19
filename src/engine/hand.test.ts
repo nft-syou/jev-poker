@@ -396,3 +396,76 @@ describe("Hand invariants", () => {
     }
   });
 });
+
+describe("Hand clone", () => {
+  it("isolates the copy: acting on it leaves the original untouched", () => {
+    const hand = threeHanded();
+    const before = hand.snapshot();
+    const beforeEvents = [...hand.events];
+    const clone = hand.clone();
+
+    clone.act(0, { type: "raise", amount: 30 });
+    clone.act(1, { type: "fold" });
+    clone.act(2, { type: "call" });
+
+    expect(clone.street).toBe("flop");
+    expect(hand.snapshot()).toEqual(before);
+    expect(hand.events).toEqual(beforeEvents);
+    expect(hand.actingSeat).toBe(0);
+    expect(hand.street).toBe("preflop");
+    expect(hand.snapshot().board).toEqual([]);
+    expect(hand.legalActions(0)).toEqual<LegalActions>({
+      canFold: true,
+      canCheck: false,
+      callAmount: 10,
+      minRaiseTo: 20,
+      maxRaiseTo: 100,
+    });
+  });
+
+  it("replays identically: clone and original agree on the same actions", () => {
+    const hand = threeHanded({ deck: riggedDeck("As Ad Ks Kd Qs Qd") });
+    const clone = hand.clone();
+    expect(clone.snapshot()).toEqual(hand.snapshot());
+
+    const line: [number, Action][] = [
+      [0, { type: "call" }],
+      [1, { type: "call" }],
+      [2, { type: "check" }],
+      [1, { type: "bet", amount: 20 }],
+      [2, { type: "call" }],
+      [0, { type: "fold" }],
+    ];
+    for (const [seat, action] of line) {
+      expect(clone.legalActions(seat)).toEqual(hand.legalActions(seat));
+      const mine = clone.act(seat, action);
+      expect(mine).toEqual(hand.act(seat, action));
+      expect(clone.snapshot()).toEqual(hand.snapshot());
+    }
+    expect(clone.events).toEqual(hand.events);
+    expect(clone.stacks()).toEqual(hand.stacks());
+  });
+
+  it("copies the short-all-in raise lock so the copy keeps its own", () => {
+    const hand = threeHanded({
+      seats: [
+        { seat: 0, stack: 100 },
+        { seat: 1, stack: 100 },
+        { seat: 2, stack: 26 },
+      ],
+    });
+    hand.act(0, { type: "raise", amount: 20 });
+    hand.act(1, { type: "call" });
+    hand.act(2, { type: "allin" }); // 26 total: a raise that is too small to reopen
+    expect(hand.legalActions(0).minRaiseTo).toBeNull();
+
+    const clone = hand.clone();
+    expect(clone.legalActions(0)).toEqual(hand.legalActions(0));
+    clone.act(0, { type: "call" });
+    clone.act(1, { type: "call" });
+    expect(clone.street).toBe("flop");
+    expect(hand.legalActions(0).minRaiseTo).toBeNull();
+    expect(hand.street).toBe("preflop");
+    expect(hand.actingSeat).toBe(0);
+  });
+});

@@ -38,6 +38,24 @@ interface Player {
   allIn: boolean;
 }
 
+/** Every field of a `Hand`, writable, so `clone` can rebuild one field by field. */
+interface HandFields {
+  handNumber: number;
+  button: SeatId;
+  bigBlind: number;
+  events: GameEvent[];
+  players: Player[];
+  deck: Card[];
+  board: Card[];
+  currentStreet: Street;
+  currentBet: number;
+  minRaise: number;
+  toAct: SeatId[];
+  acting: SeatId | null;
+  complete: boolean;
+  cannotRaise: Set<SeatId>;
+}
+
 const NEXT_STREET: Record<Street, Street> = {
   preflop: "flop",
   flop: "turn",
@@ -117,6 +135,31 @@ export class Hand {
 
   get street(): Street {
     return this.currentStreet;
+  }
+
+  /**
+   * A deep copy of this hand, made without replaying it: acting on the copy never touches
+   * this one. Cards are immutable values, so they are shared; everything mutable is copied.
+   */
+  clone(): Hand {
+    const fields: HandFields = {
+      handNumber: this.handNumber,
+      button: this.button,
+      bigBlind: this.bigBlind,
+      events: [...this.events],
+      players: this.players.map((p) => ({ ...p })),
+      deck: [...this.deck],
+      board: [...this.board],
+      currentStreet: this.currentStreet,
+      currentBet: this.currentBet,
+      minRaise: this.minRaise,
+      toAct: [...this.toAct],
+      acting: this.acting,
+      complete: this.complete,
+      cannotRaise: new Set(this.cannotRaise),
+    };
+    // The constructor deals a new hand, so the copy is built straight onto the prototype.
+    return Object.assign(Object.create(Hand.prototype) as Hand, fields);
   }
 
   legalActions(seat: SeatId): LegalActions {
