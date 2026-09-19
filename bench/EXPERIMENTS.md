@@ -16,6 +16,7 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
 | 6 | `2c68824` | preflop 3-bet/4-bet discipline and sizing guidance | +58.0 [+50.1, +65.9] | +7.7 [-6.9, +22.2] (200) |
 | 7 | `c328305` | conventional preflop raise sizes (bb opens, multiples of the raise faced) instead of pot fractions | +57.5 [+49.7, +65.3] | +8.4 [-19.2, +36.0] (200); +8.2 [-8.7, +25.1] (400); +18.8 [+10.8, +26.8] (100, seeds 0-99) |
 | 8 | `7afd6d1` | `stackToPotRatio` and pot-commitment guidance; `tag` variance 0.3 → 0.15 | +57.3 [+49.0, +65.5] | +11.9 [-29.8, +53.6] (200) |
+| final | `7afd6d1` | same code, 1,000 seeds = 6,000 hands in 6-max to settle the question | — | **+19.0 [+3.1, +35.0] (1000)** |
 
 ## What the decision logs showed / 判断ログから分かったこと
 
@@ -35,7 +36,9 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
   the persona variance of 0.3 still folded ~9% of the time, hence exp8's 0.15.
 - The 6-max number is dominated by a handful of big pots; seed 182 alone is a -100 bb cooler
   (QQ/AK-class hand into AA). 100-seed runs that exclude it look much better than 200/400-seed
-  runs that include it. Treat the 6-max result as "roughly +8 to +12 bb/100, not yet significant".
+  runs that include it. The 1,000-seed run settles it: **+19.0 bb/100 with the 95% CI above zero**, so the
+  Jev CPU (`tag`) beats the rule-based bot in both formats. Five of the six -100 bb hands in that run
+  are preflop all-in confrontations with 85%-equity hands (QQ/AK class) — coolers, not mistakes.
 
 ## Reproduce / 再現
 

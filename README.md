@@ -182,8 +182,9 @@ improvement (`7afd6d1`, see [`bench/EXPERIMENTS.md`](bench/EXPERIMENTS.md)).
 | rules | 6-max | tag | 100 | 600 | +14.3 | [+7.1, +21.5] | 25% | 22% | 0 | 0.4s |
 
 **EN:** After the improvements every persona beats the rule-based bot heads-up with the CI above
-zero, and `tag` beats it in 6-max too (+14.3, CI above zero on seeds 0–99; larger 200–400-seed runs
-give roughly +8 to +12 with a CI that still touches zero, dominated by one -100 bb cooler). The
+zero, and `tag` beats it in 6-max too: a dedicated 1,000-seed run (6,000 hands) gives **+19.0 bb/100,
+95% CI [+3.1, +35.0]** (`bench/results/*final6max*`). Smaller runs swing by ±20 because single -100 bb
+coolers dominate them. The
 improvements were all in what Jev is told — exact hand strength, equity vs. pot odds, whether its bet
 was raised, pot commitment, blind-stealing spots — plus conventional preflop raise sizes; the engine
 and the baselines are unchanged. Heads-up vs `random` remains inconclusive (random all-ins). `station`
@@ -191,7 +192,7 @@ vs `caller` was exactly 0.0 before the changes because neither side ever raised;
 persona raises occasionally.
 
 **JA:** 改善後は、全人格がルールベースの `rules` にヘッズアップで有意に勝ち、`tag` は 6-max でも勝っています
-(+14.3、シード 0〜99 で CI が 0 より上。200〜400 シードでは +8〜+12 で CI が 0 に接触、-100bb のクーラー 1 ハンドが支配的)。
+(1,000 シード = 6,000 ハンドの専用 run で **+19.0 bb/100、95% CI [+3.1, +35.0]**。小さい run は -100bb のクーラー 1 回で ±20 揺れる)。
 改善はすべて「Jev に何を伝えるか」(正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、
 ポットコミット、スティールの機会) とプリフロップの標準的なレイズ額で、エンジンと対照群は変えていません。
 `random` とのヘッズアップは依然として結論が出ません (ランダムなオールイン)。
