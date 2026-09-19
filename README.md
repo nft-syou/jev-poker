@@ -119,8 +119,29 @@ CLI の詳細な使い方と結果フォーマットは [`bench/README.md`](benc
 
 最新の結果表はベンチマーク実行後にここへ手動で貼る (`pnpm bench:report` の出力)。
 
+**Run: 2026-09-19** — model `jev-1.13.0`, SDK 0.6.0, code `2af5f01`, `--seeds 100 --concurrency 8`
+(3,455 API calls, 0 fail-open, p95 latency 0.36 s, wall clock ≈ 90 s). Raw data: [`bench/results/`](bench/results/).
+
 | 相手 | 形式 | 人格 | N (群) | ハンド | bb/100 | 95% CI | VPIP | PFR | 失敗 | 平均応答 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| random | HU | tag | 100 | 200 | -41.6 | [-315.6, +232.5] | 13% | 11% | 0 | 0.3s |
+| random | 6-max | tag | 100 | 600 | +404.2 | [+72.5, +735.9] | 11% | 8% | 0 | 0.3s |
+| caller | HU | tag | 100 | 200 | +405.1 | [+155.9, +654.3] | 14% | 13% | 0 | 0.2s |
+| caller | 6-max | tag | 100 | 600 | +984.8 | [+338.2, +1631.5] | 13% | 11% | 0 | 0.3s |
+| rules | HU | tag | 100 | 200 | -9.0 | [-37.8, +19.8] | 11% | 11% | 0 | 0.3s |
+| rules | 6-max | tag | 100 | 600 | -40.0 | [-80.4, +0.5] | 14% | 11% | 0 | 0.3s |
+
+**EN:** The `tag` persona clearly beats `caller` in both formats and `random` in 6-max (CI above zero).
+Heads-up against `random` is inconclusive: random all-ins make the variance enormous.
+Against `rules` it is roughly break-even (HU) to slightly losing (6-max, CI touching zero) —
+so "stronger than a rule-based bot" is **not** established by this run. Note the very tight
+VPIP (11–14 %): the persona folds most small-blind hands, which bleeds blinds heads-up.
+
+**JA:** `tag` 人格は `caller` に両形式で、`random` には 6-max で明確に勝っています (CI が 0 より上)。
+`random` とのヘッズアップは、ランダムなオールインで分散が大きすぎて結論が出ません。
+`rules` に対してはほぼ互角 (HU) からやや負け (6-max、CI が 0 に接触) で、
+「ルールベースより強い」はこの実行では**言えません**。VPIP が 11〜14% と非常にタイトで、
+SB のほとんどを降りてブラインドを失っている点が要因の一つです。
 
 ## Architecture / アーキテクチャ
 
