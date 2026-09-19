@@ -17,6 +17,7 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
 | 7 | `c328305` | conventional preflop raise sizes (bb opens, multiples of the raise faced) instead of pot fractions | +57.5 [+49.7, +65.3] | +8.4 [-19.2, +36.0] (200); +8.2 [-8.7, +25.1] (400); +18.8 [+10.8, +26.8] (100, seeds 0-99) |
 | 8 | `7afd6d1` | `stackToPotRatio` and pot-commitment guidance; `tag` variance 0.3 → 0.15 | +57.3 [+49.0, +65.5] | +11.9 [-29.8, +53.6] (200) |
 | final | `7afd6d1` | same code, 1,000 seeds = 6,000 hands in 6-max to settle the question | — | **+19.0 [+3.1, +35.0] (1000)** |
+| 9 | `18a43cf` | A/B: split preflop/postflop format (`--prompt split`: street-specific task, guidance and sizing rubric) vs unified, same seeds | unified +58.0 / split +58.3; paired diff +0.3 [-1.9, +2.4] | unified +13.0 / split +12.6 (400); paired diff -0.4 [-22.7, +21.9] |
 
 ## What the decision logs showed / 判断ログから分かったこと
 
@@ -41,6 +42,11 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
   preflop all-in confrontations with 85%-equity hands (QQ/AK class) — coolers — and two are real
   mistakes: calling a 5-bet shove with a 48%-equity hand, and stacking off with board trips and a
   weak kicker. Those two are the next things to fix.
+
+- **exp9 (split format)**: no measurable effect. Heads-up the two formats are identical (paired
+  difference +0.3 bb/100, CI [-1.9, +2.4]); in 6-max the split version plays tighter (VPIP 26% → 21%,
+  PFR 22% → 15%) and its result has a narrower CI, but the mean is the same (paired -0.4 bb/100,
+  CI [-22.7, +21.9]). The default stays `unified`; `--prompt split` remains available.
 
 ## Reproduce / 再現
 
