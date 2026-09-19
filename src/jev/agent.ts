@@ -83,16 +83,42 @@ function checkOrCall(legal: LegalActions): Action {
   return legal.canCheck ? { type: 'check' } : { type: 'call' };
 }
 
+/** Preflop open sizes in big blinds, indexed by `sizing.score` (the last step is all-in). */
+const PREFLOP_OPEN_BB: readonly number[] = [2, 2.5, 3, 3.5, 4, Infinity];
+/** Preflop re-raise sizes as a multiple of the raise being faced, indexed by `sizing.score`. */
+const PREFLOP_RERAISE_MULT: readonly number[] = [2, 2.5, 3, 3.5, 4, Infinity];
+
+/** The largest raise-to amount seen preflop so far, or `null` when nobody has raised. */
+function preflopRaiseFaced(view: PlayerView): number | null {
+  let top: number | null = null;
+  for (const h of view.history) {
+    if (h.street !== 'preflop') continue;
+    if ((h.action.type === 'raise' || h.action.type === 'bet') && (top === null || h.action.amount > top)) top = h.action.amount;
+  }
+  return top;
+}
+
 function betOrRaise(score: number, legal: LegalActions, view: PlayerView): Action {
   const min = legal.minRaiseTo;
   if (min === null) return checkOrCall(legal);
 
   const step = clamp(Math.round(score), 0, SIZING_LABELS.length - 1);
-  const fraction = SIZING_FRACTIONS[step] ?? 0;
-  if (!Number.isFinite(fraction)) return { type: 'allin' };
-
   const max = legal.maxRaiseTo ?? min;
-  const amount = Math.round(clamp(min + fraction * (view.pot + view.toCall), min, max));
+  let target: number;
+  if (view.street === 'preflop') {
+    // Preflop sizes are conventionally expressed in big blinds (opens) or as a
+    // multiple of the raise faced (re-raises), not as a fraction of the pot.
+    const faced = preflopRaiseFaced(view);
+    const factor = faced === null ? PREFLOP_OPEN_BB[step] : PREFLOP_RERAISE_MULT[step];
+    if (!Number.isFinite(factor)) return { type: 'allin' };
+    target = faced === null ? (factor ?? 2) * view.bigBlind : (factor ?? 2) * faced;
+  } else {
+    const fraction = SIZING_FRACTIONS[step] ?? 0;
+    if (!Number.isFinite(fraction)) return { type: 'allin' };
+    target = min + fraction * (view.pot + view.toCall);
+  }
+
+  const amount = Math.round(clamp(target, min, max));
   if (amount >= max) return { type: 'allin' };
   return { type: legal.canCheck ? 'bet' : 'raise', amount };
 }

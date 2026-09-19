@@ -115,3 +115,20 @@ describe('JevAgent records', () => {
     expect(records[0]).toMatchObject({ apiCall: true, error: 'offline', sizingScore: null, bluffIntent: null });
   });
 });
+
+describe('answersToAction preflop sizing', () => {
+  const pre = { ...view, street: 'preflop' as const, board: [], pot: 150, toCall: 100, bigBlind: 100 };
+  const open = { canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 200, maxRaiseTo: 10000 };
+  it('opens in big blinds, not pot fractions', () => {
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 0), open, pre, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 200 });
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 2), open, pre, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 300 });
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 4), open, pre, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 400 });
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 5), open, pre, 0, new Rng(1)).action).toEqual({ type: 'allin' });
+  });
+  it('re-raises as a multiple of the raise faced', () => {
+    const faced = { ...pre, pot: 450, toCall: 300, history: [{ street: 'preflop' as const, seat: 1, action: { type: 'raise' as const, amount: 300 } }] };
+    const legal3 = { ...open, callAmount: 300, minRaiseTo: 500 };
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 2), legal3, faced, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 900 });
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 0), legal3, faced, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 600 });
+  });
+});
