@@ -45,6 +45,7 @@ exports[`compressState > matches snapshot shape 1`] = `
     "When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.",
     "Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.",
     "Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.",
+    "stackToPotRatio is your remaining stack divided by the pot. Below about 1 you are pot-committed: never fold a hand with decent equity there, call or go all in instead. Never make a raise that commits most of your stack unless you are willing to call an all-in with that hand.",
   ],
   "persona": {
     "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",
@@ -60,6 +61,7 @@ exports[`compressState > matches snapshot shape 1`] = `
     "potOddsPct": 25,
     "raisesThisStreet": 0,
     "requiredEquityPct": 25,
+    "stackToPotRatio": 7.5,
     "stacksBB": [
       {
         "folded": false,

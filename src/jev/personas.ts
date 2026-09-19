@@ -27,7 +27,7 @@ export const PRESET_PERSONAS: readonly Persona[] = [
       ja: 'タイト・アグレッシブな常連プレイヤー。強いスターティングハンドに絞って参加し、コールよりレイズを選ぶ。オッズが合わなければ素直に降り、良いスポットでは時折ブラフを打つ。',
       en: 'A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.',
     },
-    variance: 0.3,
+    variance: 0.15,
     isPreset: true,
   },
   {

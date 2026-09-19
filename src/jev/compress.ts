@@ -24,6 +24,7 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.',
   'Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.',
   'Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.',
+  'stackToPotRatio is your remaining stack divided by the pot. Below about 1 you are pot-committed: never fold a hand with decent equity there, call or go all in instead. Never make a raise that commits most of your stack unless you are willing to call an all-in with that hand.',
 ];
 
 export interface JevHand {
@@ -64,6 +65,8 @@ export interface JevTable {
   /** Equity needed to break even on a call; equals the pot odds. 0 when nothing is due. */
   requiredEquityPct: number;
   effectiveStackBB: number;
+  /** Your remaining stack divided by the pot (one decimal). Below about 1 you are pot-committed. */
+  stackToPotRatio: number;
   /** Preflop only: true when nobody has voluntarily put chips in yet (everyone before you folded). */
   unopenedPot?: boolean;
   /** Number of bets/raises made on the current street so far (by anyone). */
@@ -150,6 +153,7 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     toCallBB: bb(view.toCall, bigBlind),
     potOddsPct,
     requiredEquityPct: potOddsPct,
+    stackToPotRatio: view.pot > 0 ? Math.round((10 * (me?.stack ?? 0)) / view.pot) / 10 : 99,
     ...(view.street === 'preflop'
       ? { unopenedPot: !thisStreet.some((h) => h.seat !== view.seat && h.action.type !== 'fold') }
       : {}),
