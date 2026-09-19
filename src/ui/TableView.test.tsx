@@ -82,6 +82,8 @@ function controller(): GameController {
       error: null,
       stats: {},
       prefetch: { started: 0, hits: 0, misses: 0 },
+      lastDecision: null,
+      maxPot: 0,
     },
     humanSeats: [0],
     spectator: false,

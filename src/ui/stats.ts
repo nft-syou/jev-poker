@@ -23,6 +23,8 @@ export interface PlayerStats {
   netChips: number;
   jevDecisions: number;
   jevFallbacks: number;
+  /** Decisions Jev answered with `bet_or_raise`; the aggression the ticker reports. */
+  jevRaises: number;
   jevLatencyMs: number;
   /** Σ bluff intent (0..1) over the decisions Jev actually answered. */
   jevBluffSum: number;
@@ -40,6 +42,7 @@ export const EMPTY_STATS: PlayerStats = {
   netChips: 0,
   jevDecisions: 0,
   jevFallbacks: 0,
+  jevRaises: 0,
   jevLatencyMs: 0,
   jevBluffSum: 0,
 };
@@ -140,7 +143,10 @@ export class HandStatsTracker {
     stats.jevLatencyMs += record.latencyMs;
     if (record.fallback) stats.jevFallbacks += 1;
     // Only a real answer carries a bluff intent; the average divides by the non-fallbacks.
-    else if (record.jev !== null) stats.jevBluffSum += record.jev.bluffIntent;
+    else if (record.jev !== null) {
+      stats.jevBluffSum += record.jev.bluffIntent;
+      if (record.jev.chosen === "bet_or_raise") stats.jevRaises += 1;
+    }
   }
 
   /** Per-seat deltas for the hand just finished; resets the accumulator. */

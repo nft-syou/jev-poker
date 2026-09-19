@@ -322,6 +322,33 @@ describe("HandStatsTracker", () => {
     });
   });
 
+  it("counts the decisions Jev answered with a bet or raise", () => {
+    const aggressive = { ...jevAnswer(0.4), chosen: "bet_or_raise" as const };
+    const deltas = track(
+      [
+        {
+          type: "HandStarted",
+          handNumber: 0,
+          button: 0,
+          blinds: { small: 1, big: 2, ante: 0 },
+          seats: [
+            { id: 0, stack: 100 },
+            { id: 1, stack: 100 },
+          ],
+        },
+        { type: "HandEnded", handNumber: 0, stacks: [{ id: 0, stack: 100 }] },
+      ],
+      [
+        decision({ seat: 0, jev: aggressive }),
+        decision({ seat: 0 }),
+        // A fallback is nobody's aggression: Jev never answered it.
+        decision({ seat: 1, jev: null, fallback: true }),
+      ],
+    );
+    expect(statsOf(deltas, 0)).toMatchObject({ jevDecisions: 2, jevRaises: 1 });
+    expect(statsOf(deltas, 1)).toMatchObject({ jevDecisions: 1, jevRaises: 0 });
+  });
+
   it("resets between hands and conserves chips over a real table", () => {
     const table = new Table(config());
     const tracker = new HandStatsTracker();

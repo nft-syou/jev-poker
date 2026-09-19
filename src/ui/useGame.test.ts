@@ -141,6 +141,36 @@ describe("useGame", () => {
     unmount();
   });
 
+  it("remembers the last decision and the biggest pot for the showcase", async () => {
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(2), {
+      timeout: 5000,
+    });
+    const last = result.current.state.lastDecision;
+    expect(last).not.toBeNull();
+    expect(result.current.state.seats.some((s) => s.id === last?.seat)).toBe(true);
+    expect(last?.record.seat).toBe(last?.seat);
+    // The features travel with the decision, so the panel can describe the hand it saw.
+    expect(last?.features.hand.holeCards).toHaveLength(2);
+    expect(last?.features.table.potBB).toBeGreaterThanOrEqual(0);
+    expect(last?.at).toBeGreaterThan(0);
+    // The log carries them too, next to the decision it belongs to.
+    const decided = result.current.state.log.filter((e) => e.decision !== undefined);
+    expect(decided.length).toBeGreaterThan(0);
+    expect(decided.every((e) => e.features !== undefined)).toBe(true);
+    // Every awarded pot is at least the blinds, so the biggest one is never zero.
+    expect(result.current.state.maxPot).toBeGreaterThan(0);
+    unmount();
+  });
+
   it("waits for the human and continues after they act", async () => {
     const settings: Settings = {
       ...cpuOnly,

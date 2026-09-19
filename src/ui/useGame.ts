@@ -14,7 +14,7 @@ import type {
 } from "../engine/types";
 import type { JevBackend } from "../jev/backend";
 import { type DecisionRecord, decideAction } from "../jev/decide";
-import { type ActionTakenEvent, buildFeatures } from "../jev/features";
+import { type ActionTakenEvent, buildFeatures, type DecisionFeatures } from "../jev/features";
 import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
 import {
   DecisionCache,
@@ -59,6 +59,17 @@ export interface LogEntry {
   id: number;
   event: GameEvent;
   decision?: DecisionInfo;
+  /** What Jev was shown for `decision`; kept so a panel can describe the hand it judged. */
+  features?: DecisionFeatures;
+}
+
+/** The decision the table played most recently, for the showcase overlays. */
+export interface LastDecision {
+  seat: SeatId;
+  record: DecisionInfo;
+  features: DecisionFeatures;
+  /** `Date.now()` when it landed, so an overlay can fade itself out. */
+  at: number;
 }
 
 /** How the speculative decision cache is doing this sitting. */
@@ -87,6 +98,9 @@ export interface GameState {
   /** Stats for this sitting, by seat. Derived from events, never from the trimmed log. */
   stats: Record<SeatId, PlayerStats>;
   prefetch: PrefetchStats;
+  lastDecision: LastDecision | null;
+  /** Largest pot awarded this sitting, in chips. */
+  maxPot: number;
 }
 
 export interface GameController {
@@ -111,7 +125,7 @@ export interface UseGameOptions {
 }
 
 type Msg =
-  | { type: "event"; event: GameEvent; decision?: DecisionInfo }
+  | { type: "event"; event: GameEvent; decision?: DecisionInfo; features?: DecisionFeatures }
   | { type: "sync"; snapshot: HandSnapshot | null; seats: GameSeat[]; handsPlayed: number }
   | { type: "thinking"; seat: SeatId | null }
   | { type: "paused"; paused: boolean }
@@ -133,8 +147,27 @@ function reducer(state: GameState, msg: Msg): GameState {
         event: msg.event,
       };
       if (msg.decision !== undefined) entry.decision = msg.decision;
+      if (msg.features !== undefined) entry.features = msg.features;
       const log = [...state.log, entry];
-      return { ...state, log: log.length > MAX_LOG ? log.slice(log.length - MAX_LOG) : log };
+      const lastDecision =
+        msg.decision !== undefined && msg.features !== undefined
+          ? {
+              seat: msg.decision.seat,
+              record: msg.decision,
+              features: msg.features,
+              at: Date.now(),
+            }
+          : state.lastDecision;
+      const awarded =
+        msg.event.type === "PotAwarded"
+          ? msg.event.awards.reduce((sum, award) => sum + award.amount, 0)
+          : 0;
+      return {
+        ...state,
+        log: log.length > MAX_LOG ? log.slice(log.length - MAX_LOG) : log,
+        lastDecision,
+        maxPot: Math.max(state.maxPot, awarded),
+      };
     }
     case "sync":
       return { ...state, snapshot: msg.snapshot, seats: msg.seats, handsPlayed: msg.handsPlayed };
@@ -206,6 +239,8 @@ export function useGame(options: UseGameOptions): GameController {
     error: null,
     stats: {},
     prefetch: { started: 0, hits: 0, misses: 0 },
+    lastDecision: null,
+    maxPot: 0,
   });
   const [cumulative, setCumulative] = useState<Record<StatsKey, PlayerStats>>(() =>
     loadCumulativeStats(),
@@ -222,7 +257,7 @@ export function useGame(options: UseGameOptions): GameController {
   /** Set when the loop gave up because there was no backend to ask. */
   const noBackendRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
-  const pendingRef = useRef<DecisionInfo | null>(null);
+  const pendingRef = useRef<{ record: DecisionInfo; features: DecisionFeatures } | null>(null);
   const cacheRef = useRef<DecisionCache | null>(null);
   if (cacheRef.current === null) cacheRef.current = new DecisionCache({});
   const trackerRef = useRef<HandStatsTracker | null>(null);
@@ -408,7 +443,7 @@ export function useGame(options: UseGameOptions): GameController {
             onAuthFailed();
             return;
           }
-          pendingRef.current = record;
+          pendingRef.current = { record, features };
           trackerRef.current?.onDecision(record);
           table.act(seat, record.action);
           dispatch({ type: "thinking", seat: null });
@@ -464,14 +499,16 @@ export function useGame(options: UseGameOptions): GameController {
       if (event.type === "ActionTaken") actionsRef.current = [...actionsRef.current, event];
       trackerRef.current?.onEvent(event);
       if (event.type === "HandEnded") finishStats();
-      let decision: DecisionInfo | undefined;
       const pending = pendingRef.current;
-      if (pending !== null && event.type === "ActionTaken" && event.seat === pending.seat) {
-        decision = pending;
-        pendingRef.current = null;
-      }
+      const matched =
+        pending !== null && event.type === "ActionTaken" && event.seat === pending.record.seat
+          ? pending
+          : null;
+      if (matched !== null) pendingRef.current = null;
       dispatch(
-        decision === undefined ? { type: "event", event } : { type: "event", event, decision },
+        matched === null
+          ? { type: "event", event }
+          : { type: "event", event, decision: matched.record, features: matched.features },
       );
     });
     sync();
