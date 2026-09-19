@@ -16,7 +16,13 @@ import type { JevBackend } from "../jev/backend";
 import { type DecisionRecord, decideAction } from "../jev/decide";
 import { type ActionTakenEvent, buildFeatures } from "../jev/features";
 import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
-import { DecisionCache, decisionKey, speculationTargets } from "../jev/prefetch";
+import {
+  DecisionCache,
+  type DecisionKey,
+  decisionKey,
+  fnv1a,
+  speculationTargets,
+} from "../jev/prefetch";
 import {
   addStats,
   EMPTY_STATS,
@@ -167,6 +173,11 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** The persona a seat plays, falling back to the default preset when its id is unknown. */
+function personaFor(personas: readonly Persona[], personaId: string | undefined): Persona {
+  return personas.find((p) => p.id === personaId) ?? (PRESET_PERSONAS[1] as Persona);
+}
+
 function toConfig(settings: Settings, seed: number): GameConfig {
   return {
     format: "cash",
@@ -201,8 +212,9 @@ export function useGame(options: UseGameOptions): GameController {
   );
 
   const tableRef = useRef<Table | null>(null);
-  const rngRef = useRef<Rng | null>(null);
-  if (rngRef.current === null) rngRef.current = createRng(options.seed ?? randomSeed());
+  /** Seed every decision's sampling derives from; the table keeps its own, separate rng. */
+  const decisionSeedRef = useRef<number | null>(null);
+  if (decisionSeedRef.current === null) decisionSeedRef.current = options.seed ?? randomSeed();
   const runRef = useRef<Run | null>(null);
   const pausedRef = useRef(false);
   /** Set when the loop stopped itself because Jev rejected the key. */
@@ -217,6 +229,15 @@ export function useGame(options: UseGameOptions): GameController {
   if (trackerRef.current === null) trackerRef.current = new HandStatsTracker();
   const speedRef = useRef<Speed>(settings.speed);
   speedRef.current = settings.speed;
+
+  /**
+   * One rng per decision, derived from the game seed and the decision itself. A speculative
+   * and a live call for the same state therefore sample the same label, so what the table
+   * plays no longer depends on whether the answer was prefetched or waited for.
+   */
+  const rngFor = useCallback((key: DecisionKey): Rng => {
+    return createRng(((decisionSeedRef.current ?? 0) ^ fnv1a(key)) >>> 0);
+  }, []);
 
   const statsKeys = useMemo(() => {
     const keys: Record<SeatId, StatsKey> = {};
@@ -278,21 +299,20 @@ export function useGame(options: UseGameOptions): GameController {
     (hand: Hand, seat: SeatId) => {
       const table = tableRef.current;
       const cache = cacheRef.current;
-      const rng = rngRef.current;
-      if (table === null || cache === null || rng === null || backend === null) return;
+      if (table === null || cache === null || backend === null) return;
       const isCpu = (id: SeatId) => table.seats.find((s) => s.id === id)?.kind === "cpu";
       for (const target of speculationTargets(hand, seat, actionsRef.current, isCpu)) {
         const tableSeat = table.seats.find((s) => s.id === target.seat);
         if (tableSeat === undefined) continue;
-        const persona =
-          personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
+        const persona = personaFor(personas, tableSeat.personaId);
         const features = buildFeatures({
           snapshot: target.snapshot,
           seat: target.seat,
           actions: target.actions,
           persona: personaPrompt(persona),
         });
-        cache.prefetch(decisionKey(features, target.legal), (signal) =>
+        const key = decisionKey(features, target.legal);
+        cache.prefetch(key, (signal) =>
           decideAction({
             backend,
             seat: target.seat,
@@ -300,7 +320,7 @@ export function useGame(options: UseGameOptions): GameController {
             legal: target.legal,
             snapshot: target.snapshot,
             variance: persona.variance,
-            rng,
+            rng: rngFor(key),
             model: settings.model,
             signal,
           }),
@@ -308,15 +328,14 @@ export function useGame(options: UseGameOptions): GameController {
       }
       reportPrefetch();
     },
-    [backend, personas, reportPrefetch, settings.model],
+    [backend, personas, reportPrefetch, rngFor, settings.model],
   );
 
   const loop = useCallback(
     async (run: Run) => {
       const table = tableRef.current;
-      const rng = rngRef.current;
       const cache = cacheRef.current;
-      if (table === null || rng === null || cache === null) return;
+      if (table === null || cache === null) return;
       // The whole body is guarded: a throw from the engine or the feature builder must surface
       // as `gameOver` instead of an unhandled rejection from `void loop(run)`.
       try {
@@ -349,15 +368,15 @@ export function useGame(options: UseGameOptions): GameController {
           dispatch({ type: "thinking", seat });
           const snapshot = hand.snapshot();
           const legal = hand.legalActions(seat);
-          const persona =
-            personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
+          const persona = personaFor(personas, tableSeat.personaId);
           const features = buildFeatures({
             snapshot,
             seat,
             actions: actionsRef.current,
             persona: personaPrompt(persona),
           });
-          const speculated = cache.take(decisionKey(features, legal));
+          const key = decisionKey(features, legal);
+          const speculated = cache.take(key);
           // Branch out before blocking: the next decisions are asked for while this one lands.
           speculate(hand, seat);
           const record: DecisionInfo =
@@ -370,7 +389,7 @@ export function useGame(options: UseGameOptions): GameController {
                     legal,
                     snapshot,
                     variance: persona.variance,
-                    rng,
+                    rng: rngFor(key),
                     model: settings.model,
                     signal: run.abort.signal,
                   })),
@@ -408,7 +427,7 @@ export function useGame(options: UseGameOptions): GameController {
         return;
       }
     },
-    [backend, onAuthFailed, personas, reportPrefetch, settings.model, speculate, sync],
+    [backend, onAuthFailed, personas, reportPrefetch, rngFor, settings.model, speculate, sync],
   );
 
   const stopCurrentRun = useCallback(() => {

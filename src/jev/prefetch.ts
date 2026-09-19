@@ -12,8 +12,28 @@ const POT_SIZED = 3;
 const DEFAULT_LIMIT = 8;
 const DEFAULT_MAX_IN_FLIGHT = 6;
 
+/**
+ * The features plus the labels that were offered. The raw amounts in `legal` are deliberately
+ * left out: for the path the hand actually took they are already pinned down by the features —
+ * `history` fixes what everyone has put in, `stacksBB` what everyone has left and `toCallBB`
+ * what the seat faces — so two states that agree on those agree on the amounts too. The labels
+ * are still part of the key because they say which actions are on offer at all (a seat that
+ * cannot raise is asked a different question than one that can).
+ */
 export function decisionKey(features: DecisionFeatures, legal: LegalActions): DecisionKey {
   return stableStringify({ features, labels: legalLabels(legal) });
+}
+
+/**
+ * FNV-1a over the key's code units. Used to derive a per-decision rng seed, so the sampling
+ * for one decision is the same whether it was speculated on or asked for live.
+ */
+export function fnv1a(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash = Math.imul(hash ^ value.charCodeAt(i), 0x01000193);
+  }
+  return hash >>> 0;
 }
 
 /** JSON with object keys sorted, so two equal states always stringify the same way. */

@@ -1,10 +1,19 @@
+import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
 import { createDeck } from "../engine/cards";
 import { Hand, type HandOptions } from "../engine/hand";
+import { createRng } from "../engine/rng";
 import type { Action, LegalActions, SeatId } from "../engine/types";
-import type { DecisionRecord } from "./decide";
+import type { JevBackend } from "./backend";
+import { type DecisionRecord, decideAction } from "./decide";
 import { buildFeatures } from "./features";
-import { DecisionCache, decisionKey, representativeActions, speculationTargets } from "./prefetch";
+import {
+  DecisionCache,
+  decisionKey,
+  fnv1a,
+  representativeActions,
+  speculationTargets,
+} from "./prefetch";
 
 function handWith(seats: number, overrides: Partial<HandOptions> = {}): Hand {
   return new Hand({
@@ -51,6 +60,75 @@ describe("decisionKey", () => {
 
     const other = { ...features, table: { ...features.table, potBB: features.table.potBB + 1 } };
     expect(decisionKey(other, legal)).not.toBe(decisionKey(features, legal));
+  });
+});
+
+describe("fnv1a", () => {
+  it("is stable per string and spreads neighbouring keys apart", () => {
+    expect(fnv1a("abc")).toBe(fnv1a("abc"));
+    expect(fnv1a("abc")).not.toBe(fnv1a("abd"));
+    expect(fnv1a("")).toBeGreaterThanOrEqual(0);
+    for (const key of ["", "a", "decision", '{"seat":1}']) {
+      expect(Number.isInteger(fnv1a(key))).toBe(true);
+      expect(fnv1a(key)).toBeLessThanOrEqual(0xffffffff);
+    }
+  });
+});
+
+/** Answers every choice question with a flat distribution, so the rng alone picks the label. */
+function flatBackend(): JevBackend {
+  return {
+    kind: "mock",
+    async systemOne<const Q extends Questions>(request: SystemOneRequest<Q>) {
+      const answers: Record<string, unknown> = {};
+      for (const [name, question] of Object.entries(request.questions)) {
+        if (question.type === "choice") {
+          const labels = Object.keys(question.criteria);
+          const p = 1 / labels.length;
+          answers[name] = {
+            type: "choice",
+            choice: labels[0],
+            confidence: p,
+            probabilities: Object.fromEntries(labels.map((label) => [label, p])),
+          };
+        } else if (question.type === "score") {
+          answers[name] = { type: "score", score: 2, confidence: 1, legend: {}, probabilities: {} };
+        } else {
+          answers[name] = { type: "noul", noul: 0.5 };
+        }
+      }
+      return {
+        model: "flat",
+        answers,
+        usage: { input_tokens: 0, output_tokens: 0 },
+      } as unknown as SystemOneResult<Q>;
+    },
+  };
+}
+
+describe("key-derived randomness", () => {
+  it("samples the same label for the same decision, whenever it is asked", async () => {
+    const hand = handWith(3);
+    const features = featuresOf(hand, 0);
+    const legal = hand.legalActions(0);
+    const snapshot = hand.snapshot();
+    const key = decisionKey(features, legal);
+    const backend = flatBackend();
+    const seed = 12345;
+    const ask = (rng: ReturnType<typeof createRng>) =>
+      decideAction({ backend, seat: 0, features, legal, snapshot, variance: 1, rng });
+
+    // The speculative and the live call derive their rng from the same key, so the answer
+    // no longer depends on which of them reached the table.
+    const speculative = await ask(createRng(seed ^ fnv1a(key)));
+    const live = await ask(createRng(seed ^ fnv1a(key)));
+    expect(live.jev?.chosen).toBe(speculative.jev?.chosen);
+
+    // A shared rng, by contrast, hands out a different draw to each caller.
+    const shared = createRng(seed);
+    const labels = new Set<string>();
+    for (let i = 0; i < 8; i++) labels.add(String((await ask(shared)).jev?.chosen));
+    expect(labels.size).toBeGreaterThan(1);
   });
 });
 
