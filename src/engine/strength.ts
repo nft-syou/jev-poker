@@ -69,3 +69,28 @@ export function draws(hole: readonly Card[], board: readonly Card[]): Draw[] {
 
   return result.sort();
 }
+
+export type PairKind = 'overpair' | 'top_pair' | 'middle_pair' | 'bottom_pair' | 'underpair' | 'board_pair';
+
+/**
+ * How good a one-pair hand is relative to the board. Only meaningful when
+ * `madeHand` is `'pair'`; returns `null` otherwise or before the flop.
+ * - overpair: pocket pair above every board card
+ * - top / middle / bottom pair: a hole card pairs the highest / a middle / the lowest board card
+ * - underpair: pocket pair below the top board card
+ * - board_pair: the pair is on the board, the hole cards add nothing
+ */
+export function pairKind(hole: readonly Card[], board: readonly Card[]): PairKind | null {
+  if (board.length < 3 || madeHand(hole, board) !== 'pair') return null;
+  const [a, b] = hole;
+  if (!a || !b) return null;
+  const boardRanks = [...new Set(board.map((c) => c.rank))].sort((x, y) => y - x);
+  const top = boardRanks[0]!;
+  const bottom = boardRanks[boardRanks.length - 1]!;
+  if (a.rank === b.rank) return a.rank > top ? 'overpair' : 'underpair';
+  const paired = [a, b].find((c) => board.some((bc) => bc.rank === c.rank));
+  if (!paired) return 'board_pair';
+  if (paired.rank === top) return 'top_pair';
+  if (paired.rank === bottom) return 'bottom_pair';
+  return 'middle_pair';
+}

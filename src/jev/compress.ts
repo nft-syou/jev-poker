@@ -1,7 +1,7 @@
 import { cardToString, type Card } from '../engine/cards.js';
 import { estimateEquity } from '../engine/equity.js';
 import type { HandCategory } from '../engine/evaluate.js';
-import { draws, madeHand, preflopStrength, type Draw, type PreflopStrength } from '../engine/strength.js';
+import { draws, madeHand, pairKind, preflopStrength, type Draw, type PairKind, type PreflopStrength } from '../engine/strength.js';
 import type { Action, LegalActions, PlayerView, Position, SeatId, Street } from '../engine/types.js';
 import type { Persona } from './personas.js';
 
@@ -15,6 +15,9 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises without a strong made hand (two pair or better) or a strong draw getting the right price.',
   'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
+  'When your bet is raised, re-raise only for value with two pair or better; with a draw call only if the price is right, otherwise fold. Never bluff re-raise and then fold.',
+  'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
+  'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
 ];
 
@@ -25,6 +28,8 @@ export interface JevHand {
   board: string;
   /** Present only once the board has at least three cards. */
   madeHand?: HandCategory;
+  /** Present only when `madeHand` is `'pair'`: how the pair rates against the board. */
+  pairKind?: PairKind;
   /** Present only on the flop and the turn, where a draw can still come in. */
   draws?: Draw[];
   preflopStrength: PreflopStrength;
@@ -104,6 +109,9 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     holeCards: cards(view.holeCards),
     board: cards(view.board),
     ...(showMade ? { madeHand: madeHand(view.holeCards, view.board) } : {}),
+    ...(showMade && pairKind(view.holeCards, view.board) !== null
+      ? { pairKind: pairKind(view.holeCards, view.board)! }
+      : {}),
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
     preflopStrength: preflopStrength(view.holeCards),
     equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
