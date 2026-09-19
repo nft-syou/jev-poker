@@ -461,3 +461,233 @@ button.danger {
     background: #10201a;
   }
 }
+
+/* --- Recording mode ------------------------------------------------------ */
+.showcase-bars {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+.showcase-bar {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.8em;
+  color: #9fb3a6;
+}
+.showcase-bar.chosen {
+  color: #ffd54f;
+  font-weight: 700;
+}
+.showcase-bar-track {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.showcase-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #2e8b57;
+  /* The width comes from Jev's probability; animate it as the next decision lands. */
+  transition: width 400ms ease-out;
+}
+.showcase-bar.chosen .showcase-bar-fill {
+  background: #ffd54f;
+}
+.showcase-bar-value {
+  font-variant-numeric: tabular-nums;
+}
+.showcase-persona {
+  font-weight: 700;
+}
+.showcase-action {
+  font-size: 1.1em;
+  letter-spacing: 0.04em;
+  color: #ffd54f;
+}
+.showcase-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8em;
+  color: #9fb3a6;
+}
+.showcase-unavailable {
+  color: #ff8a80;
+  font-size: 0.85em;
+}
+
+.showcase-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #2f4a3b;
+  background: rgba(8, 18, 13, 0.94);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  animation: showcase-in 180ms ease-out;
+}
+.showcase-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 6px solid transparent;
+  border-top-color: #2f4a3b;
+  transform: translateX(-50%);
+}
+.showcase-bubble .showcase-bars {
+  min-width: 180px;
+}
+.showcase-thinking {
+  color: #7fd1a0;
+  animation: showcase-pulse 1s ease-in-out infinite;
+}
+.showcase-bolt {
+  font-size: 1.4rem;
+  animation: showcase-pulse 300ms ease-out;
+}
+@keyframes showcase-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes showcase-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.showcase-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid #2f4a3b;
+  border-radius: 14px;
+  background: #10201a;
+}
+.showcase-panel .showcase-action {
+  font-size: 2rem;
+}
+.showcase-decision {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.showcase-who {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.showcase-who .showcase-persona {
+  font-size: 1.2rem;
+}
+.showcase-where {
+  color: #9fb3a6;
+  font-size: 0.85rem;
+}
+.showcase-summary {
+  margin: 0;
+  color: #e8efe9;
+}
+.showcase-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+.showcase-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.showcase-facts dt {
+  color: #9fb3a6;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.showcase-facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.showcase-waiting {
+  color: #9fb3a6;
+  margin: auto 0;
+  text-align: center;
+}
+.showcase-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #2f4a3b;
+  color: #7fd1a0;
+  font-size: 0.8rem;
+}
+
+.ticker {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border: 1px solid #2f4a3b;
+  border-radius: 14px;
+  background: #10201a;
+}
+.ticker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+.ticker-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: ticker-pop 320ms ease-out;
+}
+.ticker-label {
+  color: #9fb3a6;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+@keyframes ticker-pop {
+  from {
+    color: #ffd54f;
+    transform: translateY(-2px);
+  }
+  to {
+    color: inherit;
+    transform: none;
+  }
+}
