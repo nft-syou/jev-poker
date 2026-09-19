@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { initI18n } from "../i18n";
 import type { DecisionFeatures } from "../jev/features";
 import { DecisionBubble } from "./DecisionBubble";
@@ -11,7 +11,10 @@ initI18n("en");
 
 // @testing-library/react only auto-registers its afterEach(cleanup) hook when a global
 // `afterEach` exists, which this project's Vitest config does not enable (no `test.globals`).
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const FEATURES = {
   task: "decide",
@@ -97,6 +100,59 @@ describe("DecisionBubble", () => {
     renderBubble({ decision: decision({ prefetched: true }) });
     expect(screen.getByText("⚡ prefetched")).toBeInTheDocument();
     expect(screen.queryByText("640 ms")).not.toBeInTheDocument();
+  });
+
+  it("holds the thinking line for its full moment, then gives way to the decision", () => {
+    vi.useFakeTimers();
+    const { rerender } = renderBubble({ thinking: true });
+
+    act(() => void vi.advanceTimersByTime(150));
+    // Jev answered after 150 ms; the thinking line still owes the eye the rest of its hold.
+    rerender(
+      <DecisionBubble
+        seat={1}
+        personaName="LAG"
+        thinking={false}
+        decision={decision()}
+        features={FEATURES}
+        bigBlind={2}
+        visibleUntil={null}
+      />,
+    );
+    expect(screen.getByText("Jev thinking…")).toBeInTheDocument();
+    expect(screen.queryByText("RAISE to 12 BB")).not.toBeInTheDocument();
+
+    // Past the 600 ms hold the bubble must move on by itself, not wait to be unmounted.
+    act(() => void vi.advanceTimersByTime(500));
+    expect(screen.queryByText("Jev thinking…")).not.toBeInTheDocument();
+    expect(screen.getByText("RAISE to 12 BB")).toBeInTheDocument();
+  });
+
+  it("flashes a prefetched answer through instead of holding it back", () => {
+    vi.useFakeTimers();
+    const { rerender } = renderBubble({ thinking: true });
+
+    act(() => void vi.advanceTimersByTime(150));
+    rerender(
+      <DecisionBubble
+        seat={1}
+        personaName="LAG"
+        thinking={false}
+        decision={decision({ prefetched: true })}
+        features={FEATURES}
+        bigBlind={2}
+        visibleUntil={null}
+      />,
+    );
+    // No pretend thinking for an answer that was already in hand: the bolt flashes instead.
+    expect(screen.queryByText("Jev thinking…")).not.toBeInTheDocument();
+    expect(screen.getByText("⚡")).toBeInTheDocument();
+
+    // Just past the 300 ms flash.
+    act(() => void vi.advanceTimersByTime(310));
+    expect(screen.queryByText("⚡")).not.toBeInTheDocument();
+    expect(screen.getByText("RAISE to 12 BB")).toBeInTheDocument();
+    expect(screen.getByText("⚡ prefetched")).toBeInTheDocument();
   });
 
   it("says so when Jev could not answer", () => {

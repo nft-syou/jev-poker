@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SeatId } from "../engine/types";
 import type { DecisionFeatures } from "../jev/features";
@@ -41,11 +41,23 @@ export function DecisionBubble({
   const prefetched = decision?.prefetched === true;
 
   // Jev can answer faster than the eye follows, so hold the thinking line open a moment.
+  // The hold is released on the falling edge, for whatever is left of it: a timer started
+  // while the seat was still thinking would be cancelled by this effect's own cleanup.
+  const thinkingStartRef = useRef<number | null>(null);
   const [holding, setHolding] = useState(false);
   useEffect(() => {
-    if (!thinking) return;
-    setHolding(true);
-    const timer = setTimeout(() => setHolding(false), MIN_THINKING_MS);
+    if (thinking) {
+      thinkingStartRef.current = Date.now();
+      setHolding(true);
+      return;
+    }
+    const start = thinkingStartRef.current;
+    const remaining = start === null ? 0 : MIN_THINKING_MS - (Date.now() - start);
+    if (remaining <= 0) {
+      setHolding(false);
+      return;
+    }
+    const timer = setTimeout(() => setHolding(false), remaining);
     return () => clearTimeout(timer);
   }, [thinking]);
 

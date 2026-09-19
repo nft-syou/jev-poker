@@ -29,14 +29,18 @@ export function Ticker({ stats, prefetch, handsPlayed, maxPot }: Props) {
     return rate === null ? none : `${rate}%`;
   };
 
+  /** An average in milliseconds, or a dash when nothing has been asked yet. */
+  const avgMs = (field: keyof PlayerStats) =>
+    decisions === 0
+      ? none
+      : t("showcase.latency", { ms: Math.round(sum(stats, field) / decisions) });
+
   const counters: [string, string][] = [
     [t("showcase.ticker_calls"), String(decisions)],
-    [
-      t("showcase.ticker_latency"),
-      decisions === 0
-        ? none
-        : t("showcase.latency", { ms: Math.round(sum(stats, "jevLatencyMs") / decisions) }),
-    ],
+    // What Jev took to answer, against what the table was actually held up for: the
+    // difference between the two is what the speculation bought.
+    [t("showcase.avgAnswer"), avgMs("jevLatencyMs")],
+    [t("showcase.perceivedWait"), avgMs("jevWaitMs")],
     [t("showcase.ticker_hitRate"), pct(prefetch.hits, takes)],
     [t("showcase.ticker_raiseRate"), pct(sum(stats, "jevRaises"), decisions)],
     [t("showcase.ticker_bluff"), pct(sum(stats, "jevBluffSum"), answered)],

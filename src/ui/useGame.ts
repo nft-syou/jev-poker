@@ -125,7 +125,14 @@ export interface UseGameOptions {
 }
 
 type Msg =
-  | { type: "event"; event: GameEvent; decision?: DecisionInfo; features?: DecisionFeatures }
+  | {
+      type: "event";
+      event: GameEvent;
+      decision?: DecisionInfo;
+      features?: DecisionFeatures;
+      /** `Date.now()` when the event was seen; stamped by the caller to keep this pure. */
+      at?: number;
+    }
   | { type: "sync"; snapshot: HandSnapshot | null; seats: GameSeat[]; handsPlayed: number }
   | { type: "thinking"; seat: SeatId | null }
   | { type: "paused"; paused: boolean }
@@ -155,7 +162,7 @@ function reducer(state: GameState, msg: Msg): GameState {
               seat: msg.decision.seat,
               record: msg.decision,
               features: msg.features,
-              at: Date.now(),
+              at: msg.at ?? 0,
             }
           : state.lastDecision;
       const awarded =
@@ -444,7 +451,7 @@ export function useGame(options: UseGameOptions): GameController {
             return;
           }
           pendingRef.current = { record, features };
-          trackerRef.current?.onDecision(record);
+          trackerRef.current?.onDecision(record, record.prefetched);
           table.act(seat, record.action);
           dispatch({ type: "thinking", seat: null });
           reportPrefetch();
@@ -508,7 +515,13 @@ export function useGame(options: UseGameOptions): GameController {
       dispatch(
         matched === null
           ? { type: "event", event }
-          : { type: "event", event, decision: matched.record, features: matched.features },
+          : {
+              type: "event",
+              event,
+              decision: matched.record,
+              features: matched.features,
+              at: Date.now(),
+            },
       );
     });
     sync();

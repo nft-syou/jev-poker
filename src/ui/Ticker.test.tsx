@@ -14,12 +14,20 @@ initI18n("en");
 afterEach(cleanup);
 
 const STATS: Record<SeatId, PlayerStats> = {
-  0: { ...EMPTY_STATS, jevDecisions: 6, jevLatencyMs: 3000, jevRaises: 3, jevBluffSum: 1.2 },
+  0: {
+    ...EMPTY_STATS,
+    jevDecisions: 6,
+    jevLatencyMs: 3000,
+    jevWaitMs: 1800,
+    jevRaises: 3,
+    jevBluffSum: 1.2,
+  },
   1: {
     ...EMPTY_STATS,
     jevDecisions: 4,
     jevFallbacks: 2,
     jevLatencyMs: 1000,
+    jevWaitMs: 200,
     jevRaises: 1,
     jevBluffSum: 0.4,
   },
@@ -44,8 +52,10 @@ describe("Ticker", () => {
     );
 
     expect(valueFor("Jev calls")).toBe("10");
-    // 4000 ms over 10 decisions.
-    expect(valueFor("Avg latency")).toBe("400 ms");
+    // How long Jev took to answer: 4000 ms over 10 decisions, prefetched ones included.
+    expect(valueFor("Avg Jev answer")).toBe("400 ms");
+    // What the table actually waited: a prefetched answer cost it nothing, so 2000 / 10.
+    expect(valueFor("Perceived wait")).toBe("200 ms");
     // 6 hits out of 8 takes.
     expect(valueFor("Prefetch hit rate")).toBe("75%");
     // 4 raises out of 10 decisions.
@@ -66,7 +76,8 @@ describe("Ticker", () => {
       />,
     );
     expect(valueFor("Jev calls")).toBe("0");
-    expect(valueFor("Avg latency")).toBe("–");
+    expect(valueFor("Avg Jev answer")).toBe("–");
+    expect(valueFor("Perceived wait")).toBe("–");
     expect(valueFor("Prefetch hit rate")).toBe("–");
     expect(valueFor("Raise rate")).toBe("–");
     expect(valueFor("Avg bluff")).toBe("–");

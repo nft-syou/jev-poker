@@ -25,7 +25,10 @@ export interface PlayerStats {
   jevFallbacks: number;
   /** Decisions Jev answered with `bet_or_raise`; the aggression the ticker reports. */
   jevRaises: number;
+  /** Σ latency over every decision, prefetched or not: how long Jev takes to answer. */
   jevLatencyMs: number;
+  /** Σ latency over the decisions the table actually waited for; a prefetched one cost 0. */
+  jevWaitMs: number;
   /** Σ bluff intent (0..1) over the decisions Jev actually answered. */
   jevBluffSum: number;
 }
@@ -44,6 +47,7 @@ export const EMPTY_STATS: PlayerStats = {
   jevFallbacks: 0,
   jevRaises: 0,
   jevLatencyMs: 0,
+  jevWaitMs: 0,
   jevBluffSum: 0,
 };
 
@@ -137,10 +141,12 @@ export class HandStatsTracker {
     }
   }
 
-  onDecision(record: DecisionRecord): void {
+  /** `prefetched` says the answer was already in hand, so the table waited no time for it. */
+  onDecision(record: DecisionRecord, prefetched = false): void {
     const stats = this.statsFor(record.seat);
     stats.jevDecisions += 1;
     stats.jevLatencyMs += record.latencyMs;
+    if (!prefetched) stats.jevWaitMs += record.latencyMs;
     if (record.fallback) stats.jevFallbacks += 1;
     // Only a real answer carries a bluff intent; the average divides by the non-fallbacks.
     else if (record.jev !== null) {

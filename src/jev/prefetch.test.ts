@@ -73,6 +73,16 @@ describe("fnv1a", () => {
       expect(fnv1a(key)).toBeLessThanOrEqual(0xffffffff);
     }
   });
+
+  it("handles the non-ASCII text a persona name puts in the key", () => {
+    // A decision key embeds the persona prompt, and personas are named in Japanese too.
+    const japanese = "コーリングステーション";
+    expect(fnv1a(japanese)).toBe(fnv1a(japanese));
+    expect(fnv1a(japanese)).not.toBe(fnv1a("Calling Station"));
+    expect(Number.isInteger(fnv1a(japanese))).toBe(true);
+    expect(fnv1a(japanese)).toBeGreaterThanOrEqual(0);
+    expect(fnv1a(japanese)).toBeLessThanOrEqual(0xffffffff);
+  });
 });
 
 /** Answers every choice question with a flat distribution, so the rng alone picks the label. */

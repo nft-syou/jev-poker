@@ -19,13 +19,16 @@ const CARDS = [
 ] as const;
 
 /** Feeds the events of a single hand (and its decisions) to a fresh tracker. */
-function track(events: readonly GameEvent[], decisions: readonly DecisionRecord[] = []) {
+function track(
+  events: readonly GameEvent[],
+  decisions: readonly (DecisionRecord & { prefetched?: boolean })[] = [],
+) {
   const tracker = new HandStatsTracker();
   for (const event of events) {
     tracker.onEvent(event);
     // Decisions reach the tracker while the hand runs, i.e. after it has started.
     if (event.type === "HandStarted")
-      for (const decision of decisions) tracker.onDecision(decision);
+      for (const decision of decisions) tracker.onDecision(decision, decision.prefetched === true);
   }
   return tracker.flush();
 }
@@ -312,13 +315,41 @@ describe("HandStatsTracker", () => {
       jevDecisions: 2,
       jevFallbacks: 1,
       jevLatencyMs: 150,
+      jevWaitMs: 150,
       jevBluffSum: 0.5,
     });
     expect(statsOf(deltas, 1)).toMatchObject({
       jevDecisions: 1,
       jevFallbacks: 0,
       jevLatencyMs: 20,
+      jevWaitMs: 20,
       jevBluffSum: 0.25,
+    });
+  });
+
+  it("keeps a prefetched answer out of what the table waited for", () => {
+    const deltas = track(
+      [
+        {
+          type: "HandStarted",
+          handNumber: 0,
+          button: 0,
+          blinds: { small: 1, big: 2, ante: 0 },
+          seats: [{ id: 0, stack: 100 }],
+        },
+        { type: "HandEnded", handNumber: 0, stacks: [{ id: 0, stack: 100 }] },
+      ],
+      [
+        // Answered in the background while another seat acted: the table never waited.
+        { ...decision({ seat: 0, latencyMs: 900 }), prefetched: true },
+        decision({ seat: 0, latencyMs: 120 }),
+      ],
+    );
+    expect(statsOf(deltas, 0)).toMatchObject({
+      jevDecisions: 2,
+      // Jev still took 1020 ms of thinking; only 120 ms of it held the table up.
+      jevLatencyMs: 1020,
+      jevWaitMs: 120,
     });
   });
 
