@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { EMPTY_STATS, type PlayerStats } from "./stats";
 import {
   clearApiKey,
+  clearCumulativeStats,
   DEFAULT_SETTINGS,
   loadApiKey,
+  loadCumulativeStats,
   loadSettings,
   SETTINGS_STORAGE_KEY,
+  STATS_STORAGE_KEY,
   saveApiKey,
+  saveCumulativeStats,
   saveSettings,
   validateSettings,
 } from "./storage";
@@ -44,5 +49,27 @@ describe("storage", () => {
     expect(validateSettings({ ...DEFAULT_SETTINGS, smallBlind: 0 })).toBe("invalidBlinds");
     expect(validateSettings({ ...DEFAULT_SETTINGS, startingStack: 15 })).toBe("invalidStack");
     expect(validateSettings({ ...DEFAULT_SETTINGS, startingStack: 10.5 })).toBe("invalidStack");
+  });
+
+  it("round-trips cumulative stats", () => {
+    expect(loadCumulativeStats()).toEqual({});
+    const stats: PlayerStats = { ...EMPTY_STATS, handsPlayed: 4, handsWon: 1, netChips: -12 };
+    saveCumulativeStats({ "persona:rock": stats, "human:You": EMPTY_STATS });
+    expect(loadCumulativeStats()).toEqual({ "persona:rock": stats, "human:You": EMPTY_STATS });
+    clearCumulativeStats();
+    expect(loadCumulativeStats()).toEqual({});
+  });
+
+  it("tolerates broken or partial cumulative stats", () => {
+    localStorage.setItem(STATS_STORAGE_KEY, "{bad");
+    expect(loadCumulativeStats()).toEqual({});
+    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify([1, 2]));
+    expect(loadCumulativeStats()).toEqual({});
+    // Fields added after an old record was written fall back to zero.
+    localStorage.setItem(
+      STATS_STORAGE_KEY,
+      JSON.stringify({ "persona:rock": { handsPlayed: 3, netChips: "nope" }, bogus: 7 }),
+    );
+    expect(loadCumulativeStats()).toEqual({ "persona:rock": { ...EMPTY_STATS, handsPlayed: 3 } });
   });
 });

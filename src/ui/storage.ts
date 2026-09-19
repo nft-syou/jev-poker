@@ -1,8 +1,10 @@
 import type { SeatKind } from "../engine/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "../i18n";
+import { EMPTY_STATS, type PlayerStats, type StatsKey } from "./stats";
 
 export const API_KEY_STORAGE_KEY = "jev-poker.apiKey";
 export const SETTINGS_STORAGE_KEY = "jev-poker.settings";
+export const STATS_STORAGE_KEY = "jev-poker.stats";
 
 export type Speed = "slow" | "normal" | "fast" | "max";
 export const SPEEDS: readonly Speed[] = ["slow", "normal", "fast", "max"];
@@ -100,6 +102,40 @@ export function loadSettings(): Settings {
 
 export function saveSettings(settings: Settings): void {
   write(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+}
+
+/**
+ * Cumulative stats survive reloads, so they must survive a record written by an older
+ * version too: anything unreadable degrades to zeroes instead of throwing at the table.
+ */
+export function loadCumulativeStats(): Record<StatsKey, PlayerStats> {
+  const raw = read(STATS_STORAGE_KEY);
+  if (raw === null) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+    const result: Record<StatsKey, PlayerStats> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof value !== "object" || value === null) continue;
+      const fields = value as Partial<Record<keyof PlayerStats, unknown>>;
+      const stats = { ...EMPTY_STATS };
+      for (const field of Object.keys(EMPTY_STATS) as (keyof PlayerStats)[]) {
+        stats[field] = numberOr(fields[field], 0);
+      }
+      result[key] = stats;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+export function saveCumulativeStats(record: Record<StatsKey, PlayerStats>): void {
+  write(STATS_STORAGE_KEY, JSON.stringify(record));
+}
+
+export function clearCumulativeStats(): void {
+  remove(STATS_STORAGE_KEY);
 }
 
 export function loadLanguage(): string | null {
