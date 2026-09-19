@@ -21,6 +21,7 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
   'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
+  'When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.',
 ];
 
 export interface JevHand {
@@ -61,6 +62,8 @@ export interface JevTable {
   /** Equity needed to break even on a call; equals the pot odds. 0 when nothing is due. */
   requiredEquityPct: number;
   effectiveStackBB: number;
+  /** Preflop only: true when nobody has voluntarily put chips in yet (everyone before you folded). */
+  unopenedPot?: boolean;
   /** Number of bets/raises made on the current street so far (by anyone). */
   raisesThisStreet: number;
   /** True when the acting player bet or raised on this street and an opponent raised after that. */
@@ -145,6 +148,9 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     toCallBB: bb(view.toCall, bigBlind),
     potOddsPct,
     requiredEquityPct: potOddsPct,
+    ...(view.street === 'preflop'
+      ? { unopenedPot: !thisStreet.some((h) => h.seat !== view.seat && h.action.type !== 'fold') }
+      : {}),
     raisesThisStreet,
     myBetWasRaisedThisStreet,
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),

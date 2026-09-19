@@ -42,6 +42,7 @@ exports[`compressState > matches snapshot shape 1`] = `
     "On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.",
     "pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.",
     "Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.",
+    "When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.",
   ],
   "persona": {
     "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",

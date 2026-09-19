@@ -88,3 +88,14 @@ describe('compressState street aggression', () => {
     expect(mk(iRaisedLast)).toMatchObject({ raisesThisStreet: 2, myBetWasRaisedThisStreet: false });
   });
 });
+
+describe('compressState unopened pot', () => {
+  const pre = (history: PlayerView['history']) => compressState({ ...view, street: 'preflop', board: [], history }, legal, getPersona('tag')).table;
+  it('is true preflop when only folds precede the actor, false once someone enters, absent postflop', () => {
+    expect(pre([]).unopenedPot).toBe(true);
+    expect(pre([{ street: 'preflop', seat: 1, action: { type: 'fold' } }]).unopenedPot).toBe(true);
+    expect(pre([{ street: 'preflop', seat: 1, action: { type: 'call' } }]).unopenedPot).toBe(false);
+    expect(pre([{ street: 'preflop', seat: 2, action: { type: 'raise', amount: 300 } }]).unopenedPot).toBe(false);
+    expect('unopenedPot' in compressState(view, legal, getPersona('tag')).table).toBe(false);
+  });
+});
