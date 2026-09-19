@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { fixedBlinds } from "../engine/blinds";
 import { createRng, type Rng, randomSeed } from "../engine/rng";
 import { Table } from "../engine/table";
@@ -15,7 +15,21 @@ import type { JevBackend } from "../jev/backend";
 import { type DecisionRecord, decideAction } from "../jev/decide";
 import { type ActionTakenEvent, buildFeatures } from "../jev/features";
 import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
-import type { Settings, Speed } from "./storage";
+import {
+  addStats,
+  EMPTY_STATS,
+  HandStatsTracker,
+  type PlayerStats,
+  type StatsKey,
+  statsKeyFor,
+} from "./stats";
+import {
+  clearCumulativeStats,
+  loadCumulativeStats,
+  type Settings,
+  type Speed,
+  saveCumulativeStats,
+} from "./storage";
 
 export const ACTION_DELAY_MS: Record<Speed, number> = {
   slow: 1600,
@@ -52,6 +66,8 @@ export interface GameState {
   handsPlayed: number;
   gameOver: boolean;
   error: string | null;
+  /** Stats for this sitting, by seat. Derived from events, never from the trimmed log. */
+  stats: Record<SeatId, PlayerStats>;
 }
 
 export interface GameController {
@@ -61,6 +77,10 @@ export interface GameController {
   legalForHuman: LegalActions | null;
   humanAct: (action: Action) => void;
   togglePause: () => void;
+  /** Stats kept across sittings, by persona or human name. */
+  cumulative: Record<StatsKey, PlayerStats>;
+  statsKeys: Record<SeatId, StatsKey>;
+  resetCumulative: () => void;
 }
 
 export interface UseGameOptions {
@@ -77,6 +97,7 @@ type Msg =
   | { type: "thinking"; seat: SeatId | null }
   | { type: "paused"; paused: boolean }
   | { type: "gameOver"; error: string | null }
+  | { type: "stats"; deltas: ReadonlyMap<SeatId, PlayerStats> }
   | { type: "reset" };
 
 const MAX_LOG = 400;
@@ -103,6 +124,13 @@ function reducer(state: GameState, msg: Msg): GameState {
       return { ...state, paused: msg.paused };
     case "gameOver":
       return { ...state, gameOver: true, error: msg.error, thinkingSeat: null };
+    case "stats": {
+      const stats = { ...state.stats };
+      for (const [seat, delta] of msg.deltas) {
+        stats[seat] = addStats(stats[seat] ?? EMPTY_STATS, delta);
+      }
+      return { ...state, stats };
+    }
     case "reset":
       return { ...state, gameOver: false, error: null };
   }
@@ -149,7 +177,11 @@ export function useGame(options: UseGameOptions): GameController {
     handsPlayed: 0,
     gameOver: false,
     error: null,
+    stats: {},
   });
+  const [cumulative, setCumulative] = useState<Record<StatsKey, PlayerStats>>(() =>
+    loadCumulativeStats(),
+  );
 
   const tableRef = useRef<Table | null>(null);
   const rngRef = useRef<Rng | null>(null);
@@ -162,8 +194,21 @@ export function useGame(options: UseGameOptions): GameController {
   const noBackendRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
   const pendingRef = useRef<DecisionRecord | null>(null);
+  const trackerRef = useRef<HandStatsTracker | null>(null);
+  if (trackerRef.current === null) trackerRef.current = new HandStatsTracker();
   const speedRef = useRef<Speed>(settings.speed);
   speedRef.current = settings.speed;
+
+  const statsKeys = useMemo(() => {
+    const keys: Record<SeatId, StatsKey> = {};
+    settings.seats.forEach((seat, id) => {
+      keys[id] = statsKeyFor(seat);
+    });
+    return keys;
+  }, [settings.seats]);
+  // The table listener is installed once, but it must always see the current keys.
+  const statsKeysRef = useRef(statsKeys);
+  statsKeysRef.current = statsKeys;
 
   const sync = useCallback(() => {
     const table = tableRef.current;
@@ -174,6 +219,28 @@ export function useGame(options: UseGameOptions): GameController {
       seats: table.seats.map((s) => ({ id: s.id, name: s.name, kind: s.kind, stack: s.stack })),
       handsPlayed: table.handNumber,
     });
+  }, []);
+
+  /** Closes a hand's stats: session deltas, then one read-modify-write of the store. */
+  const finishStats = useCallback(() => {
+    const deltas = trackerRef.current?.flush();
+    if (deltas === undefined || deltas.size === 0) return;
+    dispatch({ type: "stats", deltas });
+    const keys = statsKeysRef.current;
+    // Re-read rather than trusting the React copy: another tab may have played too.
+    const next = loadCumulativeStats();
+    for (const [seat, delta] of deltas) {
+      const key = keys[seat];
+      if (key === undefined) continue;
+      next[key] = addStats(next[key] ?? EMPTY_STATS, delta);
+    }
+    saveCumulativeStats(next);
+    setCumulative(next);
+  }, []);
+
+  const resetCumulative = useCallback(() => {
+    clearCumulativeStats();
+    setCumulative({});
   }, []);
 
   const loop = useCallback(
@@ -241,6 +308,7 @@ export function useGame(options: UseGameOptions): GameController {
             return;
           }
           pendingRef.current = record;
+          trackerRef.current?.onDecision(record);
           table.act(seat, record.action);
           dispatch({ type: "thinking", seat: null });
           sync();
@@ -280,6 +348,8 @@ export function useGame(options: UseGameOptions): GameController {
     const off = table.on((event) => {
       if (event.type === "HandStarted") actionsRef.current = [];
       if (event.type === "ActionTaken") actionsRef.current = [...actionsRef.current, event];
+      trackerRef.current?.onEvent(event);
+      if (event.type === "HandEnded") finishStats();
       let decision: DecisionRecord | undefined;
       const pending = pendingRef.current;
       if (pending !== null && event.type === "ActionTaken" && event.seat === pending.seat) {
@@ -370,5 +440,8 @@ export function useGame(options: UseGameOptions): GameController {
     legalForHuman,
     humanAct,
     togglePause,
+    cumulative,
+    statsKeys,
+    resetCumulative,
   };
 }

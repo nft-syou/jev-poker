@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
 import { createMockBackend } from "../jev/mock-backend";
 import { PRESET_PERSONAS } from "../jev/personas";
-import { DEFAULT_SETTINGS, type Settings } from "./storage";
+import type { PlayerStats } from "./stats";
+import { DEFAULT_SETTINGS, type Settings, STATS_STORAGE_KEY } from "./storage";
 import { useGame } from "./useGame";
 
 // @testing-library/react only auto-registers its afterEach(cleanup) hook when a global
@@ -76,6 +77,55 @@ describe("useGame", () => {
       .filter((e) => e.type === "SeatRebought")
       .reduce((sum, e) => sum + (e.type === "SeatRebought" ? e.amount : 0), 0);
     expect(total).toBe(3 * cpuOnly.startingStack + rebought);
+    unmount();
+  });
+
+  it("accumulates session stats and merges them into the cumulative store", async () => {
+    localStorage.clear();
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        seed: 7,
+      }),
+    );
+    await waitFor(
+      () => {
+        expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(2);
+        const seats = Object.values(result.current.state.stats);
+        expect(seats).toHaveLength(3);
+        for (const stats of seats) {
+          expect(stats.handsPlayed).toBeGreaterThanOrEqual(2);
+          // Every seat is a CPU here, so every seat asked Jev at least once.
+          expect(stats.jevDecisions).toBeGreaterThan(0);
+        }
+      },
+      { timeout: 5000 },
+    );
+
+    // Stop the table so the session stats and the store cannot drift apart mid-assertion.
+    act(() => result.current.togglePause());
+    await new Promise((r) => setTimeout(r, 80));
+
+    // Session stats are keyed by seat; the cumulative store by persona.
+    expect(result.current.statsKeys).toEqual({
+      0: "persona:tag",
+      1: "persona:lag",
+      2: "persona:rock",
+    });
+    const stored = JSON.parse(localStorage.getItem(STATS_STORAGE_KEY) ?? "{}") as Record<
+      string,
+      PlayerStats
+    >;
+    expect(Object.keys(stored).sort()).toEqual(["persona:lag", "persona:rock", "persona:tag"]);
+    expect(stored["persona:tag"]?.handsPlayed).toBe(result.current.state.stats[0]?.handsPlayed);
+    expect(result.current.cumulative).toEqual(stored);
+
+    act(() => result.current.resetCumulative());
+    expect(result.current.cumulative).toEqual({});
+    expect(localStorage.getItem(STATS_STORAGE_KEY)).toBeNull();
     unmount();
   });
 
