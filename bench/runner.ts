@@ -6,6 +6,7 @@ import { fixedBlinds, type GameConfig, type SeatId, type TableEvent } from '../s
 import { JevAgent, type DecisionRecord } from '../src/jev/agent.js';
 import type { JevBackend } from '../src/jev/backend.js';
 import type { Persona } from '../src/jev/personas.js';
+import type { PromptStyle } from '../src/jev/questions.js';
 import { rotations, seatCount } from './matchups.js';
 import type { Format, HandRecord, Opponent } from './types.js';
 
@@ -31,6 +32,8 @@ export interface RunOptions {
   concurrency: number;
   persona: Persona;
   backend: JevBackend;
+  /** Passed to every `JevAgent`; default `unified`. */
+  promptStyle?: PromptStyle;
   signal?: AbortSignal;
   onHand?: (done: number, total: number) => void;
   /** Called once per Jev decision, as the hand that produced it finishes. */
@@ -47,6 +50,7 @@ export interface PlayHandArgs {
   baseSeed: number;
   persona: Persona;
   backend: JevBackend;
+  promptStyle?: PromptStyle;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: TableEvent) => void;
 }
@@ -71,6 +75,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
             backend,
             seed: hashSeed(baseSeed, seedIndex, rotation, JEV_SEED_TAG),
             onDecision: (record) => decisions.push(record),
+            ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
           })
         : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
     );
@@ -188,6 +193,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           baseSeed,
           persona,
           backend,
+          ...(opts.promptStyle !== undefined ? { promptStyle: opts.promptStyle } : {}),
         });
       } catch (err) {
         failed = true;

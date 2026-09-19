@@ -80,6 +80,7 @@ async function main(): Promise<void> {
       concurrency: opts.concurrency,
       persona,
       backend,
+      promptStyle: opts.promptStyle,
       signal: controller.signal,
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
@@ -107,6 +108,7 @@ async function main(): Promise<void> {
         concurrency: opts.concurrency,
         sdkVersion: VERSION,
         gitCommit: commit,
+        promptStyle: opts.promptStyle,
       },
       summary: summarize(hands, matchup.format),
       hands,

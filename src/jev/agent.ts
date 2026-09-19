@@ -5,7 +5,7 @@ import { Rng } from '../engine/rng.js';
 import type { Action, LegalActions, PlayerView, Street } from '../engine/types.js';
 import type { JevAnswers, JevBackend } from './backend.js';
 import { compressState } from './compress.js';
-import { buildQuestions, legalChoices, SIZING_LABELS, type ActionChoice } from './questions.js';
+import { buildQuestions, legalChoices, SIZING_LABELS, type ActionChoice, type PromptStyle } from './questions.js';
 import type { Persona } from './personas.js';
 
 /** Below this, tempering is numerically pointless - take the most likely choice instead. */
@@ -39,6 +39,8 @@ export interface JevAgentOptions {
   backend: JevBackend;
   seed: number;
   onDecision?: (record: DecisionRecord) => void;
+  /** One shared state/question format (default) or a preflop/postflop pair. */
+  promptStyle?: PromptStyle;
 }
 
 function clamp(x: number, min: number, max: number): number {
@@ -172,12 +174,14 @@ export class JevAgent implements Agent {
   private readonly backend: JevBackend;
   private readonly rng: Rng;
   private readonly onDecision: ((record: DecisionRecord) => void) | undefined;
+  private readonly promptStyle: PromptStyle;
 
   constructor(opts: JevAgentOptions) {
     this.persona = opts.persona;
     this.backend = opts.backend;
     this.rng = new Rng(opts.seed);
     this.onDecision = opts.onDecision;
+    this.promptStyle = opts.promptStyle ?? 'unified';
     this.id = `jev:${opts.persona.id}`;
   }
 
@@ -188,8 +192,8 @@ export class JevAgent implements Agent {
     try {
       // Inside the try: building the state can throw too (e.g. a malformed view),
       // and that must fail open rather than stall the table.
-      const state = compressState(view, legal, this.persona);
-      const questions = buildQuestions(legal);
+      const state = compressState(view, legal, this.persona, this.promptStyle);
+      const questions = buildQuestions(legal, { street: view.street, style: this.promptStyle });
       const { answers, model } = await this.backend.systemOne(state, questions);
       const { action, choice, sizingScore } = answersToAction(
         answers,

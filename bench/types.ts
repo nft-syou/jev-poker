@@ -50,6 +50,8 @@ export interface BenchConfig {
   concurrency: number;
   sdkVersion: string;
   gitCommit: string | null;
+  /** Absent in results written before the split-format experiment (= `unified`). */
+  promptStyle?: 'unified' | 'split';
 }
 
 export interface BenchResult {

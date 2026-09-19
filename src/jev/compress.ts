@@ -4,8 +4,49 @@ import type { HandCategory } from '../engine/evaluate.js';
 import { draws, madeHand, pairKind, preflopStrength, type Draw, type PairKind, type PreflopStrength } from '../engine/strength.js';
 import type { Action, LegalActions, PlayerView, Position, SeatId, Street } from '../engine/types.js';
 import type { Persona } from './personas.js';
+import type { PromptStyle } from './questions.js';
 
 export const TASK = "Decide the next poker action for the acting player in No-Limit Texas Hold'em.";
+
+/** Split format: one task line per street group. */
+export const PREFLOP_TASK =
+  "Decide the acting player's PREFLOP action in No-Limit Texas Hold'em: whether to enter the pot, and how to size a raise.";
+export const POSTFLOP_TASK =
+  "Decide the acting player's POSTFLOP action in No-Limit Texas Hold'em, weighing the made hand, draws, the board and the betting so far.";
+
+/** Split format: context every decision gets. */
+export const COMMON_CONTEXT: readonly string[] = [
+  'Only legal actions are offered.',
+  'Amounts are in big blinds.',
+  "You cannot see other players' hole cards.",
+  'Stay in character as the persona.',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
+  'Before calling, compare your equity with requiredEquityPct (the pot odds).',
+  'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
+  'stackToPotRatio is your remaining stack divided by the pot. Below about 1 you are pot-committed: never fold a hand with decent equity there, call or go all in instead. Never make a raise that commits most of your stack unless you are willing to call an all-in with that hand.',
+];
+
+/** Split format: preflop-only guidance. */
+export const PREFLOP_CONTEXT: readonly string[] = [
+  'preflopStrength is a 169-hand tier: premium > strong > medium > weak > trash.',
+  'When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.',
+  'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
+  'Once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds.',
+  'When myBetWasRaisedThisStreet is true, your raise has been re-raised: continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.',
+  'raisesThisStreet counts the raises so far; two or more means someone is very strong.',
+  'Sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet.',
+];
+
+/** Split format: postflop-only guidance. */
+export const POSTFLOP_CONTEXT: readonly string[] = [
+  'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
+  'Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
+  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Never bluff re-raise and then fold.',
+  'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
+  'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
+  'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
+  'Sizes: bet about two thirds of the pot for value; use the pot or an overbet only with very strong hands; use the minimum or one third of the pot for thin value or as a probe.',
+];
 
 export const IMPORTANT_CONTEXT: readonly string[] = [
   'Only legal actions are offered.',
@@ -110,7 +151,18 @@ function cards(cs: readonly Card[]): string {
  * `_legal` is accepted so callers pass the view and its legal actions together —
  * the legal actions shape the question set (`buildQuestions`), not the state.
  */
-export function compressState(view: PlayerView, _legal: LegalActions, persona: Persona): JevState {
+export function compressState(
+  view: PlayerView,
+  _legal: LegalActions,
+  persona: Persona,
+  style: PromptStyle = 'unified',
+): JevState {
+  const preflop = view.street === 'preflop';
+  const task = style === 'split' ? (preflop ? PREFLOP_TASK : POSTFLOP_TASK) : TASK;
+  const importantContext =
+    style === 'split'
+      ? [...COMMON_CONTEXT, ...(preflop ? PREFLOP_CONTEXT : POSTFLOP_CONTEXT)]
+      : [...IMPORTANT_CONTEXT];
   const { bigBlind } = view;
   const live = view.stacks.filter((s) => !s.folded);
   const me = view.stacks.find((s) => s.seat === view.seat);
@@ -178,9 +230,9 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
   }));
 
   return {
-    task: TASK,
+    task,
     persona: { name: persona.name.en, description: persona.description.en },
-    importantContext: [...IMPORTANT_CONTEXT],
+    importantContext,
     hand,
     table,
     history,

@@ -10,6 +10,7 @@ export interface CliOptions {
   baseSeed: number;
   label: string | null;
   model: string | null;
+  promptStyle: 'unified' | 'split';
 }
 
 export const USAGE = `Usage: pnpm bench [options]
@@ -23,6 +24,7 @@ export const USAGE = `Usage: pnpm bench [options]
   --base-seed N                        default 1
   --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
   --model <name>                       model passed to the SDK, default the SDK's own
+  --prompt unified|split               one state/question format, or separate preflop/postflop ones (default unified)
   --help, -h                           print this message
 
 Results are written to bench/results/. Render them again with: pnpm bench:report [files...]`;
@@ -161,6 +163,7 @@ export function parseArgs(argv: string[]): CliOptions {
     baseSeed: 1,
     label: null,
     model: null,
+    promptStyle: 'unified',
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -206,6 +209,12 @@ export function parseArgs(argv: string[]): CliOptions {
       case '--model':
         options.model = take();
         break;
+      case '--prompt': {
+        const value = take();
+        if (value !== 'unified' && value !== 'split') throw new Error(`invalid --prompt: ${value}`);
+        options.promptStyle = value;
+        break;
+      }
       default:
         throw new Error(`unknown flag: ${flag}`);
     }

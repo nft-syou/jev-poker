@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseCards } from '../engine/cards.js';
 import type { PlayerView } from '../engine/types.js';
-import { compressState } from './compress.js';
+import { compressState, TASK } from './compress.js';
 import { getPersona } from './personas.js';
 const view = { seat: 0, street: 'flop' as const, holeCards: parseCards('Ah Kh'), board: parseCards('Qh Jh 2c'), stacks: [{ seat: 0, stack: 9000, isAllIn: false, folded: false }, { seat: 1, stack: 5000, isAllIn: false, folded: false }, { seat: 2, stack: 0, isAllIn: true, folded: false }], pot: 1200, toCall: 400, bigBlind: 100, position: 'BTN' as const, history: [{ street: 'preflop' as const, seat: 1, action: { type: 'raise' as const, amount: 300 } }] };
 const legal = { canFold: true, canCheck: false, callAmount: 400, minRaiseTo: 800, maxRaiseTo: 9000 };
@@ -97,5 +97,22 @@ describe('compressState unopened pot', () => {
     expect(pre([{ street: 'preflop', seat: 1, action: { type: 'call' } }]).unopenedPot).toBe(false);
     expect(pre([{ street: 'preflop', seat: 2, action: { type: 'raise', amount: 300 } }]).unopenedPot).toBe(false);
     expect('unopenedPot' in compressState(view, legal, getPersona('tag')).table).toBe(false);
+  });
+});
+
+describe('compressState split format', () => {
+  it('gives preflop and postflop decisions different task and context, and leaves unified unchanged', () => {
+    const unified = compressState(view, legal, getPersona('tag'));
+    const post = compressState(view, legal, getPersona('tag'), 'split');
+    const pre = compressState({ ...view, street: 'preflop', board: [] }, legal, getPersona('tag'), 'split');
+    expect(unified.task).toBe(TASK);
+    expect(post.task).not.toBe(pre.task);
+    expect(post.importantContext.some((l) => l.includes('beatsPctOfHands'))).toBe(true);
+    expect(pre.importantContext.some((l) => l.includes('beatsPctOfHands'))).toBe(false);
+    expect(pre.importantContext.some((l) => l.includes('unopenedPot'))).toBe(true);
+    expect(post.importantContext.some((l) => l.includes('unopenedPot'))).toBe(false);
+    // Hand/table content is the same either way; only the wording differs.
+    expect(post.hand).toEqual(unified.hand);
+    expect(post.table).toEqual(unified.table);
   });
 });

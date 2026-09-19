@@ -120,6 +120,7 @@ describe('parseArgs', () => {
       baseSeed: 1,
       label: null,
       model: null,
+      promptStyle: 'unified',
     }));
 
   it('parses values', () =>
