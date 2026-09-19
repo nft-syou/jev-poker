@@ -1,3 +1,5 @@
+import type { HandCategory } from '../engine/evaluate.js';
+import type { PairKind } from '../engine/strength.js';
 import type { Agent } from '../agents/types.js';
 import { Rng } from '../engine/rng.js';
 import type { Action, LegalActions, PlayerView, Street } from '../engine/types.js';
@@ -24,6 +26,11 @@ export interface DecisionRecord {
   apiCall: boolean;
   error?: string;
   model?: string;
+  /** Diagnostics copied from the compressed state (absent on fail-open). */
+  equityVsRandomPct?: number;
+  madeHand?: HandCategory;
+  pairKind?: PairKind;
+  myBetWasRaised?: boolean;
 }
 
 export interface JevAgentOptions {
@@ -174,6 +181,11 @@ export class JevAgent implements Agent {
         latencyMs: performance.now() - t0,
         apiCall,
         model,
+        // Diagnostics: what the model was told about its own hand.
+        equityVsRandomPct: state.hand.equityVsRandomPct,
+        ...(state.hand.madeHand !== undefined ? { madeHand: state.hand.madeHand } : {}),
+        ...(state.hand.pairKind !== undefined ? { pairKind: state.hand.pairKind } : {}),
+        myBetWasRaised: state.table.myBetWasRaisedThisStreet,
       });
       return action;
     } catch (err) {

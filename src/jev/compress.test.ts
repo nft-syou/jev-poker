@@ -65,3 +65,25 @@ describe('compressState omissions', () => {
     expect(s.table).toMatchObject({ playersInHand: 0, playersToAct: 0, effectiveStackBB: 0 });
   });
 });
+
+describe('compressState street aggression', () => {
+  const mk = (history: typeof view.history) => compressState({ ...view, history }, legal, getPersona('tag')).table;
+  it('flags a raised bet on the current street only', () => {
+    expect(mk([])).toMatchObject({ raisesThisStreet: 0, myBetWasRaisedThisStreet: false });
+    const raisedOnFlop = [
+      { street: 'flop' as const, seat: 0, action: { type: 'bet' as const, amount: 200 } },
+      { street: 'flop' as const, seat: 1, action: { type: 'raise' as const, amount: 600 } },
+    ];
+    expect(mk(raisedOnFlop)).toMatchObject({ raisesThisStreet: 2, myBetWasRaisedThisStreet: true });
+    const raisedPreflopOnly = [
+      { street: 'preflop' as const, seat: 0, action: { type: 'raise' as const, amount: 300 } },
+      { street: 'preflop' as const, seat: 1, action: { type: 'raise' as const, amount: 900 } },
+    ];
+    expect(mk(raisedPreflopOnly)).toMatchObject({ raisesThisStreet: 0, myBetWasRaisedThisStreet: false });
+    const iRaisedLast = [
+      { street: 'flop' as const, seat: 1, action: { type: 'bet' as const, amount: 200 } },
+      { street: 'flop' as const, seat: 0, action: { type: 'raise' as const, amount: 600 } },
+    ];
+    expect(mk(iRaisedLast)).toMatchObject({ raisesThisStreet: 2, myBetWasRaisedThisStreet: false });
+  });
+});

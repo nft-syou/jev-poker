@@ -15,7 +15,8 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises without a strong made hand (two pair or better) or a strong draw getting the right price.',
   'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
-  'When your bet is raised, re-raise only for value with two pair or better; with a draw call only if the price is right, otherwise fold. Never bluff re-raise and then fold.',
+  'When myBetWasRaisedThisStreet is true, your bet has been raised: re-raise only for value with two pair or better; with a draw call only if the price is right, otherwise fold. Never bluff re-raise and then fold.',
+  'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so one pair or a weak draw should fold.',
   'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
   'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
@@ -55,6 +56,10 @@ export interface JevTable {
   /** Equity needed to break even on a call; equals the pot odds. 0 when nothing is due. */
   requiredEquityPct: number;
   effectiveStackBB: number;
+  /** Number of bets/raises made on the current street so far (by anyone). */
+  raisesThisStreet: number;
+  /** True when the acting player bet or raised on this street and an opponent raised after that. */
+  myBetWasRaisedThisStreet: boolean;
   stacksBB: JevSeat[];
 }
 
@@ -118,6 +123,13 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
   };
 
   const potOddsPct = view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0;
+  const aggressive = (t: Action['type']) => t === 'bet' || t === 'raise' || t === 'allin';
+  const thisStreet = view.history.filter((h) => h.street === view.street);
+  const raisesThisStreet = thisStreet.filter((h) => aggressive(h.action.type)).length;
+  const myLastAggression = thisStreet.map((h, i) => ({ h, i })).filter(({ h }) => h.seat === view.seat && aggressive(h.action.type)).pop();
+  const myBetWasRaisedThisStreet =
+    myLastAggression !== undefined &&
+    thisStreet.slice(myLastAggression.i + 1).some((h) => h.seat !== view.seat && aggressive(h.action.type));
   const table: JevTable = {
     position: view.position,
     playersInHand: live.length,
@@ -126,6 +138,8 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     toCallBB: bb(view.toCall, bigBlind),
     potOddsPct,
     requiredEquityPct: potOddsPct,
+    raisesThisStreet,
+    myBetWasRaisedThisStreet,
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,
