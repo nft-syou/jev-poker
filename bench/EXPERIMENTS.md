@@ -37,8 +37,10 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
 - The 6-max number is dominated by a handful of big pots; seed 182 alone is a -100 bb cooler
   (QQ/AK-class hand into AA). 100-seed runs that exclude it look much better than 200/400-seed
   runs that include it. The 1,000-seed run settles it: **+19.0 bb/100 with the 95% CI above zero**, so the
-  Jev CPU (`tag`) beats the rule-based bot in both formats. Five of the six -100 bb hands in that run
-  are preflop all-in confrontations with 85%-equity hands (QQ/AK class) — coolers, not mistakes.
+  Jev CPU (`tag`) beats the rule-based bot in both formats. Of its five -100 bb hands, three are
+  preflop all-in confrontations with 85%-equity hands (QQ/AK class) — coolers — and two are real
+  mistakes: calling a 5-bet shove with a 48%-equity hand, and stacking off with board trips and a
+  weak kicker. Those two are the next things to fix.
 
 ## Reproduce / 再現
 
