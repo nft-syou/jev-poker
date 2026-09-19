@@ -6,3 +6,4 @@ export * from './types.js';
 export * from './pots.js';
 export * from './hand.js';
 export * from './table.js';
+export * from './equity.js';

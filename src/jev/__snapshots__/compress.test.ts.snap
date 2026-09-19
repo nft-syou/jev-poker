@@ -8,6 +8,7 @@ exports[`compressState > matches snapshot shape 1`] = `
       "flush_draw",
       "gutshot",
     ],
+    "equityVsRandomPct": 57,
     "holeCards": "Ah Kh",
     "madeHand": "high_card",
     "preflopStrength": "premium",
@@ -26,6 +27,10 @@ exports[`compressState > matches snapshot shape 1`] = `
     "Amounts are in big blinds.",
     "You cannot see other players' hole cards.",
     "Stay in character as the persona.",
+    "equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.",
+    "Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises without a strong made hand (two pair or better) or a strong draw getting the right price.",
+    "Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.",
+    "Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.",
   ],
   "persona": {
     "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",
@@ -38,6 +43,7 @@ exports[`compressState > matches snapshot shape 1`] = `
     "position": "BTN",
     "potBB": 12,
     "potOddsPct": 25,
+    "requiredEquityPct": 25,
     "stacksBB": [
       {
         "folded": false,

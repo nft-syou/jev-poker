@@ -1,4 +1,5 @@
 import { cardToString, type Card } from '../engine/cards.js';
+import { estimateEquity } from '../engine/equity.js';
 import type { HandCategory } from '../engine/evaluate.js';
 import { draws, madeHand, preflopStrength, type Draw, type PreflopStrength } from '../engine/strength.js';
 import type { Action, LegalActions, PlayerView, Position, SeatId, Street } from '../engine/types.js';
@@ -11,6 +12,10 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
+  'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises without a strong made hand (two pair or better) or a strong draw getting the right price.',
+  'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
+  'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
 ];
 
 export interface JevHand {
@@ -23,6 +28,8 @@ export interface JevHand {
   /** Present only on the flop and the turn, where a draw can still come in. */
   draws?: Draw[];
   preflopStrength: PreflopStrength;
+  /** Monte Carlo showdown equity against random hands for every live opponent, in percent. */
+  equityVsRandomPct: number;
 }
 
 export interface JevSeat {
@@ -40,6 +47,8 @@ export interface JevTable {
   potBB: number;
   toCallBB: number;
   potOddsPct: number;
+  /** Equity needed to break even on a call; equals the pot odds. 0 when nothing is due. */
+  requiredEquityPct: number;
   effectiveStackBB: number;
   stacksBB: JevSeat[];
 }
@@ -97,15 +106,18 @@ export function compressState(view: PlayerView, _legal: LegalActions, persona: P
     ...(showMade ? { madeHand: madeHand(view.holeCards, view.board) } : {}),
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
     preflopStrength: preflopStrength(view.holeCards),
+    equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
   };
 
+  const potOddsPct = view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0;
   const table: JevTable = {
     position: view.position,
     playersInHand: live.length,
     playersToAct: live.filter((s) => s.seat !== view.seat && !s.isAllIn).length,
     potBB: bb(view.pot, bigBlind),
     toCallBB: bb(view.toCall, bigBlind),
-    potOddsPct: view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0,
+    potOddsPct,
+    requiredEquityPct: potOddsPct,
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,

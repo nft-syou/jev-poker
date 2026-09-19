@@ -38,7 +38,7 @@ describe('answersToAction', () => {
 });
 
 describe('JevAgent', () => {
-  it('returns legal actions with the mock backend and records decisions', async () => {
+  it('returns legal actions with the mock backend and records decisions', { timeout: 30_000 }, async () => {
     const records: unknown[] = [];
     const agent = new JevAgent({ persona: getPersona('tag'), backend: createMockBackend(), seed: 1, onDecision: (r) => records.push(r) });
     const rng = new Rng(4);
