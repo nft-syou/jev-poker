@@ -2,4 +2,5 @@ export { API_KEY_HEADER, createTypeSafeBackend, DEFAULT_MODEL, type JevBackend }
 export * from "./decide";
 export * from "./features";
 export * from "./personas";
+export * from "./prefetch";
 export * from "./questions";
