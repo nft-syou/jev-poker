@@ -116,6 +116,7 @@
     "rebuy": "{{name}} rebuys for {{amount}}",
     "handEnded": "Hand #{{number}} over",
     "jev": "Jev",
+    "prefetched": "⚡ prefetched",
     "probabilities": "Probabilities",
     "sizing": "Sizing",
     "bluff": "Bluff intent",

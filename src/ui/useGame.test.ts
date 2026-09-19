@@ -32,6 +32,18 @@ function authFailingBackend(): JevBackend {
   };
 }
 
+/** Mock that counts every request that reaches it. */
+function countingBackend(seen: { calls: number }): JevBackend {
+  const inner = createMockBackend();
+  return {
+    kind: "mock",
+    systemOne: (request, options) => {
+      seen.calls++;
+      return inner.systemOne(request, options);
+    },
+  };
+}
+
 /** Mock that answers after 40ms and rejects as soon as the caller aborts. */
 function slowBackend(seen: { aborts: number }): JevBackend {
   const inner = createMockBackend();
@@ -200,10 +212,95 @@ describe("useGame", () => {
     });
     const before = result.current.state.log.length;
     act(() => result.current.togglePause());
-    expect(seen.aborts).toBe(1);
+    // The live request plus whatever was being speculated on behind it.
+    expect(seen.aborts).toBeGreaterThanOrEqual(1);
     // Well past the backend's 40ms: the aborted decision must not reach `table.act`.
     await new Promise((r) => setTimeout(r, 200));
     expect(result.current.state.log.length).toBe(before);
+    unmount();
+  });
+
+  it("speculates ahead and serves CPU turns from the prefetch cache", async () => {
+    const seen = { calls: 0 };
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: countingBackend(seen),
+        onAuthFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(3), {
+      timeout: 10000,
+    });
+    const { started, hits, misses } = result.current.state.prefetch;
+    expect(started).toBeGreaterThan(0);
+    expect(hits).toBeGreaterThan(0);
+    // Nothing can be taken twice, and no entry survives its hand to be hit later.
+    expect(hits).toBeLessThanOrEqual(started);
+    const decided = result.current.state.log.filter((e) => e.decision !== undefined);
+    expect(hits + misses).toBeGreaterThanOrEqual(decided.length);
+    expect(seen.calls).toBeGreaterThan(decided.length);
+    expect(result.current.state.log.some((e) => e.decision?.prefetched === true)).toBe(true);
+    expect(result.current.state.log.some((e) => e.decision?.prefetched === false)).toBe(true);
+    unmount();
+  });
+
+  it("drops the speculation when the table pauses", async () => {
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        seed: 9,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.prefetch.started).toBeGreaterThan(0), {
+      timeout: 10000,
+    });
+    act(() => result.current.togglePause());
+    await new Promise((r) => setTimeout(r, 80));
+    const frozen = result.current.state.prefetch;
+    await new Promise((r) => setTimeout(r, 120));
+    expect(result.current.state.prefetch).toEqual(frozen);
+    expect(frozen.hits).toBeLessThanOrEqual(frozen.started);
+    unmount();
+  });
+
+  it("has the CPU's answer ready by the time the human has acted", async () => {
+    const settings: Settings = {
+      ...cpuOnly,
+      seats: [
+        { name: "Me", kind: "human", personaId: "tag" },
+        { name: "B", kind: "cpu", personaId: "lag" },
+        { name: "C", kind: "cpu", personaId: "rock" },
+      ],
+    };
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings,
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        // Seed 7 puts the button on the human, who therefore opens the first hand.
+        seed: 7,
+      }),
+    );
+    await waitFor(() => expect(result.current.legalForHuman).not.toBeNull(), { timeout: 5000 });
+    expect(result.current.state.snapshot?.actingSeat).toBe(0);
+    expect(result.current.legalForHuman?.callAmount).toBe(DEFAULT_SETTINGS.bigBlind);
+    // The human is still thinking, so their answers are already being prefetched.
+    await waitFor(() => expect(result.current.state.prefetch.started).toBeGreaterThan(0), {
+      timeout: 5000,
+    });
+    const before = result.current.state.prefetch.hits;
+
+    act(() => result.current.humanAct({ type: "call" }));
+    await waitFor(() => expect(result.current.state.prefetch.hits).toBeGreaterThan(before), {
+      timeout: 5000,
+    });
     unmount();
   });
 

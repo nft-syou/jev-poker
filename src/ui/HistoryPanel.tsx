@@ -1,10 +1,9 @@
 import { useTranslation } from "react-i18next";
 import type { Card } from "../engine/cards";
 import type { GameEvent, SeatId } from "../engine/types";
-import type { DecisionRecord } from "../jev/decide";
 import type { ActionLabel } from "../jev/questions";
 import { cardText } from "./format";
-import type { LogEntry } from "./useGame";
+import type { DecisionInfo, LogEntry } from "./useGame";
 
 interface Props {
   log: readonly LogEntry[];
@@ -82,13 +81,14 @@ export function HistoryPanel({ log, names }: Props) {
   );
 }
 
-function Decision({ record }: { record: DecisionRecord }) {
+function Decision({ record }: { record: DecisionInfo }) {
   const { t } = useTranslation();
   return (
     <details className="decision">
       <summary>
         {t("history.jev")}
         {record.fallback && ` — ${t("history.fallback")}`}
+        {record.prefetched && <span className="prefetched">{t("history.prefetched")}</span>}
       </summary>
       {record.jev !== null && (
         <div className="probabilities">

@@ -116,6 +116,7 @@
     "rebuy": "{{name}} が {{amount}} でリバイ",
     "handEnded": "ハンド #{{number}} 終了",
     "jev": "Jev",
+    "prefetched": "⚡ 先読み済み",
     "probabilities": "確率",
     "sizing": "サイズ",
     "bluff": "ブラフ意図",

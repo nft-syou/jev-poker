@@ -295,6 +295,15 @@ a {
   cursor: pointer;
   color: #7fd1a0;
 }
+.decision summary .prefetched {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #23402f;
+  color: #ffd54f;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
 .prob-row {
   display: grid;
   grid-template-columns: 110px 1fr 40px;

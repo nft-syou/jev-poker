@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { fixedBlinds } from "../engine/blinds";
+import type { Hand } from "../engine/hand";
 import { createRng, type Rng, randomSeed } from "../engine/rng";
 import { Table } from "../engine/table";
 import type {
@@ -15,6 +16,7 @@ import type { JevBackend } from "../jev/backend";
 import { type DecisionRecord, decideAction } from "../jev/decide";
 import { type ActionTakenEvent, buildFeatures } from "../jev/features";
 import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
+import { DecisionCache, decisionKey, speculationTargets } from "../jev/prefetch";
 import {
   addStats,
   EMPTY_STATS,
@@ -44,10 +46,20 @@ export const BETWEEN_HANDS_MS: Record<Speed, number> = {
   max: 0,
 };
 
+/** A decision as the UI reports it: Jev's record plus how it reached the table. */
+export type DecisionInfo = DecisionRecord & { prefetched: boolean };
+
 export interface LogEntry {
   id: number;
   event: GameEvent;
-  decision?: DecisionRecord;
+  decision?: DecisionInfo;
+}
+
+/** How the speculative decision cache is doing this sitting. */
+export interface PrefetchStats {
+  started: number;
+  hits: number;
+  misses: number;
 }
 
 export interface GameSeat {
@@ -68,6 +80,7 @@ export interface GameState {
   error: string | null;
   /** Stats for this sitting, by seat. Derived from events, never from the trimmed log. */
   stats: Record<SeatId, PlayerStats>;
+  prefetch: PrefetchStats;
 }
 
 export interface GameController {
@@ -92,12 +105,13 @@ export interface UseGameOptions {
 }
 
 type Msg =
-  | { type: "event"; event: GameEvent; decision?: DecisionRecord }
+  | { type: "event"; event: GameEvent; decision?: DecisionInfo }
   | { type: "sync"; snapshot: HandSnapshot | null; seats: GameSeat[]; handsPlayed: number }
   | { type: "thinking"; seat: SeatId | null }
   | { type: "paused"; paused: boolean }
   | { type: "gameOver"; error: string | null }
   | { type: "stats"; deltas: ReadonlyMap<SeatId, PlayerStats> }
+  | { type: "prefetch"; stats: PrefetchStats }
   | { type: "reset" };
 
 const MAX_LOG = 400;
@@ -131,6 +145,8 @@ function reducer(state: GameState, msg: Msg): GameState {
       }
       return { ...state, stats };
     }
+    case "prefetch":
+      return { ...state, prefetch: msg.stats };
     case "reset":
       return { ...state, gameOver: false, error: null };
   }
@@ -178,6 +194,7 @@ export function useGame(options: UseGameOptions): GameController {
     gameOver: false,
     error: null,
     stats: {},
+    prefetch: { started: 0, hits: 0, misses: 0 },
   });
   const [cumulative, setCumulative] = useState<Record<StatsKey, PlayerStats>>(() =>
     loadCumulativeStats(),
@@ -193,7 +210,9 @@ export function useGame(options: UseGameOptions): GameController {
   /** Set when the loop gave up because there was no backend to ask. */
   const noBackendRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
-  const pendingRef = useRef<DecisionRecord | null>(null);
+  const pendingRef = useRef<DecisionInfo | null>(null);
+  const cacheRef = useRef<DecisionCache | null>(null);
+  if (cacheRef.current === null) cacheRef.current = new DecisionCache({});
   const trackerRef = useRef<HandStatsTracker | null>(null);
   if (trackerRef.current === null) trackerRef.current = new HandStatsTracker();
   const speedRef = useRef<Speed>(settings.speed);
@@ -243,11 +262,61 @@ export function useGame(options: UseGameOptions): GameController {
     setCumulative({});
   }, []);
 
+  const reportPrefetch = useCallback(() => {
+    const cache = cacheRef.current;
+    if (cache === null) return;
+    const { started, hits, misses } = cache.stats;
+    dispatch({ type: "prefetch", stats: { started, hits, misses } });
+  }, []);
+
+  /**
+   * Asks Jev, in the background, about the decisions that may follow `seat`'s turn. It runs
+   * while that seat is still being decided (or while a human is still thinking), so the answer
+   * is usually already in hand when the turn arrives.
+   */
+  const speculate = useCallback(
+    (hand: Hand, seat: SeatId) => {
+      const table = tableRef.current;
+      const cache = cacheRef.current;
+      const rng = rngRef.current;
+      if (table === null || cache === null || rng === null || backend === null) return;
+      const isCpu = (id: SeatId) => table.seats.find((s) => s.id === id)?.kind === "cpu";
+      for (const target of speculationTargets(hand, seat, actionsRef.current, isCpu)) {
+        const tableSeat = table.seats.find((s) => s.id === target.seat);
+        if (tableSeat === undefined) continue;
+        const persona =
+          personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
+        const features = buildFeatures({
+          snapshot: target.snapshot,
+          seat: target.seat,
+          actions: target.actions,
+          persona: personaPrompt(persona),
+        });
+        cache.prefetch(decisionKey(features, target.legal), (signal) =>
+          decideAction({
+            backend,
+            seat: target.seat,
+            features,
+            legal: target.legal,
+            snapshot: target.snapshot,
+            variance: persona.variance,
+            rng,
+            model: settings.model,
+            signal,
+          }),
+        );
+      }
+      reportPrefetch();
+    },
+    [backend, personas, reportPrefetch, settings.model],
+  );
+
   const loop = useCallback(
     async (run: Run) => {
       const table = tableRef.current;
       const rng = rngRef.current;
-      if (table === null || rng === null) return;
+      const cache = cacheRef.current;
+      if (table === null || rng === null || cache === null) return;
       // The whole body is guarded: a throw from the engine or the feature builder must surface
       // as `gameOver` instead of an unhandled rejection from `void loop(run)`.
       try {
@@ -266,6 +335,8 @@ export function useGame(options: UseGameOptions): GameController {
           if (seat === null) return;
           const tableSeat = table.seats.find((s) => s.id === seat);
           if (tableSeat === undefined || tableSeat.kind === "human") {
+            // A human takes their time; spend it on the CPU answers to what they might do.
+            if (tableSeat !== undefined) speculate(hand, seat);
             sync();
             return; // resumed by humanAct
           }
@@ -280,28 +351,39 @@ export function useGame(options: UseGameOptions): GameController {
           const legal = hand.legalActions(seat);
           const persona =
             personas.find((p) => p.id === tableSeat.personaId) ?? (PRESET_PERSONAS[1] as Persona);
-          const record: DecisionRecord = await decideAction({
-            backend,
-            seat,
-            features: buildFeatures({
-              snapshot,
-              seat,
-              actions: actionsRef.current,
-              persona: personaPrompt(persona),
-            }),
-            legal,
+          const features = buildFeatures({
             snapshot,
-            variance: persona.variance,
-            rng,
-            model: settings.model,
-            signal: run.abort.signal,
+            seat,
+            actions: actionsRef.current,
+            persona: personaPrompt(persona),
           });
+          const speculated = cache.take(decisionKey(features, legal));
+          // Branch out before blocking: the next decisions are asked for while this one lands.
+          speculate(hand, seat);
+          const record: DecisionInfo =
+            speculated === undefined
+              ? {
+                  ...(await decideAction({
+                    backend,
+                    seat,
+                    features,
+                    legal,
+                    snapshot,
+                    variance: persona.variance,
+                    rng,
+                    model: settings.model,
+                    signal: run.abort.signal,
+                  })),
+                  prefetched: false,
+                }
+              : { ...(await speculated), prefetched: true };
           // A stale or paused run may still receive the (aborted) record; never act on it.
           if (!run.alive || pausedRef.current) return;
           if (record.errorKind === "auth") {
             pausedRef.current = true;
             authPausedRef.current = true;
             stopRun(run);
+            cache.clear();
             dispatch({ type: "paused", paused: true });
             dispatch({ type: "thinking", seat: null });
             onAuthFailed();
@@ -311,6 +393,7 @@ export function useGame(options: UseGameOptions): GameController {
           trackerRef.current?.onDecision(record);
           table.act(seat, record.action);
           dispatch({ type: "thinking", seat: null });
+          reportPrefetch();
           sync();
           const delay = ACTION_DELAY_MS[speedRef.current];
           if (delay > 0) await sleep(delay);
@@ -325,7 +408,7 @@ export function useGame(options: UseGameOptions): GameController {
         return;
       }
     },
-    [backend, onAuthFailed, personas, settings.model, sync],
+    [backend, onAuthFailed, personas, reportPrefetch, settings.model, speculate, sync],
   );
 
   const stopCurrentRun = useCallback(() => {
@@ -333,12 +416,20 @@ export function useGame(options: UseGameOptions): GameController {
     if (run !== null) stopRun(run);
   }, []);
 
-  const startLoop = useCallback(() => {
-    stopCurrentRun();
-    const run: Run = { alive: true, abort: new AbortController() };
-    runRef.current = run;
-    void loop(run);
-  }, [loop, stopCurrentRun]);
+  /**
+   * Starts the game loop. The speculation is dropped with the old run unless the caller kept
+   * playing the same turn — `humanAct` restarts the loop precisely to use what it prefetched.
+   */
+  const startLoop = useCallback(
+    (options: { keepSpeculation?: boolean } = {}) => {
+      stopCurrentRun();
+      if (options.keepSpeculation !== true) cacheRef.current?.clear();
+      const run: Run = { alive: true, abort: new AbortController() };
+      runRef.current = run;
+      void loop(run);
+    },
+    [loop, stopCurrentRun],
+  );
 
   // Create the table once per mount. Settings changes require leaving the table.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only effect
@@ -346,11 +437,15 @@ export function useGame(options: UseGameOptions): GameController {
     const table = new Table(toConfig(settings, options.seed ?? randomSeed()));
     tableRef.current = table;
     const off = table.on((event) => {
-      if (event.type === "HandStarted") actionsRef.current = [];
+      if (event.type === "HandStarted") {
+        actionsRef.current = [];
+        // New cards: nothing speculated about the last hand can apply to this one.
+        cacheRef.current?.clear();
+      }
       if (event.type === "ActionTaken") actionsRef.current = [...actionsRef.current, event];
       trackerRef.current?.onEvent(event);
       if (event.type === "HandEnded") finishStats();
-      let decision: DecisionRecord | undefined;
+      let decision: DecisionInfo | undefined;
       const pending = pendingRef.current;
       if (pending !== null && event.type === "ActionTaken" && event.seat === pending.seat) {
         decision = pending;
@@ -364,6 +459,7 @@ export function useGame(options: UseGameOptions): GameController {
     startLoop();
     return () => {
       stopCurrentRun();
+      cacheRef.current?.clear();
       off();
       tableRef.current = null;
     };
@@ -406,7 +502,8 @@ export function useGame(options: UseGameOptions): GameController {
         return; // illegal action from the UI; ignore and keep waiting
       }
       sync();
-      startLoop();
+      // The CPU answers to this very action were prefetched while the human was thinking.
+      startLoop({ keepSpeculation: true });
     },
     [startLoop, sync],
   );
@@ -415,9 +512,12 @@ export function useGame(options: UseGameOptions): GameController {
     const next = !pausedRef.current;
     pausedRef.current = next;
     dispatch({ type: "paused", paused: next });
-    if (next) stopCurrentRun();
-    else startLoop();
-  }, [startLoop, stopCurrentRun]);
+    if (next) {
+      stopCurrentRun();
+      cacheRef.current?.clear();
+      reportPrefetch();
+    } else startLoop();
+  }, [reportPrefetch, startLoop, stopCurrentRun]);
 
   const humanSeats = useMemo(
     () => settings.seats.flatMap((s, id) => (s.kind === "human" ? [id] : [])),
