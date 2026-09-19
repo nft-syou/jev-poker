@@ -295,6 +295,65 @@ a {
   font-weight: 700;
   color: #ffd54f;
 }
+.stats {
+  background: #10201a;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.85rem;
+  max-height: 80vh;
+  overflow: auto;
+}
+.stats h3 {
+  margin: 0 0 8px;
+}
+.stats h4 {
+  margin: 12px 0 6px;
+  font-size: 0.85rem;
+  color: #9fb3a6;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.stats table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+.stats table th,
+.stats table td {
+  padding: 4px 6px;
+  text-align: right;
+  font-weight: 400;
+}
+.stats table th {
+  color: #9fb3a6;
+  font-size: 0.75rem;
+}
+.stats .name {
+  text-align: left;
+  font-weight: 600;
+}
+.stats tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+.stats .pos {
+  color: #7fd1a0;
+}
+.stats .neg {
+  color: #ff8a80;
+}
+.stack-bar {
+  display: block;
+  height: 3px;
+  margin-top: 2px;
+  margin-left: auto;
+  background: #2e8b57;
+  border-radius: 2px;
+}
+.stats-views {
+  margin-top: 12px;
+}
 .persona-list {
   list-style: none;
   padding: 0;

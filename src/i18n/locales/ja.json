@@ -61,6 +61,28 @@
     "noBackend": "API キーが無いため Jev に問い合わせできません。",
     "jevError": "Jev が判断できませんでした ({{error}})。CPU は安全な手を選びました。"
   },
+  "stats": {
+    "title": "統計",
+    "standings": "順位表",
+    "session": "今回",
+    "cumulative": "通算",
+    "reset": "通算成績をリセット",
+    "rank": "#",
+    "player": "プレイヤー",
+    "stack": "スタック",
+    "net": "収支",
+    "rebuys": "リバイ",
+    "hands": "ハンド",
+    "winRate": "勝率",
+    "vpip": "VPIP",
+    "pfr": "PFR",
+    "showdownsWon": "SD 勝",
+    "allIns": "オールイン",
+    "jevLatency": "Jev ms",
+    "fallbacks": "フォールバック",
+    "bluff": "ブラフ",
+    "none": "–"
+  },
   "actions": {
     "fold": "フォールド",
     "check": "チェック",

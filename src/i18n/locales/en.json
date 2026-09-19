@@ -61,6 +61,28 @@
     "noBackend": "No API key: the table cannot ask Jev.",
     "jevError": "Jev could not decide ({{error}}); the CPU played safe."
   },
+  "stats": {
+    "title": "Statistics",
+    "standings": "Standings",
+    "session": "This session",
+    "cumulative": "All time",
+    "reset": "Reset all-time stats",
+    "rank": "#",
+    "player": "Player",
+    "stack": "Stack",
+    "net": "Net",
+    "rebuys": "Rebuys",
+    "hands": "Hands",
+    "winRate": "Win %",
+    "vpip": "VPIP %",
+    "pfr": "PFR %",
+    "showdownsWon": "SD won",
+    "allIns": "All-ins",
+    "jevLatency": "Jev ms",
+    "fallbacks": "Fallbacks",
+    "bluff": "Bluff %",
+    "none": "–"
+  },
   "actions": {
     "fold": "Fold",
     "check": "Check",
