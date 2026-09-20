@@ -2,10 +2,6 @@
 
 exports[`compressState > matches snapshot shape 1`] = `
 {
-  "actor": {
-    "position": "BTN",
-    "seat": 0,
-  },
   "hand": {
     "beatsPctOfHands": 60,
     "board": "Qh Jh 2c",
@@ -38,7 +34,6 @@ exports[`compressState > matches snapshot shape 1`] = `
     "Amounts are in big blinds.",
     "You cannot see other players' hole cards.",
     "Stay in character as the persona.",
-    "actor.seat is you: entries with isMe true in stacksBB and history are your own stack and your own earlier actions.",
     "equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.",
     "beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).",
     "Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.",

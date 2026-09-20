@@ -12,7 +12,7 @@ describe('compressState', () => {
     expect(s.hand).toMatchObject({ street: 'flop', holeCards: 'Ah Kh', board: 'Qh Jh 2c', madeHand: 'high_card', draws: ['flush_draw', 'gutshot'], preflopStrength: 'premium' });
     expect(s.table).toMatchObject({ position: 'BTN', playersInHand: 3, opponentsNotAllIn: 1, potBB: 12, toCallBB: 4, potOddsPct: 25, effectiveStackBB: 50 });
     expect(s.history).toEqual([{ street: 'preflop', seat: 1, isMe: false, action: 'raise', amountBB: 3 }]);
-    expect(s.actor).toEqual({ seat: 0, position: 'BTN' });
+    expect('actor' in s).toBe(false); // an explicit actor object measurably hurt play; isMe flags carry identity
     expect(s.table.stacksBB.map((x) => x.isMe)).toEqual([true, false, false]);
     expect(s).toMatchSnapshot();
   });

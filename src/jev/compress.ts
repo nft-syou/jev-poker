@@ -20,7 +20,6 @@ export const COMMON_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'actor.seat is you: entries with isMe true in stacksBB and history are your own stack and your own earlier actions.',
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'Before calling, compare your equity with requiredEquityPct (the pot odds).',
   'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
@@ -54,7 +53,6 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'actor.seat is you: entries with isMe true in stacksBB and history are your own stack and your own earlier actions.',
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
   'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
@@ -92,7 +90,11 @@ export interface JevHand {
 
 export interface JevSeat {
   seat: SeatId;
-  /** True for the acting player's own row. */
+  /**
+   * True for the acting player's own row: the only marker of who "you" are among the seat numbers.
+   * A separate `actor: { seat, position }` object was tried and measurably hurt heads-up play
+   * (about -5 bb/100, see bench/EXPERIMENTS.md), so identity is carried by these flags alone.
+   */
   isMe: boolean;
   stackBB: number;
   isAllIn: boolean;
@@ -135,8 +137,6 @@ export interface JevState {
   task: string;
   persona: { name: string; description: string };
   importantContext: string[];
-  /** Who is deciding: without this the seat numbers in `stacksBB` and `history` cannot be tied to the player. */
-  actor: { seat: SeatId; position: Position };
   hand: JevHand;
   table: JevTable;
   history: JevHistoryEntry[];
@@ -244,7 +244,6 @@ export function compressState(
     task,
     persona: { name: persona.name.en, description: persona.description.en },
     importantContext,
-    actor: { seat: view.seat, position: view.position },
     hand,
     table,
     history,
