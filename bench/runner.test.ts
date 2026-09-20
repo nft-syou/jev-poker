@@ -176,3 +176,15 @@ describe('runMatch', () => {
     expect(seen.every((s) => s[1] === 6)).toBe(true);
   });
 });
+
+describe('playHand action log', () => {
+  it('records every seat\'s actions in order with amounts in bb', async () => {
+    const r = await playHand({ seedIndex: 4, rotation: 0, opponent: 'rules', format: '6max', baseSeed: 3, persona, backend: createMockBackend() });
+    expect(r.actions?.length).toBeGreaterThan(0);
+    expect(r.actions?.every((a) => a.seat >= 0 && a.seat < 6)).toBe(true);
+    for (const a of r.actions ?? []) {
+      if (a.type === 'bet' || a.type === 'raise') expect(a.amountBB).toBeGreaterThan(0);
+      else expect('amountBB' in a).toBe(false);
+    }
+  });
+});

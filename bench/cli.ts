@@ -45,7 +45,8 @@ async function main(): Promise<void> {
     fail('TYPESAFE_API_KEY is not set');
   }
 
-  const persona = getPersona(opts.persona);
+  const basePersona = getPersona(opts.persona);
+  const persona = opts.variance === null ? basePersona : { ...basePersona, variance: opts.variance };
   const commit = gitCommit();
 
   let sigints = 0;
@@ -109,6 +110,7 @@ async function main(): Promise<void> {
         sdkVersion: VERSION,
         gitCommit: commit,
         promptStyle: opts.promptStyle,
+        ...(opts.variance !== null ? { variance: opts.variance } : {}),
       },
       summary: summarize(hands, matchup.format),
       hands,

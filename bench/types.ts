@@ -1,5 +1,5 @@
 import type { DecisionRecord } from '../src/jev/agent.js';
-import type { SeatId } from '../src/engine/types.js';
+import type { Action, SeatId, Street } from '../src/engine/types.js';
 
 export type Opponent = 'random' | 'caller' | 'rules';
 export type Format = 'hu' | '6max';
@@ -20,6 +20,16 @@ export interface HandRecord {
   oppVpip: number;
   oppPfr: number;
   decisions: DecisionRecord[];
+  /** Every seat's actions in order (amounts in bb). Absent in older result files. */
+  actions?: HandAction[];
+}
+
+export interface HandAction {
+  street: Street;
+  seat: SeatId;
+  type: Action['type'];
+  /** Raise-to / bet total in bb, for bets and raises. */
+  amountBB?: number;
 }
 
 export interface JevSummary {
@@ -62,6 +72,8 @@ export interface BenchConfig {
   gitCommit: string | null;
   /** Absent in results written before the split-format experiment (= `unified`). */
   promptStyle?: 'unified' | 'split';
+  /** Persona variance override (`--variance`); absent = the persona's own value. */
+  variance?: number;
 }
 
 export interface BenchResult {

@@ -123,6 +123,7 @@ describe('parseArgs', () => {
       label: null,
       model: null,
       promptStyle: 'unified',
+      variance: null,
     }));
 
   it('parses values', () =>
@@ -172,5 +173,14 @@ describe('report identity', () => {
   it('prints n/a when no interval can be estimated', () => {
     const one = mk({ summary: { ...mk({}).summary, jev: { ...mk({}).summary.jev, n: 1, ci95: null } } });
     expect(resultsToMarkdown([one])).toContain('| n/a |');
+  });
+});
+
+describe('parseArgs --variance', () => {
+  it('accepts 0..1 and rejects anything else', () => {
+    expect(parseArgs(['--variance', '0']).variance).toBe(0);
+    expect(parseArgs(['--variance=0.5']).variance).toBe(0.5);
+    expect(() => parseArgs(['--variance', '2'])).toThrow();
+    expect(() => parseArgs(['--variance', 'x'])).toThrow();
   });
 });

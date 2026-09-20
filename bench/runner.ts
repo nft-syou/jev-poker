@@ -8,7 +8,7 @@ import type { JevBackend } from '../src/jev/backend.js';
 import type { Persona } from '../src/jev/personas.js';
 import type { PromptStyle } from '../src/jev/questions.js';
 import { rotations, seatCount } from './matchups.js';
-import type { Format, HandRecord, Opponent } from './types.js';
+import type { Format, HandAction, HandRecord, Opponent } from './types.js';
 
 const SMALL_BLIND = 50;
 const BIG_BLIND = 100;
@@ -98,6 +98,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const vpip = new Set<SeatId>();
   const pfr = new Set<SeatId>();
   const folded = new Set<SeatId>();
+  const actions: HandAction[] = [];
   const unsubscribe = table.on((e: TableEvent) => {
     args.onEvent?.(e);
     if (e.type === 'ActionTaken' && e.street === 'preflop') {
@@ -107,6 +108,15 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       if (t === 'bet' || t === 'raise' || t === 'allin') pfr.add(e.seat);
     }
     if (e.type === 'ActionTaken' && e.action.type === 'fold') folded.add(e.seat);
+    if (e.type === 'ActionTaken') {
+      const a = e.action;
+      actions.push({
+        street: e.street,
+        seat: e.seat,
+        type: a.type,
+        ...(a.type === 'bet' || a.type === 'raise' ? { amountBB: a.amount / BIG_BLIND } : {}),
+      });
+    }
   });
 
   try {
@@ -145,6 +155,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       oppVpip: fraction(vpip),
       oppPfr: fraction(pfr),
       decisions,
+      actions,
     };
   } finally {
     unsubscribe();
