@@ -28,6 +28,7 @@ export interface DecisionRecord {
   model?: string;
   /** Diagnostics copied from the compressed state (absent on fail-open). */
   equityVsRandomPct?: number;
+  equityVsRangePct?: number;
   beatsPctOfHands?: number;
   madeHand?: HandCategory;
   pairKind?: PairKind;
@@ -217,6 +218,7 @@ export class JevAgent implements Agent {
         model,
         // Diagnostics: what the model was told about its own hand.
         equityVsRandomPct: state.hand.equityVsRandomPct,
+        equityVsRangePct: state.hand.equityVsRangePct,
         ...(state.hand.beatsPctOfHands !== undefined ? { beatsPctOfHands: state.hand.beatsPctOfHands } : {}),
         ...(state.hand.madeHand !== undefined ? { madeHand: state.hand.madeHand } : {}),
         ...(state.hand.pairKind !== undefined ? { pairKind: state.hand.pairKind } : {}),

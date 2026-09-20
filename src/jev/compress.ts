@@ -1,6 +1,7 @@
 import { cardToString, type Card } from '../engine/cards.js';
 import { boardTexture, estimateEquity, handStrengthPct, type BoardTexture } from '../engine/equity.js';
 import type { HandCategory } from '../engine/evaluate.js';
+import { estimateEquityVsRanges, inferRange } from '../engine/ranges.js';
 import { draws, madeHand, pairKind, preflopStrength, type Draw, type PairKind, type PreflopStrength } from '../engine/strength.js';
 import type { Action, LegalActions, PlayerView, Position, SeatId, Street } from '../engine/types.js';
 import type { Persona } from './personas.js';
@@ -20,8 +21,8 @@ export const COMMON_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
-  'Before calling, compare your equity with requiredEquityPct (the pot odds).',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.',
+  'Before calling, compare equityVsRangePct with requiredEquityPct (the pot odds).',
   'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
   'stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.',
 ];
@@ -53,9 +54,9 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.',
   'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
-  'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
+  'Before calling, compare equityVsRangePct with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
   'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
   'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.',
   'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
@@ -82,6 +83,12 @@ export interface JevHand {
   preflopStrength: PreflopStrength;
   /** Monte Carlo showdown equity against random hands for every live opponent, in percent. */
   equityVsRandomPct: number;
+  /**
+   * The same estimate against the hands each live opponent plausibly holds given what they did
+   * this hand (an open raise is about the top fifth of hands, a re-raise the top few percent, a
+   * postflop bet the better half of that range). Equal to `equityVsRandomPct` when nobody has acted.
+   */
+  equityVsRangePct: number;
   /** From the flop on: percentage of all possible opponent holdings the current hand beats right now. */
   beatsPctOfHands?: number;
   /** From the flop on: whether the board makes full houses, flushes or straights possible. */
@@ -197,6 +204,11 @@ export function compressState(
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
     preflopStrength: preflopStrength(view.holeCards),
     equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
+    equityVsRangePct: estimateEquityVsRanges(
+      view.holeCards,
+      view.board,
+      live.filter((o) => o.seat !== view.seat).map((o) => inferRange(o.seat, view.history, view.board, view.holeCards)),
+    ),
     ...(showMade ? { beatsPctOfHands: handStrengthPct(view.holeCards, view.board)! } : {}),
     ...(showMade ? { board_texture: boardTexture(view.board)! } : {}),
   };
