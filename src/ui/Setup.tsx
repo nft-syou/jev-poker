@@ -4,6 +4,7 @@ import type { Language } from "../i18n";
 import type { Persona } from "../jev/personas";
 import {
   DEFAULT_SEATS,
+  PREFETCH_MAX_IN_FLIGHT_OPTIONS,
   type SeatSetting,
   type Settings,
   SPEEDS,
@@ -98,6 +99,33 @@ export function Setup({
             ))}
           </select>
         </label>
+        <label className="field">
+          <span>
+            <input
+              type="checkbox"
+              checked={settings.prefetch}
+              onChange={(e) => onChange({ ...settings, prefetch: e.target.checked })}
+            />{" "}
+            {t("setup.prefetch")}
+          </span>
+        </label>
+        {settings.prefetch && (
+          <label className="field">
+            <span>{t("setup.prefetchMaxInFlight")}</span>
+            <select
+              value={settings.prefetchMaxInFlight}
+              onChange={(e) =>
+                onChange({ ...settings, prefetchMaxInFlight: Number(e.target.value) })
+              }
+            >
+              {PREFETCH_MAX_IN_FLIGHT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <table className="seats">

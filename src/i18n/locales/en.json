@@ -21,6 +21,13 @@
     "invalid": "TypeSafe rejected the key. Check it and try again.",
     "getOne": "Get a key at typesafe.ai"
   },
+  "billing": {
+    "title": "TypeSafe credit exhausted",
+    "description": "TypeSafe returned 402 Payment Required, so the CPUs cannot ask Jev. Top up your TypeSafe account, then press Resume.",
+    "topUp": "Top up at typesafe.ai",
+    "resume": "Resume",
+    "close": "Close"
+  },
   "setup": {
     "title": "New table",
     "seats": "Seats",
@@ -37,6 +44,8 @@
     "speed_normal": "Normal",
     "speed_fast": "Fast",
     "speed_max": "Max",
+    "prefetch": "Speculative prefetch (faster, more API calls)",
+    "prefetchMaxInFlight": "Max parallel Jev requests",
     "start": "Start playing",
     "spectate": "Watch the CPUs play",
     "needKey": "Add an API key first.",
@@ -59,7 +68,10 @@
     "spectating": "Spectator mode",
     "gameOver": "Game over",
     "noBackend": "No API key: the table cannot ask Jev.",
-    "jevError": "Jev could not decide ({{error}}); the CPU played safe."
+    "jevError": "Jev could not decide ({{error}}); the CPU played safe.",
+    "prefetchOn": "⚡ Prefetch on",
+    "prefetchOff": "Prefetch off",
+    "pausedBilling": "Paused: TypeSafe credit exhausted"
   },
   "tabs": {
     "table": "Table",

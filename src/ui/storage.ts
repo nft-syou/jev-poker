@@ -9,6 +9,9 @@ export const STATS_STORAGE_KEY = "jev-poker.stats";
 export type Speed = "slow" | "normal" | "fast" | "max";
 export const SPEEDS: readonly Speed[] = ["slow", "normal", "fast", "max"];
 
+/** Allowed caps for `Settings.prefetchMaxInFlight`. */
+export const PREFETCH_MAX_IN_FLIGHT_OPTIONS: readonly number[] = [2, 4, 6, 8];
+
 export interface SeatSetting {
   name: string;
   kind: SeatKind;
@@ -22,6 +25,10 @@ export interface Settings {
   bigBlind: number;
   speed: Speed;
   model: string;
+  /** Whether CPU turns are speculatively prefetched ahead of the acting seat's turn. */
+  prefetch: boolean;
+  /** Cap on concurrent speculative Jev requests; one of `PREFETCH_MAX_IN_FLIGHT_OPTIONS`. */
+  prefetchMaxInFlight: number;
 }
 
 export const DEFAULT_SEATS: readonly SeatSetting[] = [
@@ -40,6 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   bigBlind: 2,
   speed: "normal",
   model: "jev-latest",
+  prefetch: true,
+  prefetchMaxInFlight: 6,
 };
 
 function read(key: string): string | null {
@@ -94,6 +103,10 @@ export function loadSettings(): Settings {
         typeof parsed.model === "string" && parsed.model.length > 0
           ? parsed.model
           : DEFAULT_SETTINGS.model,
+      prefetch: typeof parsed.prefetch === "boolean" ? parsed.prefetch : DEFAULT_SETTINGS.prefetch,
+      prefetchMaxInFlight: isPrefetchMaxInFlight(parsed.prefetchMaxInFlight)
+        ? parsed.prefetchMaxInFlight
+        : DEFAULT_SETTINGS.prefetchMaxInFlight,
     };
   } catch {
     return { ...DEFAULT_SETTINGS, seats: [...DEFAULT_SEATS] };
@@ -161,6 +174,10 @@ function numberOr(value: unknown, fallback: number): number {
 
 function isSpeed(value: unknown): value is Speed {
   return typeof value === "string" && (SPEEDS as readonly string[]).includes(value);
+}
+
+function isPrefetchMaxInFlight(value: unknown): value is number {
+  return typeof value === "number" && PREFETCH_MAX_IN_FLIGHT_OPTIONS.includes(value);
 }
 
 function isSeatArray(value: unknown): value is SeatSetting[] {

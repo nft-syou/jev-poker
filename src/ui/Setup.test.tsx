@@ -55,6 +55,41 @@ describe("Setup", () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
+  it("toggles prefetch and hides the max-in-flight select when it is off", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <Setup
+        settings={DEFAULT_SETTINGS}
+        personas={[...PRESET_PERSONAS]}
+        language="en"
+        hasApiKey={true}
+        onChange={onChange}
+        onStart={() => {}}
+        onEditPersonas={() => {}}
+        onOpenKey={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText("Speculative prefetch (faster, more API calls)")).toBeChecked();
+    expect(screen.getByLabelText("Max parallel Jev requests")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Speculative prefetch (faster, more API calls)"));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ prefetch: false }));
+
+    rerender(
+      <Setup
+        settings={{ ...DEFAULT_SETTINGS, prefetch: false }}
+        personas={[...PRESET_PERSONAS]}
+        language="en"
+        hasApiKey={true}
+        onChange={onChange}
+        onStart={() => {}}
+        onEditPersonas={() => {}}
+        onOpenKey={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText("Max parallel Jev requests")).not.toBeInTheDocument();
+  });
+
   it("labels the start button as spectating when no seat is human", () => {
     render(
       <Setup

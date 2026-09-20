@@ -92,6 +92,8 @@ export interface GameState {
   log: LogEntry[];
   thinkingSeat: SeatId | null;
   paused: boolean;
+  /** Why the table is paused, when it paused itself; null for a manual pause or when running. */
+  pauseReason: "auth" | "billing" | null;
   handsPlayed: number;
   gameOver: boolean;
   error: string | null;
@@ -121,6 +123,7 @@ export interface UseGameOptions {
   personas: readonly Persona[];
   backend: JevBackend | null;
   onAuthFailed: () => void;
+  onBillingFailed: () => void;
   seed?: number;
 }
 
@@ -135,7 +138,7 @@ type Msg =
     }
   | { type: "sync"; snapshot: HandSnapshot | null; seats: GameSeat[]; handsPlayed: number }
   | { type: "thinking"; seat: SeatId | null }
-  | { type: "paused"; paused: boolean }
+  | { type: "paused"; paused: boolean; reason?: "auth" | "billing" }
   | { type: "gameOver"; error: string | null }
   | { type: "stats"; deltas: ReadonlyMap<SeatId, PlayerStats> }
   | { type: "prefetch"; stats: PrefetchStats }
@@ -181,7 +184,11 @@ function reducer(state: GameState, msg: Msg): GameState {
     case "thinking":
       return { ...state, thinkingSeat: msg.seat };
     case "paused":
-      return { ...state, paused: msg.paused };
+      return {
+        ...state,
+        paused: msg.paused,
+        pauseReason: msg.paused ? (msg.reason ?? null) : null,
+      };
     case "gameOver":
       return { ...state, gameOver: true, error: msg.error, thinkingSeat: null };
     case "stats": {
@@ -234,13 +241,14 @@ function toConfig(settings: Settings, seed: number): GameConfig {
 }
 
 export function useGame(options: UseGameOptions): GameController {
-  const { settings, personas, backend, onAuthFailed } = options;
+  const { settings, personas, backend, onAuthFailed, onBillingFailed } = options;
   const [state, dispatch] = useReducer(reducer, {
     snapshot: null,
     seats: [],
     log: [],
     thinkingSeat: null,
     paused: false,
+    pauseReason: null,
     handsPlayed: 0,
     gameOver: false,
     error: null,
@@ -261,16 +269,23 @@ export function useGame(options: UseGameOptions): GameController {
   const pausedRef = useRef(false);
   /** Set when the loop stopped itself because Jev rejected the key. */
   const authPausedRef = useRef(false);
+  /** Set when the loop stopped itself because TypeSafe returned 402 Payment Required. */
+  const billingPausedRef = useRef(false);
   /** Set when the loop gave up because there was no backend to ask. */
   const noBackendRef = useRef(false);
   const actionsRef = useRef<ActionTakenEvent[]>([]);
   const pendingRef = useRef<{ record: DecisionInfo; features: DecisionFeatures } | null>(null);
   const cacheRef = useRef<DecisionCache | null>(null);
-  if (cacheRef.current === null) cacheRef.current = new DecisionCache({});
+  if (cacheRef.current === null) {
+    cacheRef.current = new DecisionCache({ maxInFlight: settings.prefetchMaxInFlight });
+  }
   const trackerRef = useRef<HandStatsTracker | null>(null);
   if (trackerRef.current === null) trackerRef.current = new HandStatsTracker();
   const speedRef = useRef<Speed>(settings.speed);
   speedRef.current = settings.speed;
+  /** Read mid-loop so a live setting change (from `Setup`/`TableView`) applies immediately. */
+  const prefetchRef = useRef<boolean>(settings.prefetch);
+  prefetchRef.current = settings.prefetch;
 
   /**
    * One rng per decision, derived from the game seed and the decision itself. A speculative
@@ -339,6 +354,7 @@ export function useGame(options: UseGameOptions): GameController {
    */
   const speculate = useCallback(
     (hand: Hand, seat: SeatId) => {
+      if (!prefetchRef.current) return;
       const table = tableRef.current;
       const cache = cacheRef.current;
       if (table === null || cache === null || backend === null) return;
@@ -440,14 +456,16 @@ export function useGame(options: UseGameOptions): GameController {
               : { ...(await speculated), prefetched: true };
           // A stale or paused run may still receive the (aborted) record; never act on it.
           if (!run.alive || pausedRef.current) return;
-          if (record.errorKind === "auth") {
+          if (record.errorKind === "auth" || record.errorKind === "billing") {
             pausedRef.current = true;
-            authPausedRef.current = true;
+            if (record.errorKind === "auth") authPausedRef.current = true;
+            else billingPausedRef.current = true;
             stopRun(run);
             cache.clear();
-            dispatch({ type: "paused", paused: true });
+            dispatch({ type: "paused", paused: true, reason: record.errorKind });
             dispatch({ type: "thinking", seat: null });
-            onAuthFailed();
+            if (record.errorKind === "auth") onAuthFailed();
+            else onBillingFailed();
             return;
           }
           pendingRef.current = { record, features };
@@ -469,7 +487,17 @@ export function useGame(options: UseGameOptions): GameController {
         return;
       }
     },
-    [backend, onAuthFailed, personas, reportPrefetch, rngFor, settings.model, speculate, sync],
+    [
+      backend,
+      onAuthFailed,
+      onBillingFailed,
+      personas,
+      reportPrefetch,
+      rngFor,
+      settings.model,
+      speculate,
+      sync,
+    ],
   );
 
   const stopCurrentRun = useCallback(() => {
@@ -556,6 +584,23 @@ export function useGame(options: UseGameOptions): GameController {
     }
   }, [backend]);
 
+  // Turning prefetch off mid-game drops whatever was already speculated; turning it back on
+  // starts clean rather than resurrecting stale entries, so nothing special happens there.
+  const wasPrefetchingRef = useRef(settings.prefetch);
+  useEffect(() => {
+    if (wasPrefetchingRef.current && !settings.prefetch) {
+      cacheRef.current?.clear();
+      reportPrefetch();
+    }
+    wasPrefetchingRef.current = settings.prefetch;
+  }, [settings.prefetch, reportPrefetch]);
+
+  // The cache is created once; a later change to the configured cap is applied in place so
+  // cumulative stats survive it.
+  useEffect(() => {
+    cacheRef.current?.setMaxInFlight(settings.prefetchMaxInFlight);
+  }, [settings.prefetchMaxInFlight]);
+
   const humanAct = useCallback(
     (action: Action) => {
       const table = tableRef.current;
@@ -585,7 +630,13 @@ export function useGame(options: UseGameOptions): GameController {
       stopCurrentRun();
       cacheRef.current?.clear();
       reportPrefetch();
-    } else startLoop();
+    } else {
+      // A manual resume clears whatever self-pause was in effect (billing never clears
+      // itself, and an auth pause resumed this way needn't wait for a fresh backend too).
+      authPausedRef.current = false;
+      billingPausedRef.current = false;
+      startLoop();
+    }
   }, [reportPrefetch, startLoop, stopCurrentRun]);
 
   const humanSeats = useMemo(

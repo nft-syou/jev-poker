@@ -78,6 +78,7 @@ function controller(overrides: Partial<GameController["state"]> = {}): GameContr
       log: [],
       thinkingSeat: null,
       paused: false,
+      pauseReason: null,
       handsPlayed: 0,
       gameOver: false,
       error: null,

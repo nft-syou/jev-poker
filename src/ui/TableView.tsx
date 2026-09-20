@@ -24,6 +24,9 @@ interface Props {
   personaNames?: Record<SeatId, string>;
   /** Model the table asks for, shown when no decision has named one yet. */
   model?: string;
+  /** Whether CPU turns are speculatively prefetched; the header toggle mirrors it. */
+  prefetch?: boolean;
+  onPrefetchChange?: (prefetch: boolean) => void;
 }
 
 type Panel = "table" | "stats" | "log";
@@ -63,6 +66,8 @@ export function TableView({
   onLeave,
   personaNames,
   model,
+  prefetch,
+  onPrefetchChange,
 }: Props) {
   const { t } = useTranslation();
   const speedId = useId();
@@ -136,6 +141,9 @@ export function TableView({
           >
             {state.paused ? t("table.resume") : t("table.pause")}
           </button>
+          {state.pauseReason === "billing" && !showcase && (
+            <span className="badge">{t("table.pausedBilling")}</span>
+          )}
           {showcase ? (
             <button
               type="button"
@@ -147,6 +155,15 @@ export function TableView({
             </button>
           ) : (
             <>
+              {onPrefetchChange !== undefined && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => onPrefetchChange(!(prefetch ?? true))}
+                >
+                  {(prefetch ?? true) ? t("table.prefetchOn") : t("table.prefetchOff")}
+                </button>
+              )}
               <button type="button" className="secondary" onClick={() => setShowcase(true)}>
                 {t("showcase.toggle")}
               </button>

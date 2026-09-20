@@ -35,6 +35,23 @@ describe("storage", () => {
     expect(loadSettings()).toEqual({ ...DEFAULT_SETTINGS, bigBlind: 4 });
   });
 
+  it("falls back to defaults for an invalid prefetch or prefetchMaxInFlight", () => {
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ prefetch: "nope", prefetchMaxInFlight: 5 }),
+    );
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ prefetch: false, prefetchMaxInFlight: 8 }),
+    );
+    expect(loadSettings()).toEqual({
+      ...DEFAULT_SETTINGS,
+      prefetch: false,
+      prefetchMaxInFlight: 8,
+    });
+  });
+
   it("round-trips settings", () => {
     const settings = { ...DEFAULT_SETTINGS, speed: "max" as const, startingStack: 500 };
     saveSettings(settings);

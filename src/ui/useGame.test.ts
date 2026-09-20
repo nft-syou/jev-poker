@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { AuthenticationError } from "@typesafe-ai/sdk";
+import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
 import { createMockBackend } from "../jev/mock-backend";
@@ -29,6 +29,17 @@ function authFailingBackend(): JevBackend {
     kind: "typesafe",
     systemOne: () =>
       Promise.reject(new AuthenticationError(401, { error: "bad key" }, new Headers(), "bad key")),
+  };
+}
+
+/** Mock whose every call fails the way an out-of-credit account does. */
+function billingFailingBackend(): JevBackend {
+  return {
+    kind: "typesafe",
+    systemOne: () =>
+      Promise.reject(
+        new APIError(402, { error: "insufficient credits" }, new Headers(), "payment required"),
+      ),
   };
 }
 
@@ -71,6 +82,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 3,
       }),
     );
@@ -100,6 +112,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 7,
       }),
     );
@@ -148,6 +161,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 3,
       }),
     );
@@ -185,6 +199,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 4,
       }),
     );
@@ -207,6 +222,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 5,
       }),
     );
@@ -234,6 +250,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: slowBackend(seen),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 3,
       }),
     );
@@ -258,6 +275,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: countingBackend(seen),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 3,
       }),
     );
@@ -284,6 +302,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         seed: 9,
       }),
     );
@@ -314,6 +333,7 @@ describe("useGame", () => {
         personas: [...PRESET_PERSONAS],
         backend: createMockBackend(),
         onAuthFailed: () => {},
+        onBillingFailed: () => {},
         // Seed 7 puts the button on the human, who therefore opens the first hand.
         seed: 7,
       }),
@@ -339,7 +359,14 @@ describe("useGame", () => {
     const personas = [...PRESET_PERSONAS];
     const { result, rerender, unmount } = renderHook(
       ({ backend }: { backend: JevBackend }) =>
-        useGame({ settings: cpuOnly, personas, backend, onAuthFailed, seed: 11 }),
+        useGame({
+          settings: cpuOnly,
+          personas,
+          backend,
+          onAuthFailed,
+          onBillingFailed: () => {},
+          seed: 11,
+        }),
       { initialProps: { backend: authFailingBackend() } },
     );
     await waitFor(
@@ -359,6 +386,70 @@ describe("useGame", () => {
       timeout: 5000,
     });
     expect(onAuthFailed).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("pauses on a billing failure (402), notifies, and only resumes when toggled", async () => {
+    const onBillingFailed = vi.fn();
+    const personas = [...PRESET_PERSONAS];
+    const { result, rerender, unmount } = renderHook(
+      ({ backend }: { backend: JevBackend }) =>
+        useGame({
+          settings: cpuOnly,
+          personas,
+          backend,
+          onAuthFailed: () => {},
+          onBillingFailed,
+          seed: 11,
+        }),
+      { initialProps: { backend: billingFailingBackend() } },
+    );
+    await waitFor(
+      () => {
+        expect(onBillingFailed).toHaveBeenCalledTimes(1);
+        expect(result.current.state.paused).toBe(true);
+        expect(result.current.state.pauseReason).toBe("billing");
+      },
+      { timeout: 5000 },
+    );
+    // The billing path must stop before touching the table: blinds are posted, nothing is acted.
+    expect(result.current.state.log.some((e) => e.event.type === "ActionTaken")).toBe(false);
+    expect(result.current.state.handsPlayed).toBe(0);
+
+    // Unlike an auth failure, a working backend alone does not resume the table: the key was
+    // never wrong, so nothing about the backend identity changing means the bill is paid.
+    rerender({ backend: createMockBackend() });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(result.current.state.paused).toBe(true);
+    expect(result.current.state.pauseReason).toBe("billing");
+    expect(result.current.state.handsPlayed).toBe(0);
+
+    act(() => result.current.togglePause());
+    await waitFor(() => expect(result.current.state.paused).toBe(false), { timeout: 5000 });
+    expect(result.current.state.pauseReason).toBeNull();
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(1), {
+      timeout: 5000,
+    });
+    expect(onBillingFailed).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("skips speculation entirely when prefetch is disabled", async () => {
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: { ...cpuOnly, prefetch: false },
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        onBillingFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(2), {
+      timeout: 5000,
+    });
+    expect(result.current.state.prefetch.started).toBe(0);
+    expect(result.current.state.log.some((e) => e.decision?.prefetched === true)).toBe(false);
     unmount();
   });
 });
