@@ -45,6 +45,8 @@ export interface JevAgentOptions {
   promptStyle?: PromptStyle;
   /** `chart`: preflop decisions come from the position-based chart in code; Jev decides postflop only. */
   preflop?: 'jev' | 'chart';
+  /** Add the range-aware equity feature to the state (off by default, see `CompressOptions`). */
+  rangeEquity?: boolean;
 }
 
 function clamp(x: number, min: number, max: number): number {
@@ -183,6 +185,7 @@ export class JevAgent implements Agent {
   private readonly onDecision: ((record: DecisionRecord) => void) | undefined;
   private readonly promptStyle: PromptStyle;
   private readonly preflop: 'jev' | 'chart';
+  private readonly rangeEquity: boolean;
 
   constructor(opts: JevAgentOptions) {
     this.persona = opts.persona;
@@ -191,6 +194,7 @@ export class JevAgent implements Agent {
     this.onDecision = opts.onDecision;
     this.promptStyle = opts.promptStyle ?? 'unified';
     this.preflop = opts.preflop ?? 'jev';
+    this.rangeEquity = opts.rangeEquity ?? false;
     this.id = `jev:${opts.persona.id}`;
   }
 
@@ -201,7 +205,7 @@ export class JevAgent implements Agent {
     try {
       // Inside the try: building the state can throw too (e.g. a malformed view),
       // and that must fail open rather than stall the table.
-      const state = compressState(view, legal, this.persona, this.promptStyle);
+      const state = compressState(view, legal, this.persona, this.promptStyle, { rangeEquity: this.rangeEquity });
       if (this.preflop === 'chart' && view.street === 'preflop') {
         const action = chartPreflop(state, view, legal);
         const choice: ActionChoice =
@@ -217,7 +221,7 @@ export class JevAgent implements Agent {
           apiCall: false,
           model: 'chart',
           equityVsRandomPct: state.hand.equityVsRandomPct,
-          equityVsRangePct: state.hand.equityVsRangePct,
+          ...(state.hand.equityVsRangePct !== undefined ? { equityVsRangePct: state.hand.equityVsRangePct } : {}),
           myBetWasRaised: state.table.myBetWasRaisedThisStreet,
         });
         return action;
@@ -243,7 +247,7 @@ export class JevAgent implements Agent {
         model,
         // Diagnostics: what the model was told about its own hand.
         equityVsRandomPct: state.hand.equityVsRandomPct,
-        equityVsRangePct: state.hand.equityVsRangePct,
+        ...(state.hand.equityVsRangePct !== undefined ? { equityVsRangePct: state.hand.equityVsRangePct } : {}),
         ...(state.hand.beatsPctOfHands !== undefined ? { beatsPctOfHands: state.hand.beatsPctOfHands } : {}),
         ...(state.hand.madeHand !== undefined ? { madeHand: state.hand.madeHand } : {}),
         ...(state.hand.pairKind !== undefined ? { pairKind: state.hand.pairKind } : {}),

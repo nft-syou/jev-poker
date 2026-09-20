@@ -15,6 +15,7 @@ export interface CliOptions {
   variance: number | null;
   hero: 'jev' | 'heuristic';
   preflop: 'jev' | 'chart';
+  rangeEquity: boolean;
 }
 
 export const USAGE = `Usage: pnpm bench [options]
@@ -29,6 +30,7 @@ export const USAGE = `Usage: pnpm bench [options]
   --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
   --model <name>                       model passed to the SDK, default the SDK's own
   --prompt unified|split               one state/question format, or separate preflop/postflop ones (default unified)
+  --range-equity                       add the opt-in equityVsRangePct feature to the state
   --preflop jev|chart                  chart: preflop from the position chart in code, Jev decides postflop only
   --hero jev|heuristic                 who sits in the measured seat: Jev (default) or the fixed heuristic over the same features
   --variance X                         override the persona's variance, 0 (always the most likely action) to 1
@@ -81,6 +83,7 @@ function conditions(r: BenchResult): string {
   if ((r.config.promptStyle ?? 'unified') === 'split') parts.push('split');
   if (r.config.hero === 'heuristic') parts.push('heuristic');
   if (r.config.preflop === 'chart') parts.push('chart');
+  if (r.config.rangeEquity === true) parts.push('range');
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === 'mock') parts.push('mock');
   if (r.config.model !== null) parts.push(r.config.model);
@@ -90,7 +93,7 @@ function conditions(r: BenchResult): string {
 /** Identity of an experimental configuration: two results with the same key measure the same thing. */
 export function configKey(r: BenchResult): string {
   const c = r.config;
-  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.variance ?? null, c.hero ?? 'jev', c.preflop ?? 'jev', c.seeds, c.baseSeed, c.gitCommit]);
+  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.variance ?? null, c.hero ?? 'jev', c.preflop ?? 'jev', c.rangeEquity ?? false, c.seeds, c.baseSeed, c.gitCommit]);
 }
 
 function row(r: BenchResult): string {
@@ -196,11 +199,16 @@ export function parseArgs(argv: string[]): CliOptions {
     variance: null,
     hero: 'jev',
     preflop: 'jev',
+    rangeEquity: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === '--help' || arg === '-h') throw new HelpRequested();
+    if (arg === '--range-equity') {
+      options.rangeEquity = true;
+      continue;
+    }
     if (!arg.startsWith('--')) throw new Error(`unexpected argument: ${arg}`);
 
     const eq = arg.indexOf('=');

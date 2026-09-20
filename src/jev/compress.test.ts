@@ -134,13 +134,15 @@ describe('compressState identity flags', () => {
 describe('compressState range-aware equity', () => {
   it('is lower than the random-hand equity once an opponent has raised, and equal-ish with no action', () => {
     const kk = { ...view, street: 'preflop' as const, board: [], holeCards: parseCards('Kh Kd'), stacks: view.stacks.slice(0, 2) };
-    const quiet = compressState({ ...kk, history: [] }, legal, getPersona('tag')).hand;
-    expect(Math.abs(quiet.equityVsRangePct - quiet.equityVsRandomPct)).toBeLessThanOrEqual(8);
+    const on = { rangeEquity: true };
+    expect('equityVsRangePct' in compressState({ ...kk, history: [] }, legal, getPersona('tag')).hand).toBe(false);
+    const quiet = compressState({ ...kk, history: [] }, legal, getPersona('tag'), 'unified', on).hand;
+    expect(Math.abs((quiet.equityVsRangePct ?? 0) - quiet.equityVsRandomPct)).toBeLessThanOrEqual(8);
     const reraised = compressState({ ...kk, history: [
       { street: 'preflop', seat: 0, action: { type: 'raise', amount: 300 } },
       { street: 'preflop', seat: 1, action: { type: 'raise', amount: 900 } },
-    ] }, legal, getPersona('tag')).hand;
+    ] }, legal, getPersona('tag'), 'unified', on).hand;
     // KK: about 81% against a random hand, about 70% against a 3-bet range.
-    expect(reraised.equityVsRangePct).toBeLessThan(reraised.equityVsRandomPct - 5);
+    expect(reraised.equityVsRangePct ?? 100).toBeLessThan(reraised.equityVsRandomPct - 5);
   });
 });

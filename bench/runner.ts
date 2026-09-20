@@ -35,6 +35,8 @@ export interface RunOptions {
   backend: JevBackend;
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
+  /** Opt-in range-aware equity feature for the Jev agent. */
+  rangeEquity?: boolean;
   /** `chart`: the Jev agent uses the preflop chart in code and asks Jev only after the flop. */
   preflop?: 'jev' | 'chart';
   /** `heuristic` seats the fixed rule set over Jev's own features instead of the Jev agent. */
@@ -58,6 +60,7 @@ export interface PlayHandArgs {
   promptStyle?: PromptStyle;
   hero?: 'jev' | 'heuristic';
   preflop?: 'jev' | 'chart';
+  rangeEquity?: boolean;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: TableEvent) => void;
 }
@@ -86,6 +89,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
             onDecision: (record) => decisions.push(record),
             ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
             ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
+            ...(args.rangeEquity !== undefined ? { rangeEquity: args.rangeEquity } : {}),
           })
         : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
     );
@@ -222,6 +226,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           ...(opts.promptStyle !== undefined ? { promptStyle: opts.promptStyle } : {}),
           ...(opts.hero !== undefined ? { hero: opts.hero } : {}),
           ...(opts.preflop !== undefined ? { preflop: opts.preflop } : {}),
+          ...(opts.rangeEquity !== undefined ? { rangeEquity: opts.rangeEquity } : {}),
         });
       } catch (err) {
         failed = true;

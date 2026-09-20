@@ -21,8 +21,8 @@ export const COMMON_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'equityVsRandomPct is your estimated chance to win at showdown against random hands. equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.',
-  'Before calling, compare equityVsRangePct with requiredEquityPct (the pot odds).',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
+  'Before calling, compare your equity with requiredEquityPct (the pot odds).',
   'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
   'stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.',
 ];
@@ -54,9 +54,9 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
-  'equityVsRandomPct is your estimated chance to win at showdown against random hands. equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.',
+  'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
-  'Before calling, compare equityVsRangePct with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
+  'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
   'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
   'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.',
   'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
@@ -68,6 +68,24 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.',
   'stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.',
 ];
+
+/** Optional state features, off by default. */
+export interface CompressOptions {
+  /** Add `equityVsRangePct` and the guidance that refers to it. */
+  rangeEquity?: boolean;
+}
+
+const RANGE_WORDING: readonly (readonly [string, string])[] = [
+  [
+    'Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
+    'equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.',
+  ],
+  ['Before calling, compare your equity with requiredEquityPct', 'Before calling, compare equityVsRangePct with requiredEquityPct'],
+];
+
+function withRangeWording(line: string): string {
+  return RANGE_WORDING.reduce((acc, [from, to]) => acc.split(from).join(to), line);
+}
 
 export interface JevHand {
   street: Street;
@@ -86,9 +104,11 @@ export interface JevHand {
   /**
    * The same estimate against the hands each live opponent plausibly holds given what they did
    * this hand (an open raise is about the top fifth of hands, a re-raise the top few percent, a
-   * postflop bet the better half of that range). Equal to `equityVsRandomPct` when nobody has acted.
+   * postflop bet the better half of that range). Opt-in (`rangeEquity`): measured on 1,000 seeds it
+   * changed nothing six-handed (+0.2 bb/100 [-6.4, +6.8]) and leaned negative heads-up
+   * (-9.1 [-19.8, +1.6]), so it is off by default.
    */
-  equityVsRangePct: number;
+  equityVsRangePct?: number;
   /** From the flop on: percentage of all possible opponent holdings the current hand beats right now. */
   beatsPctOfHands?: number;
   /** From the flop on: whether the board makes full houses, flushes or straights possible. */
@@ -175,6 +195,7 @@ export function compressState(
   _legal: LegalActions,
   persona: Persona,
   style: PromptStyle = 'unified',
+  options: CompressOptions = {},
 ): JevState {
   const preflop = view.street === 'preflop';
   const task = style === 'split' ? (preflop ? PREFLOP_TASK : POSTFLOP_TASK) : TASK;
@@ -182,6 +203,7 @@ export function compressState(
     style === 'split'
       ? [...COMMON_CONTEXT, ...(preflop ? PREFLOP_CONTEXT : POSTFLOP_CONTEXT)]
       : [...IMPORTANT_CONTEXT];
+  const context = options.rangeEquity === true ? importantContext.map(withRangeWording) : importantContext;
   const { bigBlind } = view;
   const live = view.stacks.filter((s) => !s.folded);
   const me = view.stacks.find((s) => s.seat === view.seat);
@@ -204,11 +226,15 @@ export function compressState(
     ...(showDraws ? { draws: draws(view.holeCards, view.board) } : {}),
     preflopStrength: preflopStrength(view.holeCards),
     equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
-    equityVsRangePct: estimateEquityVsRanges(
-      view.holeCards,
-      view.board,
-      live.filter((o) => o.seat !== view.seat).map((o) => inferRange(o.seat, view.history, view.board, view.holeCards)),
-    ),
+    ...(options.rangeEquity === true
+      ? {
+          equityVsRangePct: estimateEquityVsRanges(
+            view.holeCards,
+            view.board,
+            live.filter((o) => o.seat !== view.seat).map((o) => inferRange(o.seat, view.history, view.board, view.holeCards)),
+          ),
+        }
+      : {}),
     ...(showMade ? { beatsPctOfHands: handStrengthPct(view.holeCards, view.board)! } : {}),
     ...(showMade ? { board_texture: boardTexture(view.board)! } : {}),
   };
@@ -260,7 +286,7 @@ export function compressState(
   return {
     task,
     persona: { name: persona.name.en, description: persona.description.en },
-    importantContext,
+    importantContext: context,
     hand,
     table,
     history,
