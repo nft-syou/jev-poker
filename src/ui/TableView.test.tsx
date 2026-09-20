@@ -273,6 +273,30 @@ describe("TableView", () => {
     expect(container.querySelector(".winner-glow")).not.toBeNull();
   });
 
+  it("keeps every flight inside the felt's clipping layer", () => {
+    // A flight is a felt-sized box translated by tens of percent. Left loose on the felt it
+    // reached past the page, grew the scrollable area and made the layout jump sideways on
+    // every bet, so each one must sit inside the single `.fx-layer` that clips them.
+    stubViewport(false);
+    const { container } = renderTable({
+      fx: {
+        ...EMPTY_FX,
+        chipMoves: [
+          { id: 1, seat: 1, kind: "toBet", amount: 6, at: 10 },
+          { id: 2, seat: 0, kind: "toSeat", amount: 40, at: 11 },
+        ],
+      },
+    });
+    const layers = container.querySelectorAll(".felt > .fx-layer");
+    expect(layers).toHaveLength(1);
+    const flights = container.querySelectorAll(".chip-fly");
+    expect(flights).toHaveLength(2);
+    for (const flight of flights) {
+      expect(flight.parentElement).toBe(layers[0]);
+    }
+    expect(container.querySelectorAll(".felt > .chip-fly")).toHaveLength(0);
+  });
+
   it("puts the action feed under the felt on a wide screen", () => {
     stubViewport(false);
     const { container } = renderTable({ fx: FEED_FX });

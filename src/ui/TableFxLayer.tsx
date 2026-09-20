@@ -27,10 +27,15 @@ const MIDDLE = { x: 50, y: 50 };
  * Nothing here is ever taken down on a timer. The animation ends on `opacity: 0` and holds
  * there, and the moves are capped in the state, so a table at max speed costs no re-render
  * just to make a chip disappear.
+ *
+ * The flights live inside one clipping layer. A felt-sized box translated by tens of percent
+ * sticks out of the felt and, unclipped, out of the page: that briefly grew the document's
+ * scrollable area, flashed the scrollbars and made the centred layout jump sideways on every
+ * bet. The chips themselves never leave the felt's rectangle, so clipping costs nothing.
  */
 export function TableFxLayer({ moves, spots, bigBlind }: Props) {
   return (
-    <>
+    <div className="fx-layer" aria-hidden="true">
       {moves.map((move) => {
         const spot = spots.get(move.seat);
         if (spot === undefined) return null;
@@ -56,6 +61,6 @@ export function TableFxLayer({ moves, spots, bigBlind }: Props) {
           </div>
         );
       })}
-    </>
+    </div>
   );
 }

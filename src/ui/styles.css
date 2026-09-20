@@ -3,6 +3,9 @@
   font-family: system-ui, sans-serif;
   background: #0f1a14;
   color: #e8efe9;
+  /* Keep the scrollbar's width reserved: the centred layout must not jump sideways when a
+     vertical scrollbar comes and goes (the action bar mounting, the history growing). */
+  scrollbar-gutter: stable;
 }
 body {
   margin: 0;
@@ -386,11 +389,23 @@ a {
   }
 }
 /* --- Chips in flight ------------------------------------------------------ */
+/* One felt-sized layer that clips every flight. Each `.chip-fly` box is as big as the felt and
+   is translated by tens of percent, so unclipped it reached past the page, grew the scrollable
+   area for the length of the flight and made the whole layout twitch sideways. `clip` (unlike
+   `hidden`) makes no scroll container, and the margin lets a stack landing next to the rail
+   paint a little outside the felt's box without ever counting as scrollable overflow. */
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  overflow-clip-margin: 48px;
+  pointer-events: none;
+  z-index: 5;
+}
 .chip-fly {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 5;
   animation: chip-fly var(--chip-ms, 450ms) ease-out forwards;
 }
 /* The layer is felt-sized, so a percentage here is a percentage of the felt. */
