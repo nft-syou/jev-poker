@@ -77,6 +77,56 @@ the saved results before being acted on.
   some guidance sentences are too absolute; 47 preflop raise-then-fold hands of 4 bb or more cost
   12.3 bb/100 in the 1,000-seed run, which is the largest identified leak.
 
+## Fix round (2026-09-21) / 修正ラウンド
+
+The open items from the review were fixed one at a time and measured by **paired comparison on the
+same seeds** (difference per seed group, 95% CI). Tuning used base seed 1; decisions were confirmed
+on base seed 200001; the final numbers come from base seed 300001, which no decision ever looked at.
+The pre-fix code (`d0ae482`) was run on the same fresh seeds from an extracted copy, so "before"
+and "after" share the deals.
+
+| change | commit | heads-up | 6-max |
+| --- | --- | --- | --- |
+| F1 postflop sizes are pot fractions (the minimum raise is a floor, not a base); `PlayerView` gains `currentBet` / `committedThisStreet` | `7275bfd` | +1.0 [-1.0, +3.0] (100 seeds) | +7.2 [-7.1, +21.5] (400) |
+| F7 guidance no longer states bluff/fold and SPR rules as absolutes | `8616892` | +1.0 [-1.9, +3.9] (100) | — |
+| F4 actor identity, first form: `actor {seat, position}` + `isMe` flags + a sentence | `8616892` | **-7.2 [-12.3, -2.2]** (100) | -6.5 [-26.4, +13.4] (400, with F7) |
+| — bisect: `actor` object alone | — | **-5.8 [-10.5, -1.0]** | — |
+| — bisect: `isMe` flags alone | — | -1.3 [-4.5, +2.0] | — |
+| — bisect: rename `playersToAct` → `opponentsNotAllIn` alone | — | 0.0 (identical play) | — |
+| F4 final form, measured on 1,000 fresh seeds: `isMe` flags vs none | `6fcf8ac` | flags cost 11.4 [-0.6, +23.4] | flags gain **14.5 [+6.8, +22.2]** |
+| → identity flags only at tables with three or more seats | `1014659` | | |
+| F5 rules bot: re-raise size counts chips already in (baseline change) | `e467080` | -1.8 [-4.2, +0.7] (100) | — |
+
+Final confirmation, base seed 300001, 1,000 seeds per format, `tag` vs `rules`:
+
+| code | heads-up | 6-max |
+| --- | --- | --- |
+| pre-fix `d0ae482` | +74.8 [+54.8, +94.8] | +8.7 [-1.9, +19.4] |
+| final `1014659` | **+62.7 [+48.7, +76.8]** | **+12.9 [+1.3, +24.5]** |
+| paired difference | -12.1 [-27.9, +3.7] | +4.2 [-4.7, +13.1] |
+
+Same comparison on base seed 200001 (used to choose the identity-flag rule): heads-up pre-fix +49.7,
+final without flags +53.3 (paired +3.6 [-5.9, +13.1]); 6-max pre-fix +5.2, final with flags +10.1
+(paired +4.8 [-7.2, +16.8]). Against `random` and `caller` the final code is unchanged in kind
+(100 seeds: caller HU +239.9 [+101.5, +378.3], caller 6-max +1067.0 [+438.3, +1695.7], random 6-max
++227.9 [+5.0, +450.7], random HU inconclusive as before).
+
+What this round established:
+
+- The final agent beats the rule-based bot in both formats on data that played no part in any
+  decision. The fixes are correctness fixes; their effect on strength is small — about +4 bb/100
+  six-handed on two independent seed sets (neither significant alone) and nothing detectable
+  heads-up.
+- **Telling the model who it is matters, and the form matters.** An explicit `actor` object made
+  heads-up play measurably worse (VPIP 49% → 44%); per-row `isMe` flags are worth about 14 bb/100
+  six-handed and cost about 11 heads-up, where the position already identifies the player.
+- **Heads-up at 100 seeds was under-sampled.** Its CI of ±8 held only because the first two seed
+  sets contained no preflop all-in. One seed group in base 200001 (KK-class into a better hand, and
+  a 4-bet/fold in the mirrored seat) moved a 100-seed result from about +55 to -25.9
+  [-154.9, +103.1]. Heads-up conclusions now use 1,000 seeds (CI about ±15 to ±20).
+- Three independent 1,000-seed 6-max estimates of the pre-fix agent are +19.0, +16.3 and +5.2/+8.7:
+  the true edge over `rules` six-handed is on the order of +10 bb/100, not +19.
+
 ## Reproduce / 再現
 
 ```sh

@@ -186,7 +186,11 @@ zero, and `tag` beats it in 6-max too: a dedicated 1,000-seed run (6,000 hands) 
 95% CI [+3.1, +35.0]** (`bench/results/*final6max*`). Smaller runs swing by ±20 because single -100 bb
 coolers dominate them. Because those runs shared seeds with the tuning experiments, the unchanged
 agent was re-evaluated on seeds never used before (`--base-seed 100001`): **heads-up +60.6
-[+52.9, +68.3], 6-max +16.3 [+3.1, +29.4]** over 1,000 seeds — the result holds on fresh data. The
+[+52.9, +68.3], 6-max +16.3 [+3.1, +29.4]** over 1,000 seeds — the result holds on fresh data. After a round of correctness fixes (bet sizing,
+identity flags, guidance, the rules bot's re-raise size; see `bench/EXPERIMENTS.md`) the final code was
+confirmed on a second unused seed set (`--base-seed 300001`, 1,000 seeds each): **heads-up +62.7
+[+48.7, +76.8], 6-max +12.9 [+1.3, +24.5]**. Heads-up needs 1,000 seeds too: one preflop all-in can
+swing a 100-seed result by 60 bb/100. The
 improvements were all in what Jev is told — exact hand strength, equity vs. pot odds, whether its bet
 was raised, pot commitment, blind-stealing spots — plus conventional preflop raise sizes; the engine
 and the baselines are unchanged. Heads-up vs `random` remains inconclusive (random all-ins). `station`
@@ -197,6 +201,10 @@ persona raises occasionally.
 (1,000 シード = 6,000 ハンドの専用 run で **+19.0 bb/100、95% CI [+3.1, +35.0]**。小さい run は -100bb のクーラー 1 回で ±20 揺れる)。
 これらの run はチューニングと同じシードを含むため、方策を変えずに未使用シード (`--base-seed 100001`) で
 再評価しました: **HU +60.6 [+52.9, +68.3]、6-max +16.3 [+3.1, +29.4]** (1,000 シード)。未使用データでも結論は変わりません。
+その後、正しさの修正 (ベット額、自席フラグ、指針文、`rules` のリレイズ額。詳細は `bench/EXPERIMENTS.md`) を入れ、
+最終コードを 2 つ目の未使用シード (`--base-seed 300001`、各 1,000 シード) で確認しました:
+**HU +62.7 [+48.7, +76.8]、6-max +12.9 [+1.3, +24.5]**。HU も 1,000 シードが必要です
+(プリフロップのオールイン 1 回で、100 シードの結果は 60 bb/100 動きます)。
 改善はすべて「Jev に何を伝えるか」(正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、
 ポットコミット、スティールの機会) とプリフロップの標準的なレイズ額で、エンジンと対照群は変えていません。
 `random` とのヘッズアップは依然として結論が出ません (ランダムなオールイン)。
