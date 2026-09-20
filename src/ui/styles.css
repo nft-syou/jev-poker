@@ -139,6 +139,15 @@ a {
   gap: 16px;
   align-items: start;
 }
+/* A grid item's default `min-width: auto` is its content's min-content width, and a `1fr`
+   track will not shrink below it. The action feed is a row of unbreakable entries, so its
+   total width became the column's minimum: measured at 820px, the whole table column sat
+   50px wider than the page and changed width on every action as entries came and went.
+   With a zero minimum the track keeps the width the layout gives it, in every grid variant
+   (normal, single column, recording mode). */
+.table-screen > * {
+  min-width: 0;
+}
 @media (max-width: 900px) {
   .table-screen {
     grid-template-columns: 1fr;
@@ -392,13 +401,13 @@ a {
 /* One felt-sized layer that clips every flight. Each `.chip-fly` box is as big as the felt and
    is translated by tens of percent, so unclipped it reached past the page, grew the scrollable
    area for the length of the flight and made the whole layout twitch sideways. `clip` (unlike
-   `hidden`) makes no scroll container, and the margin lets a stack landing next to the rail
-   paint a little outside the felt's box without ever counting as scrollable overflow. */
+   `hidden`) makes no scroll container. The clip is exact on purpose: an `overflow-clip-margin`
+   was measured to count as scrollable overflow (a 390px page grew to 400px for a few frames
+   per bet), and a stack arriving at the rail is already fading out, so nothing visible is lost. */
 .fx-layer {
   position: absolute;
   inset: 0;
   overflow: clip;
-  overflow-clip-margin: 48px;
   pointer-events: none;
   z-index: 5;
 }
@@ -1094,8 +1103,12 @@ body.showcase .app {
 .action-feed {
   display: flex;
   align-items: center;
+  /* Packed to the right: when the entries are wider than the strip, it is the oldest ones
+     that slide out of view on the left, never the action that just happened. */
+  justify-content: flex-end;
   gap: 6px;
   overflow: hidden;
+  min-width: 0;
   margin: 0 0 12px;
   padding: 6px 4px;
   min-height: 34px;
