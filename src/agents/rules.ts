@@ -62,7 +62,9 @@ export class RulesAgent implements Agent {
     if (idx >= TWO_PAIR_IDX) {
       if (legal.minRaiseTo === null) return legal.canCheck ? { type: 'check' } : { type: 'call' };
       if (legal.canCheck) return raiseTo(Math.round((2 / 3) * pot), legal);
-      return raiseTo(toCall + Math.round((2 / 3) * potAfterCall), legal);
+      // Raise-to total: the bet being matched plus two thirds of the pot after calling. Using
+      // `toCall` here instead of `currentBet` under-sized re-raises once chips were already in.
+      return raiseTo(view.currentBet + Math.round((2 / 3) * potAfterCall), legal);
     }
 
     if (cat === 'pair') {

@@ -39,3 +39,17 @@ describe('RulesAgent postflop', () => {
     expect(await agent.decide(flop('Ah Kd', 'As Kc 2d', 0, 30000), { ...free, maxRaiseTo: 10000 })).toEqual({ type: 'allin' });
   });
 });
+
+describe('RulesAgent re-raise sizing', () => {
+  it('counts chips already committed on the street', async () => {
+    // Bet 300, raised to 700: pot 1200, 400 to call. Two thirds of the pot after calling (1600) on top of 700.
+    const v = base({ street: 'flop', holeCards: parseCards('Ah Kd'), board: parseCards('As Kc 2d'), pot: 1200, toCall: 400, currentBet: 700, committedThisStreet: 300 });
+    const l: LegalActions = { canFold: true, canCheck: false, callAmount: 400, minRaiseTo: 1100, maxRaiseTo: 10000 };
+    expect(await agent.decide(v, l)).toEqual({ type: 'raise', amount: 1767 });
+  });
+  it('is unchanged for a first raise over a bet', async () => {
+    const v = base({ street: 'flop', holeCards: parseCards('Ah Kd'), board: parseCards('As Kc 2d'), pot: 300, toCall: 100, currentBet: 100, committedThisStreet: 0 });
+    const l: LegalActions = { canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 200, maxRaiseTo: 10000 };
+    expect(await agent.decide(v, l)).toEqual({ type: 'raise', amount: 367 });
+  });
+});
