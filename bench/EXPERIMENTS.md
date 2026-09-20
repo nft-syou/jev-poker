@@ -18,6 +18,7 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
 | 8 | `7afd6d1` | `stackToPotRatio` and pot-commitment guidance; `tag` variance 0.3 → 0.15 | +57.3 [+49.0, +65.5] | +11.9 [-29.8, +53.6] (200) |
 | final | `7afd6d1` | same code, 1,000 seeds = 6,000 hands in 6-max to settle the question | — | **+19.0 [+3.1, +35.0] (1000)** |
 | 9 | `18a43cf` | A/B: split preflop/postflop format (`--prompt split`: street-specific task, guidance and sizing rubric) vs unified, same seeds | unified +58.0 / split +58.3; paired diff +0.3 [-1.9, +2.4] | unified +13.0 / split +12.6 (400); paired diff -0.4 [-22.7, +21.9] |
+| frozen | `a21cb6a` | **no policy change**; re-evaluation on seeds never used for tuning (`--base-seed 100001`) | **+60.6 [+52.9, +68.3]** | **+16.3 [+3.1, +29.4] (1000)** |
 
 ## What the decision logs showed / 判断ログから分かったこと
 
@@ -47,6 +48,34 @@ Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
   difference +0.3 bb/100, CI [-1.9, +2.4]); in 6-max the split version plays tighter (VPIP 26% → 21%,
   PFR 22% → 15%) and its result has a narrower CI, but the mean is the same (paired -0.4 bb/100,
   CI [-22.7, +21.9]). The default stays `unified`; `--prompt split` remains available.
+
+## Review corrections (2026-09-20) / レビューによる訂正
+
+An external review (Codex) of this log and the code found the following; each was verified against
+the saved results before being acted on.
+
+- **The showdown win rate quoted above was wrong.** The statistic counted every hand in which the
+  *table* reached a showdown, including hands Jev had already folded. In the 1,000-seed run 649 of
+  825 such hands were after a Jev fold; Jev's own showdowns number 176, of which it finished ahead
+  in 61 (34.7%, not 7%). The "5% showdown win rate" diagnosis in exp0/exp1 is therefore unreliable;
+  the conclusions drawn from the individual losing hands stand. `bench/stats.ts` now counts only
+  Jev's own showdowns (new field `showdowns`), and `pnpm bench:report` recomputes every summary
+  from the raw hands, so old files are corrected too.
+- **Selection on reused seeds.** Experiments 1-9 were tuned and judged on overlapping seed sets
+  (base seed 1), so "+19.0, CI above zero" carried selection bias. The **frozen** row above re-runs
+  the unchanged agent on seeds never used before: heads-up **+60.6 [+52.9, +68.3]**, 6-max
+  **+16.3 [+3.1, +29.4]** over 1,000 seeds. The claim "beats the rule-based bot in both formats"
+  holds on fresh data. From now on: tune on base seed 1, confirm on a fresh base seed.
+- **Report identity.** `bench:report` used to key "latest" on (opponent, format, persona) only, so
+  a later 400-seed A/B run shadowed the 1,000-seed result. The key now includes backend, model,
+  prompt format, seed count, base seed and code version, and the table shows `コード` and `条件`.
+- **Balanced estimator.** bb/100 and its CI now use only complete rotation groups; a single group
+  yields no interval (`n/a`) instead of a zero-width one. No committed run was partial, so no
+  published number changes.
+- Still open (next): postflop sizes are inflated because the minimum raise is *added* to the pot
+  fraction (a "pot-sized" bet into 2 bb is 3 bb); the state never says which seat is the actor;
+  some guidance sentences are too absolute; 47 preflop raise-then-fold hands of 4 bb or more cost
+  12.3 bb/100 in the 1,000-seed run, which is the largest identified leak.
 
 ## Reproduce / 再現
 

@@ -1,6 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { pickLatest, resultsToMarkdown } from './report.js';
+import { summarize } from './stats.js';
 import type { BenchResult } from './types.js';
 
 const RESULTS_DIR = fileURLToPath(new URL('results/', import.meta.url));
@@ -26,7 +27,9 @@ async function main(): Promise<void> {
 
   const results: BenchResult[] = [];
   for (const file of files) {
-    results.push(JSON.parse(await readFile(file, 'utf8')) as BenchResult);
+    const result = JSON.parse(await readFile(file, 'utf8')) as BenchResult;
+    // Recompute from the raw hands: the stored summary reflects the statistics code of its day.
+    results.push({ ...result, summary: summarize(result.hands, result.config.format) });
   }
 
   process.stdout.write(`${resultsToMarkdown(pickLatest(results))}\n`);

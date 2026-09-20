@@ -1,6 +1,6 @@
 import type { Format, HandRecord, JevSummary, OpponentSummary } from './types.js';
 
-/** Number of seats for a given table format. Kept private; bench/matchups.ts owns the canonical version. */
+/** Number of seats (= rotations per seed) for a table format. Kept private; bench/matchups.ts owns the canonical version. */
 function seatCount(format: Format): number {
   return format === 'hu' ? 2 : 6;
 }
@@ -25,24 +25,36 @@ export function percentile(sorted: number[], p: number): number {
 }
 
 /**
- * Mean and 95% confidence interval using the sample standard deviation (n - 1).
- * `half = 1.96 * sd / sqrt(n)`. All fields are 0 for an empty array; `sd` is 0 (and thus
- * `lo === hi === mean`) when there are fewer than 2 samples.
+ * Mean and 95% confidence interval using the sample standard deviation (n - 1):
+ * `half = 1.96 * sd / sqrt(n)`. With fewer than two samples there is no spread to
+ * estimate, so `ci` is `null` rather than a misleading zero-width interval.
  */
-export function meanCi(xs: number[]): { mean: number; lo: number; hi: number } {
+export function meanCi(xs: number[]): { mean: number; ci: [number, number] | null } {
   const n = xs.length;
-  if (n === 0) return { mean: 0, lo: 0, hi: 0 };
+  if (n === 0) return { mean: 0, ci: null };
   const mean = xs.reduce((a, b) => a + b, 0) / n;
-  let sd = 0;
-  if (n >= 2) {
-    const variance = xs.reduce((acc, x) => acc + (x - mean) ** 2, 0) / (n - 1);
-    sd = Math.sqrt(variance);
-  }
-  const half = (1.96 * sd) / Math.sqrt(n);
-  return { mean, lo: mean - half, hi: mean + half };
+  if (n < 2) return { mean, ci: null };
+  const variance = xs.reduce((acc, x) => acc + (x - mean) ** 2, 0) / (n - 1);
+  const half = (1.96 * Math.sqrt(variance)) / Math.sqrt(n);
+  return { mean, ci: [mean - half, mean + half] };
+}
+
+/**
+ * Did Jev itself reach the showdown? `wentToShowdown` is a property of the table:
+ * the hand can be shown down by others after Jev folded. Older result files lack the
+ * explicit flag, so fall back to "the table showed down and Jev never folded".
+ */
+export function jevReachedShowdown(h: HandRecord): boolean {
+  if (h.jevAtShowdown !== undefined) return h.jevAtShowdown;
+  return h.wentToShowdown && !h.decisions.some((d) => d.action.type === 'fold');
+}
+
+function average(xs: number[]): number {
+  return xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
 export function summarize(hands: HandRecord[], format: Format): { jev: JevSummary; opponent: OpponentSummary } {
+  const seats = seatCount(format);
   const groups = new Map<number, HandRecord[]>();
   for (const h of hands) {
     const group = groups.get(h.seedIndex);
@@ -50,63 +62,43 @@ export function summarize(hands: HandRecord[], format: Format): { jev: JevSummar
     else groups.set(h.seedIndex, [h]);
   }
 
-  const xs: number[] = [];
-  for (const group of groups.values()) {
-    const sum = group.reduce((acc, h) => acc + (h.net[h.jevSeat] ?? 0), 0);
-    xs.push(sum / group.length);
-  }
-
-  const { mean, lo, hi } = meanCi(xs);
-  const bb100 = mean * 100;
-  const ci95: [number, number] = [lo * 100, hi * 100];
+  // The estimator is balanced only over complete rotation groups (Jev in every seat once
+  // for the same deal); a partial run's unfinished groups are left out of bb/100 and its CI.
+  const complete = [...groups.values()].filter((g) => g.length === seats);
+  const completeHands = complete.flat();
+  const xs = complete.map((g) => g.reduce((acc, h) => acc + (h.net[h.jevSeat] ?? 0), 0) / g.length);
+  const { mean, ci } = meanCi(xs);
 
   const allDecisions = hands.flatMap((h) => h.decisions);
-  const decisions = allDecisions.length;
-  const apiCalls = allDecisions.filter((d) => d.apiCall === true).length;
-  const failOpen = allDecisions.filter((d) => d.error !== undefined).length;
-
   const latencies = allDecisions.map((d) => d.latencyMs).sort((a, b) => a - b);
-  const latencyMs = {
-    mean: latencies.length === 0 ? 0 : latencies.reduce((a, b) => a + b, 0) / latencies.length,
-    p50: percentile(latencies, 0.5),
-    p95: percentile(latencies, 0.95),
-  };
 
-  const vpip = hands.length === 0 ? 0 : hands.filter((h) => h.jevVpip).length / hands.length;
-  const pfr = hands.length === 0 ? 0 : hands.filter((h) => h.jevPfr).length / hands.length;
-
-  const showdownHands = hands.filter((h) => h.wentToShowdown);
-  const showdownWins = showdownHands.filter((h) => h.jevWonShowdown === true).length;
-  const showdownWinRate = showdownHands.length === 0 ? null : showdownWins / showdownHands.length;
+  const jevShowdowns = hands.filter(jevReachedShowdown);
+  const showdownWins = jevShowdowns.filter((h) => (h.net[h.jevSeat] ?? 0) > 0).length;
 
   const jev: JevSummary = {
-    bb100,
-    ci95,
-    n: groups.size,
+    bb100: mean * 100,
+    ci95: ci === null ? null : [ci[0] * 100, ci[1] * 100],
+    n: complete.length,
+    incompleteGroups: groups.size - complete.length,
     hands: hands.length,
-    decisions,
-    apiCalls,
-    failOpen,
-    latencyMs,
-    vpip,
-    pfr,
-    showdownWinRate,
+    decisions: allDecisions.length,
+    apiCalls: allDecisions.filter((d) => d.apiCall === true).length,
+    failOpen: allDecisions.filter((d) => d.error !== undefined).length,
+    latencyMs: { mean: average(latencies), p50: percentile(latencies, 0.5), p95: percentile(latencies, 0.95) },
+    vpip: average(hands.map((h) => (h.jevVpip ? 1 : 0))),
+    pfr: average(hands.map((h) => (h.jevPfr ? 1 : 0))),
+    showdowns: jevShowdowns.length,
+    showdownWinRate: jevShowdowns.length === 0 ? null : showdownWins / jevShowdowns.length,
   };
 
-  const seats = seatCount(format);
   const oppSeats = Math.max(seats - 1, 1);
-  const oppBb100PerSeatXs = hands.map((h) => {
-    const nonJevSum = h.net.reduce((acc, v, seat) => (seat === h.jevSeat ? acc : acc + v), 0);
-    return (nonJevSum / oppSeats) * 100;
-  });
-  const bb100PerSeat = oppBb100PerSeatXs.length === 0 ? 0 : oppBb100PerSeatXs.reduce((a, b) => a + b, 0) / oppBb100PerSeatXs.length;
-  const oppVpip = hands.length === 0 ? 0 : hands.reduce((acc, h) => acc + h.oppVpip, 0) / hands.length;
-  const oppPfr = hands.length === 0 ? 0 : hands.reduce((acc, h) => acc + h.oppPfr, 0) / hands.length;
-
   const opponent: OpponentSummary = {
-    bb100PerSeat,
-    vpip: oppVpip,
-    pfr: oppPfr,
+    // Same hands as Jev's estimate, so the two figures mirror each other (zero-sum).
+    bb100PerSeat: average(
+      completeHands.map((h) => (h.net.reduce((acc, v, seat) => (seat === h.jevSeat ? acc : acc + v), 0) / oppSeats) * 100),
+    ),
+    vpip: average(hands.map((h) => h.oppVpip)),
+    pfr: average(hands.map((h) => h.oppPfr)),
   };
 
   return { jev, opponent };

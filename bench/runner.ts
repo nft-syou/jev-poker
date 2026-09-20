@@ -97,6 +97,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const table = new Table(config);
   const vpip = new Set<SeatId>();
   const pfr = new Set<SeatId>();
+  const folded = new Set<SeatId>();
   const unsubscribe = table.on((e: TableEvent) => {
     args.onEvent?.(e);
     if (e.type === 'ActionTaken' && e.street === 'preflop') {
@@ -105,6 +106,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       if (t === 'call' || t === 'bet' || t === 'raise' || t === 'allin') vpip.add(e.seat);
       if (t === 'bet' || t === 'raise' || t === 'allin') pfr.add(e.seat);
     }
+    if (e.type === 'ActionTaken' && e.action.type === 'fold') folded.add(e.seat);
   });
 
   try {
@@ -123,6 +125,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       net[seat] = (stack - STARTING_STACK) / BIG_BLIND;
     }
 
+    const jevAtShowdown = hand.wentToShowdown && !folded.has(jevSeat);
     const oppSeats = net.map((_, seat) => seat).filter((seat) => seat !== jevSeat);
     const fraction = (set: Set<SeatId>): number =>
       oppSeats.length === 0 ? 0 : oppSeats.filter((seat) => set.has(seat)).length / oppSeats.length;
@@ -133,8 +136,10 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       jevSeat,
       net,
       wentToShowdown: hand.wentToShowdown,
+      // The table can show down after Jev folded; only Jev's own showdowns count for its win rate.
+      jevAtShowdown,
       // "Won" means Jev finished the hand ahead: a chop or a lost side pot is not a win.
-      jevWonShowdown: hand.wentToShowdown ? (net[jevSeat] ?? 0) > 0 : null,
+      jevWonShowdown: jevAtShowdown ? (net[jevSeat] ?? 0) > 0 : null,
       jevVpip: vpip.has(jevSeat),
       jevPfr: pfr.has(jevSeat),
       oppVpip: fraction(vpip),

@@ -38,7 +38,7 @@ const FORMAT_LABEL: Record<Format, string> = { hu: 'HU', '6max': '6-max' };
 /** Below this many independent groups the estimate is too noisy to read straight. */
 const SMALL_N = 30;
 
-const COLUMNS = ['相手', '形式', '人格', 'N (群)', 'ハンド', 'bb/100', '95% CI', 'VPIP', 'PFR', '失敗', '平均応答'];
+const COLUMNS = ['相手', '形式', '人格', 'N (群)', 'ハンド', 'bb/100', '95% CI', 'VPIP', 'PFR', '失敗', '平均応答', 'コード', '条件'];
 
 function orderIndex<T>(order: readonly T[], value: T): number {
   const i = order.indexOf(value);
@@ -49,7 +49,8 @@ function compare(a: BenchResult, b: BenchResult): number {
   return (
     orderIndex(OPPONENT_ORDER, a.config.opponent) - orderIndex(OPPONENT_ORDER, b.config.opponent) ||
     orderIndex(FORMAT_ORDER, a.config.format) - orderIndex(FORMAT_ORDER, b.config.format) ||
-    a.config.persona.localeCompare(b.config.persona)
+    a.config.persona.localeCompare(b.config.persona) ||
+    a.finishedAt.localeCompare(b.finishedAt)
   );
 }
 
@@ -67,6 +68,21 @@ function seconds(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** What distinguishes this run from another of the same matchup: seed set, prompt format, backend, model. */
+function conditions(r: BenchResult): string {
+  const parts = [`base ${r.config.baseSeed}`];
+  if ((r.config.promptStyle ?? 'unified') === 'split') parts.push('split');
+  if (r.config.backend === 'mock') parts.push('mock');
+  if (r.config.model !== null) parts.push(r.config.model);
+  return parts.join(' ');
+}
+
+/** Identity of an experimental configuration: two results with the same key measure the same thing. */
+export function configKey(r: BenchResult): string {
+  const c = r.config;
+  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.seeds, c.baseSeed, c.gitCommit]);
+}
+
 function row(r: BenchResult): string {
   const { jev } = r.summary;
   const opponent = r.partial ? `⚠ ${r.config.opponent}` : r.config.opponent;
@@ -78,11 +94,13 @@ function row(r: BenchResult): string {
     n,
     String(jev.hands),
     signed(jev.bb100),
-    `[${signed(jev.ci95[0])}, ${signed(jev.ci95[1])}]`,
+    jev.ci95 === null ? 'n/a' : `[${signed(jev.ci95[0])}, ${signed(jev.ci95[1])}]`,
     percent(jev.vpip),
     percent(jev.pfr),
     String(jev.failOpen),
     seconds(jev.latencyMs.mean),
+    r.config.gitCommit ?? '-',
+    conditions(r),
   ];
   return `| ${cells.join(' | ')} |`;
 }
@@ -98,13 +116,14 @@ export function resultsToMarkdown(results: BenchResult[]): string {
 }
 
 /**
- * Keep only the newest result (by `finishedAt`) for each
- * `(opponent, format, persona)`, in the table's sort order.
+ * Keep only the newest result (by `finishedAt`) for each experimental configuration
+ * (`configKey`: matchup, persona, backend, model, prompt format, seed set and code version),
+ * in the table's sort order. A re-run replaces its predecessor; a different experiment never does.
  */
 export function pickLatest(results: BenchResult[]): BenchResult[] {
   const best = new Map<string, BenchResult>();
   for (const r of results) {
-    const key = `${r.config.opponent}\u0000${r.config.format}\u0000${r.config.persona}`;
+    const key = configKey(r);
     const current = best.get(key);
     if (current === undefined || r.finishedAt > current.finishedAt) best.set(key, r);
   }

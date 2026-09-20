@@ -31,7 +31,9 @@ const mk = (o: Partial<BenchResult> & { opponent?: string; format?: string; fini
       latencyMs: { mean: 1300, p50: 1200, p95: 2000 },
       vpip: 0.42,
       pfr: 0.28,
+      showdowns: 10,
       showdownWinRate: 0.5,
+      incompleteGroups: 0,
     },
     opponent: { bb100PerSeat: -45.23, vpip: 1, pfr: 0 },
   },
@@ -42,13 +44,13 @@ const mk = (o: Partial<BenchResult> & { opponent?: string; format?: string; fini
 describe('report', () => {
   it('renders a markdown table', () => {
     const md = resultsToMarkdown([mk({})]);
-    expect(md).toContain('| random | HU | tag | 100 | 200 | +45.2 | [+30.1, +60.3] | 42% | 28% | 0 | 1.3s |');
+    expect(md).toContain('| random | HU | tag | 100 | 200 | +45.2 | [+30.1, +60.3] | 42% | 28% | 0 | 1.3s | - | base 1 mock |');
     expect(md).toMatchSnapshot();
   });
 
   it('renders the header columns from the spec', () => {
     const md = resultsToMarkdown([mk({})]);
-    expect(md.split('\n')[0]).toBe('| 相手 | 形式 | 人格 | N (群) | ハンド | bb/100 | 95% CI | VPIP | PFR | 失敗 | 平均応答 |');
+    expect(md.split('\n')[0]).toBe('| 相手 | 形式 | 人格 | N (群) | ハンド | bb/100 | 95% CI | VPIP | PFR | 失敗 | 平均応答 | コード | 条件 |');
   });
 
   it('renders 6max as 6-max and negative bb/100 with a sign', () => {
@@ -59,7 +61,7 @@ describe('report', () => {
         summary: { ...r.summary, jev: { ...r.summary.jev, bb100: -3.04, ci95: [-10.5, 4.42] } },
       },
     ]);
-    expect(md).toContain('| random | 6-max | tag | 100 | 200 | -3.0 | [-10.5, +4.4] | 42% | 28% | 0 | 1.3s |');
+    expect(md).toContain('| random | 6-max | tag | 100 | 200 | -3.0 | [-10.5, +4.4] | 42% | 28% | 0 | 1.3s | - | base 1 mock |');
   });
 
   it('flags small N', () =>
@@ -152,5 +154,23 @@ describe('parseArgs', () => {
     for (const flag of ['--opponent', '--format', '--seeds', '--persona', '--backend', '--concurrency', '--base-seed', '--label', '--model', '--help']) {
       expect(USAGE).toContain(flag);
     }
+  });
+});
+
+describe('report identity', () => {
+  it('keeps different experiments of the same matchup apart and shows what differs', () => {
+    const base = mk({});
+    const split = mk({ finishedAt: '2026-09-19T02:00:00.000Z', config: { ...base.config, promptStyle: 'split' } });
+    const moreSeeds = mk({ finishedAt: '2026-09-19T03:00:00.000Z', config: { ...base.config, seeds: 1000, gitCommit: 'abc1234' } });
+    const rerun = mk({ finishedAt: '2026-09-19T04:00:00.000Z' });
+    const picked = pickLatest([base, split, moreSeeds, rerun]);
+    expect(picked).toEqual([split, moreSeeds, rerun]); // the re-run replaced `base`; the others are distinct
+    const md = resultsToMarkdown(picked);
+    expect(md).toContain('| - | base 1 split mock |');
+    expect(md).toContain('| abc1234 | base 1 mock |');
+  });
+  it('prints n/a when no interval can be estimated', () => {
+    const one = mk({ summary: { ...mk({}).summary, jev: { ...mk({}).summary.jev, n: 1, ci95: null } } });
+    expect(resultsToMarkdown([one])).toContain('| n/a |');
   });
 });

@@ -68,7 +68,10 @@ describe('playHand', () => {
     const r = await playHand({ seedIndex: 11, rotation: 0, opponent: 'caller', format: '6max', baseSeed: 9, persona, backend: createMockBackend() });
     expect(typeof r.wentToShowdown).toBe('boolean');
     // `jevWonShowdown` is "Jev finished the hand ahead", not "Jev was awarded a pot".
-    expect(r.jevWonShowdown).toBe(r.wentToShowdown ? (r.net[r.jevSeat] ?? 0) > 0 : null);
+    // The table can show down after Jev folded: only Jev's own showdowns carry a win/loss.
+    expect(typeof r.jevAtShowdown).toBe('boolean');
+    if (r.jevAtShowdown === true) expect(r.wentToShowdown).toBe(true);
+    expect(r.jevWonShowdown).toBe(r.jevAtShowdown === true ? (r.net[r.jevSeat] ?? 0) > 0 : null);
     expect(typeof r.jevVpip).toBe('boolean');
     expect(typeof r.jevPfr).toBe('boolean');
     expect(r.oppVpip).toBeGreaterThanOrEqual(0);

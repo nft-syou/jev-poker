@@ -10,7 +10,10 @@ export interface HandRecord {
   jevSeat: SeatId;
   /** net result in bb, indexed by seat */
   net: number[];
+  /** The table reached a showdown — possibly after Jev had folded. */
   wentToShowdown: boolean;
+  /** Jev itself was still in the hand at the showdown. Absent in older result files. */
+  jevAtShowdown?: boolean;
   jevWonShowdown: boolean | null;
   jevVpip: boolean;
   jevPfr: boolean;
@@ -21,8 +24,12 @@ export interface HandRecord {
 
 export interface JevSummary {
   bb100: number;
-  ci95: [number, number];
+  /** `null` when fewer than two complete seed groups exist (no spread to estimate). */
+  ci95: [number, number] | null;
+  /** Complete seed groups (Jev played every rotation); only these enter bb/100 and the CI. */
   n: number;
+  /** Seed groups left unfinished by a partial run; excluded from the estimate. */
+  incompleteGroups: number;
   hands: number;
   decisions: number;
   apiCalls: number;
@@ -30,6 +37,9 @@ export interface JevSummary {
   latencyMs: { mean: number; p50: number; p95: number };
   vpip: number;
   pfr: number;
+  /** Hands in which Jev itself reached the showdown (it had not folded). */
+  showdowns: number;
+  /** Share of those hands Jev finished ahead in (net > 0); `null` when there were none. */
   showdownWinRate: number | null;
 }
 
