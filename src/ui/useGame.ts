@@ -23,6 +23,7 @@ import {
   fnv1a,
   speculationTargets,
 } from "../jev/prefetch";
+import { EMPTY_FX, reduceFx, type TableFx } from "./fx";
 import {
   addStats,
   EMPTY_STATS,
@@ -103,6 +104,8 @@ export interface GameState {
   lastDecision: LastDecision | null;
   /** Largest pot awarded this sitting, in chips. */
   maxPot: number;
+  /** Everything the felt animates: shouts, chips in flight, winners. Derived from events. */
+  fx: TableFx;
 }
 
 export interface GameController {
@@ -177,6 +180,9 @@ function reducer(state: GameState, msg: Msg): GameState {
         log: log.length > MAX_LOG ? log.slice(log.length - MAX_LOG) : log,
         lastDecision,
         maxPot: Math.max(state.maxPot, awarded),
+        // `msg.at` is the listener's clock reading: the effects layer needs timestamps, and
+        // this reducer must stay a pure function of what it is handed.
+        fx: reduceFx(state.fx, msg.event, msg.at ?? 0),
       };
     }
     case "sync":
@@ -256,6 +262,7 @@ export function useGame(options: UseGameOptions): GameController {
     prefetch: { started: 0, hits: 0, misses: 0 },
     lastDecision: null,
     maxPot: 0,
+    fx: EMPTY_FX,
   });
   const [cumulative, setCumulative] = useState<Record<StatsKey, PlayerStats>>(() =>
     loadCumulativeStats(),
@@ -544,15 +551,18 @@ export function useGame(options: UseGameOptions): GameController {
           ? pending
           : null;
       if (matched !== null) pendingRef.current = null;
+      // Every event is stamped here, not in the reducer: the effects layer runs on time and
+      // the reducer has to stay pure.
+      const at = Date.now();
       dispatch(
         matched === null
-          ? { type: "event", event }
+          ? { type: "event", event, at }
           : {
               type: "event",
               event,
               decision: matched.record,
               features: matched.features,
-              at: Date.now(),
+              at,
             },
       );
     });

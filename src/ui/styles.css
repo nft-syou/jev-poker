@@ -157,10 +157,18 @@ a {
 .felt {
   position: relative;
   aspect-ratio: 16 / 10;
-  background: radial-gradient(ellipse at center, #1f6b45, #123d28 70%);
+  background:
+    radial-gradient(ellipse at center, #26805260, transparent 68%),
+    radial-gradient(ellipse at center, #1f6b45, #123d28 70%);
   border-radius: 50% / 45%;
   border: 8px solid #3a2a1a;
   margin: 24px 0;
+  /* A rail highlight outside, a cloth shadow inside: the felt reads as a real table. */
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.07),
+    inset 0 14px 40px rgba(0, 0, 0, 0.45),
+    inset 0 -14px 40px rgba(0, 0, 0, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .seat {
   position: absolute;
@@ -176,8 +184,217 @@ a {
 .seat.acting {
   border-color: #ffd54f;
 }
+/* A ring that breathes around whoever is on the clock. Transform and opacity only. */
+.seat.acting::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 13px;
+  border: 2px solid #ffd54f;
+  pointer-events: none;
+  animation: seat-pulse 1.3s ease-out infinite;
+}
+@keyframes seat-pulse {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+}
 .seat.folded {
-  opacity: 0.5;
+  opacity: 0.45;
+  filter: grayscale(0.85);
+}
+
+/* --- Callouts and seat effects -------------------------------------------- */
+.callout {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  z-index: 6;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: callout-flash var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes callout-flash {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+  34% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1);
+  }
+}
+.callout-fold {
+  background: #7d8a84;
+  color: #0e1a14;
+}
+.callout-check {
+  background: #26a69a;
+  color: #03201c;
+}
+.callout-call {
+  background: #4285f4;
+  color: #fff;
+}
+.callout-bet,
+.callout-raise {
+  background: #f59426;
+  color: #291500;
+}
+.callout-allin {
+  background: #d63a30;
+  color: #fff;
+  font-size: 1.25rem;
+  animation: callout-allin var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes callout-allin {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6);
+  }
+  16% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.22);
+  }
+  26% {
+    transform: translateX(-50%) translateX(-4px) scale(1.08) rotate(-2deg);
+  }
+  36% {
+    transform: translateX(-50%) translateX(4px) scale(1.08) rotate(2deg);
+  }
+  46% {
+    transform: translateX(-50%) translateX(-3px) scale(1.04) rotate(-1deg);
+  }
+  56% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1);
+  }
+}
+.seat-flash {
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  border: 2px solid currentColor;
+  pointer-events: none;
+  animation: seat-flash var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes seat-flash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.flash-fold {
+  color: #7d8a84;
+}
+.flash-check {
+  color: #26a69a;
+}
+.flash-call {
+  color: #4285f4;
+}
+.flash-bet,
+.flash-raise {
+  color: #f59426;
+}
+.flash-allin {
+  color: #d63a30;
+}
+.winner-glow {
+  position: absolute;
+  inset: -7px;
+  border-radius: 15px;
+  border: 2px solid #ffd54f;
+  box-shadow:
+    0 0 24px 6px rgba(255, 213, 79, 0.5),
+    inset 0 0 16px rgba(255, 213, 79, 0.35);
+  pointer-events: none;
+  z-index: 4;
+  animation: winner-glow var(--glow-ms, 1200ms) ease-out forwards;
+}
+@keyframes winner-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  30% {
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+/* --- Chips in flight ------------------------------------------------------ */
+.chip-fly {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  animation: chip-fly var(--chip-ms, 450ms) ease-out forwards;
+}
+/* The layer is felt-sized, so a percentage here is a percentage of the felt. */
+@keyframes chip-fly {
+  0% {
+    opacity: 1;
+    transform: translate(var(--dx, 0), var(--dy, 0));
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+.chip-fly-stack {
+  position: absolute;
+  transform: translate(-50%, -50%);
 }
 .seat-cards {
   display: flex;
@@ -256,10 +473,14 @@ a {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
-  color: #000;
+  background: radial-gradient(circle at 35% 30%, #fff, #c9cfca);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+  color: #111;
+  font-weight: 800;
   font-size: 0.7rem;
-  line-height: 18px;
+  line-height: 16px;
   margin-right: 4px;
 }
 .board {
@@ -309,6 +530,32 @@ a {
 }
 .board-cards .card {
   width: var(--board-card-width);
+}
+/* A board card is only ever mounted when it is dealt, so it pops in on arrival. */
+.board-cards .card:not(.empty) {
+  animation: board-pop var(--flip-ms, 400ms) ease-out;
+}
+@keyframes board-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotateY(60deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+/* Showdown remounts the revealed hole cards, which is what makes them turn over. */
+.seat-cards.flipping .card {
+  animation: card-flip var(--flip-ms, 400ms) ease-out;
+}
+@keyframes card-flip {
+  from {
+    transform: rotateY(90deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
 }
 .your-turn {
   margin: 12px 0;
@@ -809,5 +1056,47 @@ body.showcase .app {
 @media (max-width: 900px) {
   .table-screen.showcase-mode {
     grid-template-columns: 1fr;
+  }
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+/* Nothing slides, flips, shakes or pulses. The overlays still have to clear themselves,
+   so they keep a plain opacity fade over the same window instead of a movement. */
+@keyframes fade-out-hold {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-fly {
+    display: none;
+  }
+  .seat.acting::before,
+  .seat-cards.flipping .card,
+  .board-cards .card:not(.empty),
+  .showcase-bubble,
+  .showcase-thinking,
+  .showcase-bolt,
+  .ticker-value,
+  .action-feed-entry {
+    animation: none;
+  }
+  .showcase-bar-fill {
+    transition: none;
+  }
+  .callout,
+  .callout-allin {
+    transform: translateX(-50%);
+    animation: fade-out-hold var(--callout-ms, 900ms) linear forwards;
+  }
+  .seat-flash {
+    animation: fade-out-hold var(--callout-ms, 900ms) linear forwards;
+  }
+  .winner-glow {
+    animation: fade-out-hold var(--glow-ms, 1200ms) linear forwards;
   }
 }

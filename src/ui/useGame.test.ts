@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
 import { createMockBackend } from "../jev/mock-backend";
 import { PRESET_PERSONAS } from "../jev/personas";
+import { MAX_CHIP_MOVES } from "./fx";
 import type { PlayerStats } from "./stats";
 import { DEFAULT_SETTINGS, type Settings, STATS_STORAGE_KEY } from "./storage";
 import { useGame } from "./useGame";
@@ -183,6 +186,53 @@ describe("useGame", () => {
     // Every awarded pot is at least the blinds, so the biggest one is never zero.
     expect(result.current.state.maxPot).toBeGreaterThan(0);
     unmount();
+  });
+
+  it("records the table's effects while the hands play", async () => {
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: createMockBackend(),
+        onAuthFailed: () => {},
+        onBillingFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(2), {
+      timeout: 5000,
+    });
+    const fx = result.current.state.fx;
+    // Something was shouted, something was won, and both were stamped by the listener.
+    expect(fx.callouts.length).toBeGreaterThan(0);
+    expect(fx.callouts.every((callout) => callout.at > 0)).toBe(true);
+    expect(fx.winners.length).toBeGreaterThan(0);
+    expect(fx.winnersAt).toBeGreaterThan(0);
+    expect(fx.chipMoves.length).toBeGreaterThan(0);
+    expect(fx.chipMoves.length).toBeLessThanOrEqual(MAX_CHIP_MOVES);
+    // Every seat named by an effect is a seat at this table.
+    const seats = result.current.state.seats.map((s) => s.id);
+    expect(fx.winners.every((seat) => seats.includes(seat))).toBe(true);
+    expect(fx.callouts.every((callout) => seats.includes(callout.seat))).toBe(true);
+    // The feed is built from the events, not from the trimmed log.
+    expect(fx.feed.some((entry) => entry.type === "action")).toBe(true);
+    expect(fx.feed.some((entry) => entry.type === "street")).toBe(true);
+    expect(fx.handTimes.length).toBeGreaterThanOrEqual(2);
+    unmount();
+  });
+
+  it("keeps its reducer free of the clock", async () => {
+    // The effects layer needs timestamps, which is exactly the pressure that would push a
+    // `Date.now()` into the reducer and make it impure. Guard the boundary itself.
+    const source = await readFile(resolve(process.cwd(), "src/ui/useGame.ts"), "utf8");
+    const start = source.indexOf("function reducer(");
+    const end = source.indexOf("\ninterface Run", start);
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    expect(source.slice(start, end)).not.toContain("Date.now");
+
+    const fx = await readFile(resolve(process.cwd(), "src/ui/fx.ts"), "utf8");
+    expect(fx).not.toContain("Date.now");
   });
 
   it("waits for the human and continues after they act", async () => {

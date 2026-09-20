@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { type CSSProperties, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
@@ -6,11 +6,14 @@ import { ActionBar } from "./ActionBar";
 import { CardView } from "./CardView";
 import { ChipStack } from "./ChipStack";
 import { DecisionBubble } from "./DecisionBubble";
+import { cardText } from "./format";
+import { handsPerMinute } from "./fx";
 import { HistoryPanel } from "./HistoryPanel";
 import { SeatView } from "./SeatView";
 import { ShowcasePanel } from "./ShowcasePanel";
 import { StatsPanel } from "./StatsPanel";
 import { SPEEDS, type Speed } from "./storage";
+import { TableFxLayer } from "./TableFxLayer";
 import { Ticker } from "./Ticker";
 import { presentationTimings } from "./timings";
 import { useCountUp } from "./useCountUp";
@@ -146,6 +149,22 @@ export function TableView({
       betY: 50 + dy * BET_SPOT,
     };
   });
+  const spots = new Map(
+    layout.map(({ seat, x, y, betX, betY }) => [seat.id, { x, y, betX, betY }]),
+  );
+
+  // The effects layer keeps a short history; only each seat's newest shout is on screen.
+  const fx = state.fx;
+  const calloutBySeat = new Map<SeatId, (typeof fx.callouts)[number]>();
+  for (const callout of fx.callouts) calloutBySeat.set(callout.seat, callout);
+  const rate = handsPerMinute(fx.handTimes);
+  /** Durations the felt's animations read; one place to change, one place to speed up. */
+  const feltVars = {
+    "--callout-ms": `${timings.calloutMs}ms`,
+    "--chip-ms": `${timings.chipMoveMs}ms`,
+    "--glow-ms": `${timings.winnerGlowMs}ms`,
+    "--flip-ms": `${timings.cardFlipMs}ms`,
+  } as CSSProperties;
 
   return (
     <section className={showcase ? "table-screen showcase-mode" : "table-screen"}>
@@ -154,6 +173,9 @@ export function TableView({
           <span>{snapshot !== null && t("table.hand", { number: snapshot.handNumber + 1 })}</span>
           {game.spectator && !phone && !showcase && (
             <span className="badge">{t("table.spectating")}</span>
+          )}
+          {game.spectator && !phone && rate !== null && (
+            <span className="badge">{t("table.handsPerMin", { rate })}</span>
           )}
           <label className="visually-hidden" htmlFor={speedId}>
             {t("setup.speed")}
@@ -211,7 +233,7 @@ export function TableView({
         </div>
 
         {showFelt && (
-          <div className="felt">
+          <div className="felt" style={feltVars}>
             {layout.map(({ seat, player, x, y }) => {
               const style = { left: `${x}%`, top: `${y}%` };
               const thinking = state.thinkingSeat === seat.id;
@@ -241,9 +263,16 @@ export function TableView({
                   revealCards={revealAll || game.humanSeats.includes(seat.id)}
                   style={style}
                   overlay={bubble}
+                  callout={calloutBySeat.get(seat.id) ?? null}
+                  bigBlind={bigBlind}
+                  winnerAt={fx.winners.includes(seat.id) ? fx.winnersAt : 0}
+                  flipAt={revealAll ? fx.flipAt : 0}
                 />
               );
             })}
+
+            {/* Chips on their way out to a bet, into the pot, or home to a winner. */}
+            <TableFxLayer moves={fx.chipMoves} spots={spots} bigBlind={bigBlind} />
 
             {/* Each seat's live bet, drawn as chips between the player and the middle. */}
             {layout.map(({ seat, player, betX, betY }) => (
@@ -258,9 +287,14 @@ export function TableView({
 
             <div className="board">
               <div className="board-cards">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <CardView key={i} card={snapshot?.board[i] ?? null} />
-                ))}
+                {[0, 1, 2, 3, 4].map((i) => {
+                  const card = snapshot?.board[i] ?? null;
+                  // Keying on the card itself remounts only the slots that just changed, so
+                  // a new street's cards pop in and the ones already out stay put.
+                  return (
+                    <CardView key={`${i}:${card === null ? "" : cardText(card)}`} card={card} />
+                  );
+                })}
               </div>
               {snapshot !== null && (
                 <PotView

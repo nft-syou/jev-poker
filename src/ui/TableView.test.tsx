@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HandSnapshot, LegalActions } from "../engine/types";
 import { initI18n } from "../i18n";
+import { EMPTY_FX } from "./fx";
 import { TableView } from "./TableView";
 import type { GameController, GameSeat } from "./useGame";
 
@@ -86,6 +87,7 @@ function controller(overrides: Partial<GameController["state"]> = {}): GameContr
       prefetch: { started: 0, hits: 0, misses: 0 },
       lastDecision: null,
       maxPot: 0,
+      fx: EMPTY_FX,
       ...overrides,
     },
     humanSeats: [0],

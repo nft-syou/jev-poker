@@ -1,7 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { HandPlayerSnapshot } from "../engine/types";
+import { CalloutView } from "./CalloutView";
 import { CardView } from "./CardView";
+import type { Callout } from "./fx";
 import type { GameSeat } from "./useGame";
 
 interface Props {
@@ -14,6 +16,13 @@ interface Props {
   style: CSSProperties;
   /** Rendered inside the seat, which is the positioning context for a decision bubble. */
   overlay?: ReactNode;
+  /** The seat's most recent shout, if it still has one. */
+  callout?: Callout | null;
+  bigBlind?: number;
+  /** When this seat last won a pot; a new value restarts its glow. Zero for never. */
+  winnerAt?: number;
+  /** When cards were last revealed at showdown; a new value restarts the flip. */
+  flipAt?: number;
 }
 
 export function SeatView({
@@ -25,13 +34,22 @@ export function SeatView({
   revealCards,
   style,
   overlay,
+  callout = null,
+  bigBlind = 0,
+  winnerAt = 0,
+  flipAt = 0,
 }: Props) {
   const { t } = useTranslation();
   const folded = player?.folded ?? false;
   const classes = ["seat", isActing ? "acting" : "", folded ? "folded" : ""].join(" ");
   return (
     <div className={classes} style={style}>
-      <div className="seat-cards">
+      {/* Keyed by the callout, so a seat that acts twice running flashes twice. */}
+      {callout !== null && (
+        <span key={callout.id} className={`seat-flash flash-${callout.kind}`} aria-hidden="true" />
+      )}
+      {winnerAt > 0 && <span key={winnerAt} className="winner-glow" aria-hidden="true" />}
+      <div className={flipAt > 0 ? "seat-cards flipping" : "seat-cards"} key={flipAt}>
         {player !== undefined && !folded ? (
           <>
             <CardView card={player.holeCards[0]} hidden={!revealCards} />
@@ -54,6 +72,14 @@ export function SeatView({
         {player?.allIn && t("table.allIn")}
         {folded && t("table.folded")}
       </div>
+      {callout !== null && (
+        <CalloutView
+          key={callout.id}
+          kind={callout.kind}
+          amount={callout.amount}
+          bigBlind={bigBlind}
+        />
+      )}
       {overlay}
     </div>
   );

@@ -71,7 +71,16 @@
     "jevError": "Jev could not decide ({{error}}); the CPU played safe.",
     "prefetchOn": "⚡ Prefetch on",
     "prefetchOff": "Prefetch off",
-    "pausedBilling": "Paused: TypeSafe credit exhausted"
+    "pausedBilling": "Paused: TypeSafe credit exhausted",
+    "handsPerMin": "{{rate}} hands/min"
+  },
+  "callout": {
+    "fold": "FOLD",
+    "check": "CHECK",
+    "call": "CALL {{bb}} BB",
+    "bet": "BET {{bb}} BB",
+    "raise": "RAISE {{bb}} BB",
+    "allin": "ALL IN"
   },
   "tabs": {
     "table": "Table",

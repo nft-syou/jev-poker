@@ -71,7 +71,16 @@
     "jevError": "Jev が判断できませんでした ({{error}})。CPU は安全な手を選びました。",
     "prefetchOn": "⚡ 先読み ON",
     "prefetchOff": "先読み OFF",
-    "pausedBilling": "一時停止中: TypeSafe のクレジットが不足しています"
+    "pausedBilling": "一時停止中: TypeSafe のクレジットが不足しています",
+    "handsPerMin": "{{rate}} ハンド/分"
+  },
+  "callout": {
+    "fold": "フォールド",
+    "check": "チェック",
+    "call": "コール {{bb}} BB",
+    "bet": "ベット {{bb}} BB",
+    "raise": "レイズ {{bb}} BB",
+    "allin": "オールイン"
   },
   "tabs": {
     "table": "テーブル",
