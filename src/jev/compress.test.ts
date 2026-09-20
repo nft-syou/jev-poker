@@ -59,8 +59,9 @@ describe('compressState omissions', () => {
     const s = compressState({ ...base, stacks }, legal, getPersona('rock'));
     expect(s.table.playersInHand).toBe(1);
     expect(s.table.stacksBB).toEqual([
-      { seat: 0, isMe: true, stackBB: 90, isAllIn: false, folded: false },
-      { seat: 1, isMe: false, stackBB: 50, isAllIn: false, folded: true },
+      // two seats: no identity flags heads-up
+      { seat: 0, stackBB: 90, isAllIn: false, folded: false },
+      { seat: 1, stackBB: 50, isAllIn: false, folded: true },
     ]);
   });
   it('tolerates an empty stack list', () => {
@@ -116,5 +117,16 @@ describe('compressState split format', () => {
     // Hand/table content is the same either way; only the wording differs.
     expect(post.hand).toEqual(unified.hand);
     expect(post.table).toEqual(unified.table);
+  });
+});
+
+describe('compressState identity flags', () => {
+  it('marks the actor only at tables with three or more seats', () => {
+    const three = compressState(view, legal, getPersona('tag'));
+    expect(three.table.stacksBB.map((x) => x.isMe)).toEqual([true, false, false]);
+    expect(three.history.every((h) => h.isMe === false)).toBe(true);
+    const headsUp = compressState({ ...view, stacks: view.stacks.slice(0, 2) }, legal, getPersona('tag'));
+    expect(headsUp.table.stacksBB.some((x) => 'isMe' in x)).toBe(false);
+    expect(headsUp.history.some((h) => 'isMe' in h)).toBe(false);
   });
 });

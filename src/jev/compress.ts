@@ -94,8 +94,11 @@ export interface JevSeat {
    * True for the acting player's own row: the only marker of who "you" are among the seat numbers.
    * A separate `actor: { seat, position }` object was tried and measurably hurt heads-up play
    * (about -5 bb/100, see bench/EXPERIMENTS.md), so identity is carried by these flags alone.
+   * Present only at tables with three or more seats: heads-up the position already identifies the
+   * player, and measured on 1,000 fresh seeds the flags cost about 11 bb/100 there while they are
+   * worth about 14 bb/100 six-handed.
    */
-  isMe: boolean;
+  isMe?: boolean;
   stackBB: number;
   isAllIn: boolean;
   /** A folded seat is still listed, so the model can tell "0 bb, all-in" from "out of the hand". */
@@ -127,8 +130,8 @@ export interface JevTable {
 export interface JevHistoryEntry {
   street: Street;
   seat: SeatId;
-  /** True when the acting player made this action. */
-  isMe: boolean;
+  /** True when the acting player made this action. Present only with three or more seats (see `JevSeat.isMe`). */
+  isMe?: boolean;
   action: Action['type'];
   amountBB?: number;
 }
@@ -198,6 +201,8 @@ export function compressState(
     ...(showMade ? { board_texture: boardTexture(view.board)! } : {}),
   };
 
+  // Heads-up the position says who you are; with more seats the rows need an explicit marker.
+  const markIdentity = view.stacks.length > 2;
   const potOddsPct = view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0;
   const aggressive = (t: Action['type']) => t === 'bet' || t === 'raise' || t === 'allin';
   const thisStreet = view.history.filter((h) => h.street === view.street);
@@ -223,7 +228,7 @@ export function compressState(
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,
-      isMe: s.seat === view.seat,
+      ...(markIdentity ? { isMe: s.seat === view.seat } : {}),
       stackBB: bb(s.stack, bigBlind),
       isAllIn: s.isAllIn,
       folded: s.folded,
@@ -233,7 +238,7 @@ export function compressState(
   const history: JevHistoryEntry[] = view.history.map((h) => ({
     street: h.street,
     seat: h.seat,
-    isMe: h.seat === view.seat,
+    ...(markIdentity ? { isMe: h.seat === view.seat } : {}),
     action: h.action.type,
     ...(h.action.type === 'bet' || h.action.type === 'raise'
       ? { amountBB: bb(h.action.amount, bigBlind) }
