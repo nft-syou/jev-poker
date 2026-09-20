@@ -4,6 +4,7 @@ import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
 import { ActionBar } from "./ActionBar";
 import { CardView } from "./CardView";
+import { ChipStack } from "./ChipStack";
 import { DecisionBubble } from "./DecisionBubble";
 import { HistoryPanel } from "./HistoryPanel";
 import { SeatView } from "./SeatView";
@@ -12,6 +13,7 @@ import { StatsPanel } from "./StatsPanel";
 import { SPEEDS, type Speed } from "./storage";
 import { Ticker } from "./Ticker";
 import { presentationTimings } from "./timings";
+import { useCountUp } from "./useCountUp";
 import { type GameController, NO_BACKEND_ERROR } from "./useGame";
 
 interface Props {
@@ -33,26 +35,42 @@ interface Props {
 type Panel = "table" | "stats" | "log";
 
 const PHONE_QUERY = "(max-width: 720px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
-function matchesPhone(): boolean {
-  // jsdom (and any non-browser host) has no matchMedia; treat those as wide screens.
+/**
+ * How far from the rail a seat's chips sit, as a fraction of the seat's own distance from
+ * the middle: the bet lands a third of the way in, between the player and the pot.
+ */
+const BET_SPOT = 0.65;
+
+function mediaMatches(query: string): boolean {
+  // jsdom (and any non-browser host) has no matchMedia; treat those as a wide, moving screen.
   return typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia(PHONE_QUERY).matches
+    ? window.matchMedia(query).matches
     : false;
 }
 
-/** True while the viewport is phone-sized, so only one panel is mounted at a time. */
-function usePhone(): boolean {
-  const [phone, setPhone] = useState(matchesPhone);
+/** Tracks one media query. Used for the phone layout and for reduced motion. */
+function useMediaQuery(query: string): boolean {
+  const [on, setOn] = useState(() => mediaMatches(query));
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
-    const query = window.matchMedia(PHONE_QUERY);
-    const onChange = () => setPhone(query.matches);
+    const media = window.matchMedia(query);
+    const onChange = () => setOn(media.matches);
     onChange();
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-  return phone;
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [query]);
+  return on;
+}
+
+/** The pot, drawn as chips, with its number rolling to whatever the last action made it. */
+function PotView({ pot, bigBlind, ms }: { pot: number; bigBlind: number; ms: number }) {
+  const { t } = useTranslation();
+  const shown = useCountUp(pot, ms);
+  const label = `${t("table.pot")}: ${shown}`;
+  if (pot <= 0) return <div className="pot">{label}</div>;
+  return <ChipStack className="pot" amount={pot} bigBlind={bigBlind} label={label} />;
 }
 
 export function TableView({
@@ -69,7 +87,8 @@ export function TableView({
 }: Props) {
   const { t } = useTranslation();
   const speedId = useId();
-  const phone = usePhone();
+  const phone = useMediaQuery(PHONE_QUERY);
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
   const timings = presentationTimings(speed);
   const [panel, setPanel] = useState<Panel>("table");
   /** Recording mode: the table alone, narrated. Kept here, and only for this sitting. */
@@ -109,6 +128,24 @@ export function TableView({
   const showLog = !showcase && (phone ? panel === "log" : panel !== "stats");
   const last = state.lastDecision;
   const nameOf = (seat: SeatId) => personaNames?.[seat] ?? names.get(seat) ?? `#${seat}`;
+  const bigBlind = snapshot?.bigBlind ?? 0;
+
+  // Where each seat sits on the ellipse, and where its chips go: both are wanted by the
+  // seats, by the bet stacks and by anything flying between them, so they are worked out
+  // once here rather than three times over.
+  const layout = state.seats.map((seat, index) => {
+    const angle = ((index - anchorIndex) / count) * 2 * Math.PI + Math.PI / 2;
+    const dx = radiusX * Math.cos(angle);
+    const dy = radiusY * Math.sin(angle);
+    return {
+      seat,
+      player: snapshot?.players.find((p) => p.seat === seat.id),
+      x: 50 + dx,
+      y: 50 + dy,
+      betX: 50 + dx * BET_SPOT,
+      betY: 50 + dy * BET_SPOT,
+    };
+  });
 
   return (
     <section className={showcase ? "table-screen showcase-mode" : "table-screen"}>
@@ -175,13 +212,8 @@ export function TableView({
 
         {showFelt && (
           <div className="felt">
-            {state.seats.map((seat, index) => {
-              const angle = ((index - anchorIndex) / count) * 2 * Math.PI + Math.PI / 2;
-              const style = {
-                left: `${50 + radiusX * Math.cos(angle)}%`,
-                top: `${50 + radiusY * Math.sin(angle)}%`,
-              };
-              const player = snapshot?.players.find((p) => p.seat === seat.id);
+            {layout.map(({ seat, player, x, y }) => {
+              const style = { left: `${x}%`, top: `${y}%` };
               const thinking = state.thinkingSeat === seat.id;
               // A seat is narrated while it thinks, and for a moment after it has decided.
               const decided = last !== null && last.seat === seat.id ? last : null;
@@ -212,6 +244,18 @@ export function TableView({
                 />
               );
             })}
+
+            {/* Each seat's live bet, drawn as chips between the player and the middle. */}
+            {layout.map(({ seat, player, betX, betY }) => (
+              <ChipStack
+                key={seat.id}
+                className="bet-stack"
+                amount={player?.streetBet ?? 0}
+                bigBlind={bigBlind}
+                style={{ left: `${betX}%`, top: `${betY}%` }}
+              />
+            ))}
+
             <div className="board">
               <div className="board-cards">
                 {[0, 1, 2, 3, 4].map((i) => (
@@ -219,9 +263,11 @@ export function TableView({
                 ))}
               </div>
               {snapshot !== null && (
-                <div className="pot">
-                  {t("table.pot")}: {snapshot.pot}
-                </div>
+                <PotView
+                  pot={snapshot.pot}
+                  bigBlind={bigBlind}
+                  ms={reducedMotion ? 0 : timings.potCountMs}
+                />
               )}
             </div>
           </div>

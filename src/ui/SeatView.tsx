@@ -54,9 +54,6 @@ export function SeatView({
         {player?.allIn && t("table.allIn")}
         {folded && t("table.folded")}
       </div>
-      {player !== undefined && player.streetBet > 0 && (
-        <div className="seat-bet">{player.streetBet}</div>
-      )}
       {overlay}
     </div>
   );
