@@ -269,7 +269,11 @@ export function useGame(options: UseGameOptions): GameController {
   const pausedRef = useRef(false);
   /** Set when the loop stopped itself because Jev rejected the key. */
   const authPausedRef = useRef(false);
-  /** Set when the loop stopped itself because TypeSafe returned 402 Payment Required. */
+  /**
+   * Set when the loop stopped itself because TypeSafe returned 402 Payment Required. Mirrors
+   * `authPausedRef` for symmetry, but nothing branches on it: unlike an auth pause, a billing
+   * pause never auto-resumes, so the UI is driven entirely by `state.pauseReason` instead.
+   */
   const billingPausedRef = useRef(false);
   /** Set when the loop gave up because there was no backend to ask. */
   const noBackendRef = useRef(false);

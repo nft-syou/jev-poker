@@ -113,7 +113,10 @@ function stubViewport(phone: boolean): void {
   }));
 }
 
-function renderTable(overrides: Partial<GameController["state"]> = {}) {
+function renderTable(
+  overrides: Partial<GameController["state"]> = {},
+  extraProps: Partial<{ prefetch: boolean; onPrefetchChange: (prefetch: boolean) => void }> = {},
+) {
   return render(
     <TableView
       game={controller(overrides)}
@@ -122,6 +125,7 @@ function renderTable(overrides: Partial<GameController["state"]> = {}) {
       language="en"
       onSpeedChange={() => {}}
       onLeave={() => {}}
+      {...extraProps}
     />,
   );
 }
@@ -202,5 +206,64 @@ describe("TableView", () => {
     expect(container.querySelector(".felt")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Statistics" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Hand history" })).not.toBeInTheDocument();
+  });
+
+  it("shows the prefetch-on toggle and flips the setting off when clicked", () => {
+    stubViewport(false);
+    const onPrefetchChange = vi.fn();
+    renderTable({}, { prefetch: true, onPrefetchChange });
+
+    const button = screen.getByRole("button", { name: "⚡ Prefetch on" });
+    fireEvent.click(button);
+    expect(onPrefetchChange).toHaveBeenCalledWith(false);
+  });
+
+  it("shows the prefetch-off toggle and flips the setting on when clicked", () => {
+    stubViewport(false);
+    const onPrefetchChange = vi.fn();
+    renderTable({}, { prefetch: false, onPrefetchChange });
+
+    const button = screen.getByRole("button", { name: "Prefetch off" });
+    fireEvent.click(button);
+    expect(onPrefetchChange).toHaveBeenCalledWith(true);
+  });
+
+  it("hides the prefetch toggle when no onPrefetchChange is supplied", () => {
+    stubViewport(false);
+    renderTable();
+    expect(screen.queryByRole("button", { name: "⚡ Prefetch on" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Prefetch off" })).not.toBeInTheDocument();
+  });
+
+  it("shows the billing pause notice only while paused for billing", () => {
+    stubViewport(false);
+    renderTable({ paused: true, pauseReason: "billing" });
+    expect(screen.getByText("Paused: TypeSafe credit exhausted")).toBeInTheDocument();
+  });
+
+  it("hides the billing pause notice when there is no pause reason", () => {
+    stubViewport(false);
+    renderTable({ paused: false, pauseReason: null });
+    expect(screen.queryByText("Paused: TypeSafe credit exhausted")).not.toBeInTheDocument();
+  });
+
+  it("hides the prefetch toggle and the billing notice in recording mode", () => {
+    stubViewport(false);
+    const onPrefetchChange = vi.fn();
+    renderTable({ paused: true, pauseReason: "billing" }, { prefetch: true, onPrefetchChange });
+
+    // Both controls are present in the normal header...
+    expect(screen.getByRole("button", { name: "⚡ Prefetch on" })).toBeInTheDocument();
+    expect(screen.getByText("Paused: TypeSafe credit exhausted")).toBeInTheDocument();
+
+    // ...but recording mode's header only keeps the speed select, the pause/resume button and
+    // the exit control; the prefetch toggle and the billing badge step aside with everything
+    // else that isn't the table itself.
+    fireEvent.click(screen.getByRole("button", { name: "Recording mode" }));
+    expect(screen.queryByRole("button", { name: "⚡ Prefetch on" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Prefetch off" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Paused: TypeSafe credit exhausted")).not.toBeInTheDocument();
+    // The pause/resume control itself survives recording mode, same as before.
+    expect(screen.getByRole("button", { name: "Resume" })).toBeInTheDocument();
   });
 });
