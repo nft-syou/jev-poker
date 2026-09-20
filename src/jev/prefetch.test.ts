@@ -347,4 +347,20 @@ describe("DecisionCache", () => {
     cache.prefetch("b", () => Promise.resolve(record(1)));
     expect(cache.stats.started).toBe(2);
   });
+
+  it("applies a new in-flight cap to future prefetches", () => {
+    const cache = new DecisionCache({ maxInFlight: 1 });
+    cache.prefetch("a", () => new Promise(() => {}));
+    cache.prefetch("b", () => new Promise(() => {}));
+    expect(cache.stats.started).toBe(1); // capped at 1
+
+    cache.setMaxInFlight(3);
+    cache.prefetch("b", () => new Promise(() => {}));
+    cache.prefetch("c", () => new Promise(() => {}));
+    expect(cache.stats.started).toBe(3);
+
+    cache.setMaxInFlight(1);
+    cache.prefetch("d", () => new Promise(() => {}));
+    expect(cache.stats.started).toBe(3); // already at the new, lower cap
+  });
 });

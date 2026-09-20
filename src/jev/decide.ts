@@ -23,7 +23,7 @@ export interface DecisionRecord {
   readonly action: Action;
   readonly jev: DecisionJev | null;
   readonly error: string | null;
-  readonly errorKind: "auth" | "other" | null;
+  readonly errorKind: "auth" | "billing" | "other" | null;
   /** True when the action came from `fallbackAction`, not from Jev. */
   readonly fallback: boolean;
   readonly latencyMs: number;
@@ -108,7 +108,7 @@ export async function decideAction(input: DecideInput): Promise<DecisionRecord> 
       action: fallbackAction(input.legal),
       jev: null,
       error: describeError(error),
-      errorKind: isAuthError(error) ? "auth" : "other",
+      errorKind: errorKindFor(error),
       fallback: true,
     });
   }
@@ -202,6 +202,17 @@ function toAction(
 function isAuthError(error: unknown): boolean {
   if (error instanceof AuthenticationError || error instanceof PermissionDeniedError) return true;
   return error instanceof APIError && (error.status === 401 || error.status === 403);
+}
+
+/** HTTP 402: the TypeSafe account has run out of credit. */
+function isBillingError(error: unknown): boolean {
+  return error instanceof APIError && error.status === 402;
+}
+
+function errorKindFor(error: unknown): "auth" | "billing" | "other" {
+  if (isAuthError(error)) return "auth";
+  if (isBillingError(error)) return "billing";
+  return "other";
 }
 
 function describeError(error: unknown): string {

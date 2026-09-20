@@ -156,7 +156,7 @@ export interface DecisionCacheStats {
  * itself, so a stale entry is never wrong — it is simply never taken.
  */
 export class DecisionCache {
-  private readonly maxInFlight: number;
+  private maxInFlight: number;
   private readonly entries = new Map<DecisionKey, CacheEntry>();
   /** Entries started and not yet settled, including ones already taken. */
   private readonly running = new Set<CacheEntry>();
@@ -173,6 +173,11 @@ export class DecisionCache {
 
   get inFlight(): number {
     return this.running.size;
+  }
+
+  /** Changes the in-flight cap; entries already running are unaffected. */
+  setMaxInFlight(n: number): void {
+    this.maxInFlight = n;
   }
 
   /** Starts a speculative decision unless it is already cached or the cap is reached. */

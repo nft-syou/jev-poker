@@ -1,5 +1,5 @@
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
-import { AuthenticationError } from "@typesafe-ai/sdk";
+import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
 import { createDeck, parseCards, sameCard } from "../engine/cards";
 import { Hand } from "../engine/hand";
@@ -264,6 +264,25 @@ describe("decideAction", () => {
       rng: createRng(1),
     });
     expect(record.errorKind).toBe("auth");
+    expect(record.fallback).toBe(true);
+  });
+
+  it("flags billing failures (HTTP 402 payment required)", async () => {
+    const hand = openHand();
+    const snapshot = hand.snapshot();
+    const backend = fakeBackend(
+      () => new APIError(402, { error: "insufficient credits" }, new Headers(), "payment required"),
+    );
+    const record = await decideAction({
+      backend,
+      seat: 0,
+      features: buildFeatures({ snapshot, seat: 0, actions: [], persona }),
+      legal: hand.legalActions(0),
+      snapshot,
+      variance: 0.5,
+      rng: createRng(1),
+    });
+    expect(record.errorKind).toBe("billing");
     expect(record.fallback).toBe(true);
   });
 
