@@ -128,6 +128,34 @@ describe("DecisionBubble", () => {
     expect(screen.getByText("RAISE to 12 BB")).toBeInTheDocument();
   });
 
+  it("releases the hold inside 200 ms at max speed", () => {
+    vi.useFakeTimers();
+    const { rerender } = renderBubble({ thinking: true, speed: "max" });
+
+    act(() => void vi.advanceTimersByTime(10));
+    rerender(
+      <DecisionBubble
+        seat={1}
+        personaName="LAG"
+        thinking={false}
+        decision={decision()}
+        features={FEATURES}
+        bigBlind={2}
+        visibleUntil={null}
+        speed="max"
+      />,
+    );
+    // Max speed has no engine delay at all, so the hold must be short enough that the
+    // decision is on screen before the next seat's answer lands.
+    act(() => void vi.advanceTimersByTime(190));
+    expect(screen.queryByText("Jev thinking…")).not.toBeInTheDocument();
+    expect(screen.getByText("RAISE to 12 BB")).toBeInTheDocument();
+
+    // ...and short enough that it clears again well before a second has passed.
+    act(() => void vi.advanceTimersByTime(600));
+    expect(screen.queryByText("RAISE to 12 BB")).not.toBeInTheDocument();
+  });
+
   it("flashes a prefetched answer through instead of holding it back", () => {
     vi.useFakeTimers();
     const { rerender } = renderBubble({ thinking: true });

@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { SeatId } from "../engine/types";
 import type { DecisionFeatures } from "../jev/features";
 import { actionText, DecisionCost, ProbabilityBars } from "./showcase";
+import type { Speed } from "./storage";
+import { presentationTimings } from "./timings";
 import type { DecisionInfo } from "./useGame";
 
 interface Props {
@@ -14,14 +16,12 @@ interface Props {
   bigBlind: number;
   /** `Date.now()` after which the decision stops showing; null keeps the default window. */
   visibleUntil: number | null;
+  /** Table speed, which sets how long the bubble holds each state. Defaults to `normal`. */
+  speed?: Speed;
 }
 
-/** How long "thinking" stays up once it has appeared, so it is readable on a recording. */
-const MIN_THINKING_MS = 600;
 /** A prefetched answer needs no thinking time; it flashes instead. */
 const FLASH_MS = 300;
-/** How long a decision stays up when the caller names no deadline. */
-const VISIBLE_MS = 2500;
 
 /**
  * The overlay above one seat: what Jev is doing, then what it decided. Positioned by the
@@ -36,9 +36,11 @@ export function DecisionBubble({
   features,
   bigBlind,
   visibleUntil,
+  speed = "normal",
 }: Props) {
   const { t } = useTranslation();
   const prefetched = decision?.prefetched === true;
+  const { thinkingHoldMs, decisionHoldMs } = presentationTimings(speed);
 
   // Jev can answer faster than the eye follows, so hold the thinking line open a moment.
   // The hold is released on the falling edge, for whatever is left of it: a timer started
@@ -52,14 +54,14 @@ export function DecisionBubble({
       return;
     }
     const start = thinkingStartRef.current;
-    const remaining = start === null ? 0 : MIN_THINKING_MS - (Date.now() - start);
+    const remaining = start === null ? 0 : thinkingHoldMs - (Date.now() - start);
     if (remaining <= 0) {
       setHolding(false);
       return;
     }
     const timer = setTimeout(() => setHolding(false), remaining);
     return () => clearTimeout(timer);
-  }, [thinking]);
+  }, [thinking, thinkingHoldMs]);
 
   // A prefetched answer was already in hand: flash the bolt rather than fake a pause.
   const [flashing, setFlashing] = useState(false);
@@ -76,7 +78,7 @@ export function DecisionBubble({
       setExpired(false);
       return;
     }
-    const ms = visibleUntil === null ? VISIBLE_MS : visibleUntil - Date.now();
+    const ms = visibleUntil === null ? decisionHoldMs : visibleUntil - Date.now();
     if (ms <= 0) {
       setExpired(true);
       return;
@@ -84,7 +86,7 @@ export function DecisionBubble({
     setExpired(false);
     const timer = setTimeout(() => setExpired(true), ms);
     return () => clearTimeout(timer);
-  }, [decision, visibleUntil]);
+  }, [decision, visibleUntil, decisionHoldMs]);
 
   if (thinking || (holding && !prefetched)) {
     return (

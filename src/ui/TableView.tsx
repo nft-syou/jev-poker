@@ -11,6 +11,7 @@ import { ShowcasePanel } from "./ShowcasePanel";
 import { StatsPanel } from "./StatsPanel";
 import { SPEEDS, type Speed } from "./storage";
 import { Ticker } from "./Ticker";
+import { presentationTimings } from "./timings";
 import { type GameController, NO_BACKEND_ERROR } from "./useGame";
 
 interface Props {
@@ -32,9 +33,6 @@ interface Props {
 type Panel = "table" | "stats" | "log";
 
 const PHONE_QUERY = "(max-width: 720px)";
-
-/** How long a decision keeps its bubble over the seat that made it. */
-const BUBBLE_MS = 2500;
 
 function matchesPhone(): boolean {
   // jsdom (and any non-browser host) has no matchMedia; treat those as wide screens.
@@ -72,6 +70,7 @@ export function TableView({
   const { t } = useTranslation();
   const speedId = useId();
   const phone = usePhone();
+  const timings = presentationTimings(speed);
   const [panel, setPanel] = useState<Panel>("table");
   /** Recording mode: the table alone, narrated. Kept here, and only for this sitting. */
   const [showcase, setShowcase] = useState(false);
@@ -195,7 +194,8 @@ export function TableView({
                     decision={decided?.record ?? null}
                     features={decided?.features ?? null}
                     bigBlind={snapshot?.bigBlind ?? 0}
-                    visibleUntil={decided === null ? null : decided.at + BUBBLE_MS}
+                    visibleUntil={decided === null ? null : decided.at + timings.decisionHoldMs}
+                    speed={speed}
                   />
                 ) : null;
               return (
