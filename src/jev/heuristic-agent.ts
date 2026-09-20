@@ -15,7 +15,7 @@ export class HeuristicAgent implements Agent {
 
   async decide(view: PlayerView, legal: LegalActions): Promise<Action> {
     const state = compressState(view, legal, getPersona('tag'));
-    return view.street === 'preflop' ? preflop(state, view, legal) : postflop(state, view, legal);
+    return view.street === 'preflop' ? chartPreflop(state, view, legal) : postflop(state, view, legal);
   }
 }
 
@@ -49,7 +49,8 @@ const OPEN_TIERS: Record<string, readonly string[]> = {
   BB: ['premium', 'strong'],
 };
 
-function preflop(state: JevState, view: PlayerView, legal: LegalActions): Action {
+/** Position-based preflop chart over `preflopStrength`: open, isolate, 3-bet and continue ranges. Also used by `JevAgent` with `preflop: 'chart'`. */
+export function chartPreflop(state: JevState, view: PlayerView, legal: LegalActions): Action {
   const tier = state.hand.preflopStrength;
   const { position, raisesThisStreet, myBetWasRaisedThisStreet, unopenedPot, toCallBB } = state.table;
   const bb = view.bigBlind;

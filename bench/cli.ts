@@ -83,6 +83,7 @@ async function main(): Promise<void> {
       backend,
       promptStyle: opts.promptStyle,
       hero: opts.hero,
+      preflop: opts.preflop,
       signal: controller.signal,
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
@@ -113,6 +114,7 @@ async function main(): Promise<void> {
         promptStyle: opts.promptStyle,
         ...(opts.variance !== null ? { variance: opts.variance } : {}),
         ...(opts.hero !== 'jev' ? { hero: opts.hero } : {}),
+        ...(opts.preflop !== 'jev' ? { preflop: opts.preflop } : {}),
       },
       summary: summarize(hands, matchup.format),
       hands,

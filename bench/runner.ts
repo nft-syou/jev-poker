@@ -35,6 +35,8 @@ export interface RunOptions {
   backend: JevBackend;
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
+  /** `chart`: the Jev agent uses the preflop chart in code and asks Jev only after the flop. */
+  preflop?: 'jev' | 'chart';
   /** `heuristic` seats the fixed rule set over Jev's own features instead of the Jev agent. */
   hero?: 'jev' | 'heuristic';
   signal?: AbortSignal;
@@ -55,6 +57,7 @@ export interface PlayHandArgs {
   backend: JevBackend;
   promptStyle?: PromptStyle;
   hero?: 'jev' | 'heuristic';
+  preflop?: 'jev' | 'chart';
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: TableEvent) => void;
 }
@@ -82,6 +85,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
             seed: hashSeed(baseSeed, seedIndex, rotation, JEV_SEED_TAG),
             onDecision: (record) => decisions.push(record),
             ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
+            ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
           })
         : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
     );
@@ -217,6 +221,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           backend,
           ...(opts.promptStyle !== undefined ? { promptStyle: opts.promptStyle } : {}),
           ...(opts.hero !== undefined ? { hero: opts.hero } : {}),
+          ...(opts.preflop !== undefined ? { preflop: opts.preflop } : {}),
         });
       } catch (err) {
         failed = true;

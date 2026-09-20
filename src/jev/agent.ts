@@ -5,6 +5,7 @@ import { Rng } from '../engine/rng.js';
 import type { Action, LegalActions, PlayerView, Street } from '../engine/types.js';
 import type { JevAnswers, JevBackend } from './backend.js';
 import { compressState } from './compress.js';
+import { chartPreflop } from './heuristic-agent.js';
 import { buildQuestions, legalChoices, SIZING_LABELS, type ActionChoice, type PromptStyle } from './questions.js';
 import type { Persona } from './personas.js';
 
@@ -42,6 +43,8 @@ export interface JevAgentOptions {
   onDecision?: (record: DecisionRecord) => void;
   /** One shared state/question format (default) or a preflop/postflop pair. */
   promptStyle?: PromptStyle;
+  /** `chart`: preflop decisions come from the position-based chart in code; Jev decides postflop only. */
+  preflop?: 'jev' | 'chart';
 }
 
 function clamp(x: number, min: number, max: number): number {
@@ -179,6 +182,7 @@ export class JevAgent implements Agent {
   private readonly rng: Rng;
   private readonly onDecision: ((record: DecisionRecord) => void) | undefined;
   private readonly promptStyle: PromptStyle;
+  private readonly preflop: 'jev' | 'chart';
 
   constructor(opts: JevAgentOptions) {
     this.persona = opts.persona;
@@ -186,6 +190,7 @@ export class JevAgent implements Agent {
     this.rng = new Rng(opts.seed);
     this.onDecision = opts.onDecision;
     this.promptStyle = opts.promptStyle ?? 'unified';
+    this.preflop = opts.preflop ?? 'jev';
     this.id = `jev:${opts.persona.id}`;
   }
 
@@ -197,6 +202,26 @@ export class JevAgent implements Agent {
       // Inside the try: building the state can throw too (e.g. a malformed view),
       // and that must fail open rather than stall the table.
       const state = compressState(view, legal, this.persona, this.promptStyle);
+      if (this.preflop === 'chart' && view.street === 'preflop') {
+        const action = chartPreflop(state, view, legal);
+        const choice: ActionChoice =
+          action.type === 'fold' ? 'fold' : action.type === 'check' || action.type === 'call' ? 'check_or_call' : 'bet_or_raise';
+        this.onDecision?.({
+          street: view.street,
+          choice,
+          action,
+          probabilities: { fold: 0, check_or_call: 0, bet_or_raise: 0, [choice]: 1 },
+          sizingScore: null,
+          bluffIntent: null,
+          latencyMs: performance.now() - t0,
+          apiCall: false,
+          model: 'chart',
+          equityVsRandomPct: state.hand.equityVsRandomPct,
+          equityVsRangePct: state.hand.equityVsRangePct,
+          myBetWasRaised: state.table.myBetWasRaisedThisStreet,
+        });
+        return action;
+      }
       const questions = buildQuestions(legal, { street: view.street, style: this.promptStyle });
       const { answers, model } = await this.backend.systemOne(state, questions);
       const { action, choice, sizingScore } = answersToAction(

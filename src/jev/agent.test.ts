@@ -154,3 +154,21 @@ describe('answersToAction postflop sizes are pot fractions, not minimum-raise pl
     expect(answersToAction(answers({ bet_or_raise: 1 }, 3), l, v, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 2300 });
   });
 });
+
+describe('JevAgent with the preflop chart', () => {
+  it('never calls the backend preflop and still asks Jev after the flop', async () => {
+    let calls = 0;
+    const inner = createMockBackend();
+    const backend = { kind: 'mock' as const, systemOne: async (...a: Parameters<typeof inner.systemOne>) => { calls++; return inner.systemOne(...a); } };
+    const records: { model?: string; street: string }[] = [];
+    const agent = new JevAgent({ persona: getPersona('tag'), backend, seed: 1, preflop: 'chart', onDecision: (r) => records.push(r) });
+    const twoSeats = [{ seat: 0, stack: 10000, isAllIn: false, folded: false }, { seat: 1, stack: 10000, isAllIn: false, folded: false }];
+    const pre = { ...view, street: 'preflop' as const, board: [], pot: 150, toCall: 100, currentBet: 100, stacks: twoSeats };
+    const open = { canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 200, maxRaiseTo: 10000 };
+    expect(await agent.decide(pre, open)).toEqual({ type: 'raise', amount: 250 }); // AKs on the button: chart open
+    expect(calls).toBe(0);
+    expect(records[0]).toMatchObject({ street: 'preflop', model: 'chart' });
+    await agent.decide({ ...view, stacks: twoSeats }, legal);
+    expect(calls).toBe(1);
+  });
+});

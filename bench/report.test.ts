@@ -125,6 +125,7 @@ describe('parseArgs', () => {
       promptStyle: 'unified',
       variance: null,
       hero: 'jev',
+      preflop: 'jev',
     }));
 
   it('parses values', () =>

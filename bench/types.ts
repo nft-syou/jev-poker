@@ -72,6 +72,8 @@ export interface BenchConfig {
   gitCommit: string | null;
   /** Absent in results written before the split-format experiment (= `unified`). */
   promptStyle?: 'unified' | 'split';
+  /** `chart`: the Jev agent takes its preflop decisions from the chart in code. */
+  preflop?: 'jev' | 'chart';
   /** Who sits in the measured seat: the Jev agent (default) or the fixed heuristic over the same features. */
   hero?: 'jev' | 'heuristic';
   /** Persona variance override (`--variance`); absent = the persona's own value. */
