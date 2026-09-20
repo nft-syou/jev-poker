@@ -13,6 +13,7 @@ export interface CliOptions {
   promptStyle: 'unified' | 'split';
   /** Overrides the persona's variance when set. */
   variance: number | null;
+  hero: 'jev' | 'heuristic';
 }
 
 export const USAGE = `Usage: pnpm bench [options]
@@ -27,6 +28,7 @@ export const USAGE = `Usage: pnpm bench [options]
   --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
   --model <name>                       model passed to the SDK, default the SDK's own
   --prompt unified|split               one state/question format, or separate preflop/postflop ones (default unified)
+  --hero jev|heuristic                 who sits in the measured seat: Jev (default) or the fixed heuristic over the same features
   --variance X                         override the persona's variance, 0 (always the most likely action) to 1
   --help, -h                           print this message
 
@@ -75,6 +77,7 @@ function seconds(ms: number): string {
 function conditions(r: BenchResult): string {
   const parts = [`base ${r.config.baseSeed}`];
   if ((r.config.promptStyle ?? 'unified') === 'split') parts.push('split');
+  if (r.config.hero === 'heuristic') parts.push('heuristic');
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === 'mock') parts.push('mock');
   if (r.config.model !== null) parts.push(r.config.model);
@@ -84,7 +87,7 @@ function conditions(r: BenchResult): string {
 /** Identity of an experimental configuration: two results with the same key measure the same thing. */
 export function configKey(r: BenchResult): string {
   const c = r.config;
-  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.variance ?? null, c.seeds, c.baseSeed, c.gitCommit]);
+  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.variance ?? null, c.hero ?? 'jev', c.seeds, c.baseSeed, c.gitCommit]);
 }
 
 function row(r: BenchResult): string {
@@ -188,6 +191,7 @@ export function parseArgs(argv: string[]): CliOptions {
     model: null,
     promptStyle: 'unified',
     variance: null,
+    hero: 'jev',
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -237,6 +241,12 @@ export function parseArgs(argv: string[]): CliOptions {
         const value = Number(take());
         if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error('invalid --variance: expected a number from 0 to 1');
         options.variance = value;
+        break;
+      }
+      case '--hero': {
+        const value = take();
+        if (value !== 'jev' && value !== 'heuristic') throw new Error(`invalid --hero: ${value}`);
+        options.hero = value;
         break;
       }
       case '--prompt': {

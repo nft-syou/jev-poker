@@ -4,6 +4,7 @@ import { hashSeed } from '../src/engine/rng.js';
 import { Table } from '../src/engine/table.js';
 import { fixedBlinds, type GameConfig, type SeatId, type TableEvent } from '../src/engine/types.js';
 import { JevAgent, type DecisionRecord } from '../src/jev/agent.js';
+import { HeuristicAgent } from '../src/jev/heuristic-agent.js';
 import type { JevBackend } from '../src/jev/backend.js';
 import type { Persona } from '../src/jev/personas.js';
 import type { PromptStyle } from '../src/jev/questions.js';
@@ -34,6 +35,8 @@ export interface RunOptions {
   backend: JevBackend;
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
+  /** `heuristic` seats the fixed rule set over Jev's own features instead of the Jev agent. */
+  hero?: 'jev' | 'heuristic';
   signal?: AbortSignal;
   onHand?: (done: number, total: number) => void;
   /** Called once per Jev decision, as the hand that produced it finishes. */
@@ -51,6 +54,7 @@ export interface PlayHandArgs {
   persona: Persona;
   backend: JevBackend;
   promptStyle?: PromptStyle;
+  hero?: 'jev' | 'heuristic';
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: TableEvent) => void;
 }
@@ -70,7 +74,9 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   for (let seat = 0; seat < n; seat++) {
     agents.push(
       seat === jevSeat
-        ? new JevAgent({
+        ? args.hero === 'heuristic'
+          ? new HeuristicAgent()
+          : new JevAgent({
             persona,
             backend,
             seed: hashSeed(baseSeed, seedIndex, rotation, JEV_SEED_TAG),
@@ -210,6 +216,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           persona,
           backend,
           ...(opts.promptStyle !== undefined ? { promptStyle: opts.promptStyle } : {}),
+          ...(opts.hero !== undefined ? { hero: opts.hero } : {}),
         });
       } catch (err) {
         failed = true;

@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   const opts = readOptions();
 
   // The SDK client is built eagerly and throws without a key, so this check comes first.
-  if (opts.backend === 'typesafe' && (process.env['TYPESAFE_API_KEY'] ?? '') === '') {
+  if (opts.hero === 'jev' && opts.backend === 'typesafe' && (process.env['TYPESAFE_API_KEY'] ?? '') === '') {
     fail('TYPESAFE_API_KEY is not set');
   }
 
@@ -82,6 +82,7 @@ async function main(): Promise<void> {
       persona,
       backend,
       promptStyle: opts.promptStyle,
+      hero: opts.hero,
       signal: controller.signal,
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
@@ -111,6 +112,7 @@ async function main(): Promise<void> {
         gitCommit: commit,
         promptStyle: opts.promptStyle,
         ...(opts.variance !== null ? { variance: opts.variance } : {}),
+        ...(opts.hero !== 'jev' ? { hero: opts.hero } : {}),
       },
       summary: summarize(hands, matchup.format),
       hands,

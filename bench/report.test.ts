@@ -124,6 +124,7 @@ describe('parseArgs', () => {
       model: null,
       promptStyle: 'unified',
       variance: null,
+      hero: 'jev',
     }));
 
   it('parses values', () =>
