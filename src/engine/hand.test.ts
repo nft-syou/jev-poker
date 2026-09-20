@@ -324,3 +324,15 @@ describe('Hand invariants (randomised play)', () => {
     }
   });
 });
+
+describe('Hand view betting fields', () => {
+  it('reports the bet to match and the chips already in on this street', () => {
+    const { hand } = mk([10000, 10000]);
+    expect(hand.view(0)).toMatchObject({ toCall: 50, currentBet: 100, committedThisStreet: 50 });
+    expect(hand.view(1)).toMatchObject({ toCall: 0, currentBet: 100, committedThisStreet: 100 });
+    hand.act(0, { type: 'raise', amount: 300 });
+    expect(hand.view(1)).toMatchObject({ toCall: 200, currentBet: 300, committedThisStreet: 100 });
+    hand.act(1, { type: 'call' });
+    expect(hand.view(1)).toMatchObject({ toCall: 0, currentBet: 0, committedThisStreet: 0 });
+  });
+});

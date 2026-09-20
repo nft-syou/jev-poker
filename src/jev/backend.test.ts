@@ -14,6 +14,8 @@ const baseView: PlayerView = {
   stacks: [{ seat: 0, stack: 9000, isAllIn: false, folded: false }],
   pot: 300,
   toCall: 100,
+  currentBet: 100,
+  committedThisStreet: 0,
   bigBlind: 100,
   position: 'BTN',
   history: [],

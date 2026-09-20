@@ -75,6 +75,8 @@ export function randomView(rng: Rng): { view: PlayerView; legal: LegalActions } 
     });
   }
 
+  // Chips already in on this street: none, or a previous bet that has now been raised.
+  const committedThisStreet = toCall > 0 && rng.next() < 0.3 ? bigBlind * (1 + rng.int(4)) : 0;
   const view: PlayerView = {
     seat,
     street,
@@ -83,6 +85,8 @@ export function randomView(rng: Rng): { view: PlayerView; legal: LegalActions } 
     stacks,
     pot,
     toCall,
+    currentBet: toCall + committedThisStreet,
+    committedThisStreet,
     bigBlind,
     position,
     history,

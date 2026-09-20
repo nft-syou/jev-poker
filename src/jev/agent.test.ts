@@ -9,7 +9,7 @@ import { getPersona } from './personas.js';
 import type { JevAnswers } from './backend.js';
 
 const legal = { canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 300, maxRaiseTo: 10000 };
-const view = { seat: 0, street: 'flop' as const, holeCards: parseCards('Ah Kh'), board: parseCards('Qh Jh 2c'), stacks: [], pot: 600, toCall: 100, bigBlind: 100, position: 'BTN' as const, history: [] };
+const view = { seat: 0, street: 'flop' as const, holeCards: parseCards('Ah Kh'), board: parseCards('Qh Jh 2c'), stacks: [], pot: 600, toCall: 100, currentBet: 100, committedThisStreet: 0, bigBlind: 100, position: 'BTN' as const, history: [] };
 const answers = (p: Record<string, number>, score = 3): JevAnswers => ({
   action: { type: 'choice', choice: 'fold', confidence: 1, probabilities: p } as never,
   sizing: { type: 'score', score, confidence: 1, legend: {} as never, probabilities: {} as never },
@@ -28,7 +28,7 @@ describe('answersToAction', () => {
   });
   it('maps sizing to a clamped raise and all-in at the top', () => {
     expect(answersToAction(answers({ bet_or_raise: 1 }, 0), legal, view, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 300 });
-    expect(answersToAction(answers({ bet_or_raise: 1 }, 3), legal, view, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 1000 });  // 300 + 1.0*(600+100)
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 3), legal, view, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 800 });  // raise to 100 + 1.0*(600+100): a pot-sized raise
     expect(answersToAction(answers({ bet_or_raise: 1 }, 5), legal, view, 0, new Rng(1)).action).toEqual({ type: 'allin' });
   });
   it('ignores illegal choices', () => {
@@ -60,15 +60,17 @@ describe('answersToAction sizing steps', () => {
     answersToAction(answers({ bet_or_raise: 1 }, score), { ...legal, ...over }, view, 0, new Rng(1)).action;
 
   it('maps the pot fractions between the extremes', () => {
-    expect(at(1)).toEqual({ type: 'raise', amount: 533 }); // 300 + (1/3)*700
-    expect(at(2)).toEqual({ type: 'raise', amount: 767 }); // 300 + (2/3)*700
-    expect(at(4)).toEqual({ type: 'raise', amount: 1350 }); // 300 + 1.5*700
+    expect(at(1)).toEqual({ type: 'raise', amount: 333 }); // 100 + (1/3)*700
+    expect(at(2)).toEqual({ type: 'raise', amount: 567 }); // 100 + (2/3)*700
+    expect(at(4)).toEqual({ type: 'raise', amount: 1150 }); // 100 + 1.5*700
   });
   it('goes all-in when the clamped raise reaches the maximum', () => {
-    expect(at(3, { maxRaiseTo: 900 })).toEqual({ type: 'allin' });
+    expect(at(3, { maxRaiseTo: 700 })).toEqual({ type: 'allin' }); // the pot-sized raise to 800 exceeds the stack
   });
   it('bets rather than raises when checking is free', () => {
-    expect(at(3, { canCheck: true, canFold: false, callAmount: null })).toEqual({ type: 'bet', amount: 1000 });
+    const free = { ...view, toCall: 0, currentBet: 0 };
+    const r = answersToAction(answers({ bet_or_raise: 1 }, 3), { ...legal, canCheck: true, canFold: false, callAmount: null }, free, 0, new Rng(1));
+    expect(r.action).toEqual({ type: 'bet', amount: 600 }); // a pot-sized bet is the pot
   });
   it('never returns a raise when raising is impossible', () => {
     const r = answersToAction(answers({ fold: 0.1, check_or_call: 0.9, bet_or_raise: 1 }, 3), { ...legal, minRaiseTo: null, maxRaiseTo: null }, view, 0, new Rng(1));
@@ -130,5 +132,25 @@ describe('answersToAction preflop sizing', () => {
     const legal3 = { ...open, callAmount: 300, minRaiseTo: 500 };
     expect(answersToAction(answers({ bet_or_raise: 1 }, 2), legal3, faced, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 900 });
     expect(answersToAction(answers({ bet_or_raise: 1 }, 0), legal3, faced, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 600 });
+  });
+});
+
+describe('answersToAction postflop sizes are pot fractions, not minimum-raise plus a fraction', () => {
+  it('bets the pot into an unopened 2 bb pot', () => {
+    const v = { ...view, pot: 200, toCall: 0, currentBet: 0 };
+    const l = { canFold: false, canCheck: true, callAmount: null, minRaiseTo: 100, maxRaiseTo: 10000 };
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 3), l, v, 0, new Rng(1)).action).toEqual({ type: 'bet', amount: 200 });
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 2), l, v, 0, new Rng(1)).action).toEqual({ type: 'bet', amount: 133 });
+  });
+  it('makes a pot-sized raise to 5 bb over a 1 bb bet into 2 bb', () => {
+    const v = { ...view, pot: 300, toCall: 100, currentBet: 100 };
+    const l = { canFold: true, canCheck: false, callAmount: 100, minRaiseTo: 200, maxRaiseTo: 10000 };
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 3), l, v, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 500 });
+  });
+  it('accounts for chips already committed when re-raising', () => {
+    // Bet 300, raised to 700: pot 1200 (200 + 300 + 700), 400 to call. Pot-sized re-raise: 700 + 1600 = 2300.
+    const v = { ...view, pot: 1200, toCall: 400, currentBet: 700, committedThisStreet: 300 };
+    const l = { canFold: true, canCheck: false, callAmount: 400, minRaiseTo: 1100, maxRaiseTo: 10000 };
+    expect(answersToAction(answers({ bet_or_raise: 1 }, 3), l, v, 0, new Rng(1)).action).toEqual({ type: 'raise', amount: 2300 });
   });
 });

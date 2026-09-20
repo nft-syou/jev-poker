@@ -167,6 +167,8 @@ export class Hand {
       stacks,
       pot,
       toCall: Math.min(Math.max(0, this.currentBet - (this.committed.get(seat) ?? 0)), stack),
+      currentBet: this.currentBet,
+      committedThisStreet: this.committed.get(seat) ?? 0,
       bigBlind: this.blinds.big,
       history: this.entries.map((h) => ({ ...h })),
     };

@@ -81,6 +81,10 @@ export interface PlayerView {
   stacks: SeatState[];
   pot: number;
   toCall: number;
+  /** The bet every player must match on this street (a raise-to total); 0 when nobody has bet. */
+  currentBet: number;
+  /** Chips this seat has already put in on the current street (blinds included). */
+  committedThisStreet: number;
   bigBlind: number;
   position: Position;
   history: HistoryEntry[];

@@ -11,7 +11,7 @@ import type { Persona } from './personas.js';
 /** Below this, tempering is numerically pointless - take the most likely choice instead. */
 const MIN_VARIANCE = 0.05;
 
-/** Raise size as a fraction of the pot after calling, indexed by `sizing.score`. */
+/** Postflop bet or raise size as a fraction of the pot after calling, indexed by `sizing.score`. */
 const SIZING_FRACTIONS: readonly number[] = [0, 1 / 3, 2 / 3, 1, 1.5, Infinity];
 
 export interface DecisionRecord {
@@ -117,7 +117,10 @@ function betOrRaise(score: number, legal: LegalActions, view: PlayerView): Actio
   } else {
     const fraction = SIZING_FRACTIONS[step] ?? 0;
     if (!Number.isFinite(fraction)) return { type: 'allin' };
-    target = min + fraction * (view.pot + view.toCall);
+    // A pot-fraction bet is measured against the pot after calling, and a raise-to total adds that
+    // to the bet being matched. The minimum raise is only a floor (the clamp below), not a base:
+    // adding it would turn a "pot-sized" bet into 2 bb into 3 bb.
+    target = fraction === 0 ? min : view.currentBet + fraction * (view.pot + view.toCall);
   }
 
   const amount = Math.round(clamp(target, min, max));

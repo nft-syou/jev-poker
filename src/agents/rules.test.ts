@@ -3,7 +3,7 @@ import { parseCards } from '../engine/cards.js';
 import type { LegalActions, PlayerView } from '../engine/types.js';
 import { RulesAgent } from './rules.js';
 
-const base = (o: Partial<PlayerView>): PlayerView => ({ seat: 0, street: 'preflop', holeCards: parseCards('Ah Ad'), board: [], stacks: [{ seat: 0, stack: 10000, isAllIn: false, folded: false }, { seat: 1, stack: 10000, isAllIn: false, folded: false }], pot: 150, toCall: 50, bigBlind: 100, position: 'BTN', history: [], ...o });
+const base = (o: Partial<PlayerView>): PlayerView => ({ seat: 0, street: 'preflop', holeCards: parseCards('Ah Ad'), board: [], stacks: [{ seat: 0, stack: 10000, isAllIn: false, folded: false }, { seat: 1, stack: 10000, isAllIn: false, folded: false }], pot: 150, toCall: 50, bigBlind: 100, position: 'BTN', history: [], ...o, currentBet: o.currentBet ?? (o.toCall ?? 50) + (o.committedThisStreet ?? 0), committedThisStreet: o.committedThisStreet ?? 0 });
 const open: LegalActions = { canFold: true, canCheck: false, callAmount: 50, minRaiseTo: 200, maxRaiseTo: 10000 };
 const agent = new RulesAgent(0);
 
