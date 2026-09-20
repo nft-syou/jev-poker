@@ -190,7 +190,10 @@ agent was re-evaluated on seeds never used before (`--base-seed 100001`): **head
 identity flags, guidance, the rules bot's re-raise size; see `bench/EXPERIMENTS.md`) the final code was
 confirmed on a second unused seed set (`--base-seed 300001`, 1,000 seeds each): **heads-up +62.7
 [+48.7, +76.8], 6-max +12.9 [+1.3, +24.5]**. Heads-up needs 1,000 seeds too: one preflop all-in can
-swing a 100-seed result by 60 bb/100. The
+swing a 100-seed result by 60 bb/100. Five further ideas (always taking the most likely action,
+range-aware equity, a preflop chart, opponent session statistics, another model) were each measured on
+1,000 seeds and none beat this default, so they are options only. A fixed rule set over the same
+features shows what the classifier adds: about +30 to +50 bb/100 heads-up, nothing six-handed. The
 improvements were all in what Jev is told — exact hand strength, equity vs. pot odds, whether its bet
 was raised, pot commitment, blind-stealing spots — plus conventional preflop raise sizes; the engine
 and the baselines are unchanged. Heads-up vs `random` remains inconclusive (random all-ins). `station`
@@ -205,6 +208,9 @@ persona raises occasionally.
 最終コードを 2 つ目の未使用シード (`--base-seed 300001`、各 1,000 シード) で確認しました:
 **HU +62.7 [+48.7, +76.8]、6-max +12.9 [+1.3, +24.5]**。HU も 1,000 シードが必要です
 (プリフロップのオールイン 1 回で、100 シードの結果は 60 bb/100 動きます)。
+さらに 5 つの案 (常に最尤の行動、レンジ対応エクイティ、プリフロップのチャート化、相手プロファイル、別モデル) を
+各 1,000 シードで計測しましたが、どれも既定を上回らなかったためオプション扱いです。Jev と同じ特徴量だけを読む
+固定ルールとの比較では、分類器の上乗せは HU で +30〜+50 bb/100、6-max ではゼロでした。
 改善はすべて「Jev に何を伝えるか」(正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、
 ポットコミット、スティールの機会) とプリフロップの標準的なレイズ額で、エンジンと対照群は変えていません。
 `random` とのヘッズアップは依然として結論が出ません (ランダムなオールイン)。

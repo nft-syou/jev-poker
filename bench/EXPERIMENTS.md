@@ -127,6 +127,45 @@ What this round established:
 - Three independent 1,000-seed 6-max estimates of the pre-fix agent are +19.0, +16.3 and +5.2/+8.7:
   the true edge over `rules` six-handed is on the order of +10 bb/100, not +19.
 
+## Remaining ideas, all measured (2026-09-21) / 残りの改善案をすべて計測
+
+Every idea left on the list after the review was implemented and measured against `rules` on
+1,000 seeds per format (base seed 200001), paired on the same deals with the default agent of
+`1014659` (heads-up +53.3, 6-max +10.1 on that seed set). Nothing beat the default, so **the default
+agent is unchanged** and its reported numbers stand (base seed 300001: heads-up +62.7
+[+48.7, +76.8], 6-max +12.9 [+1.3, +24.5]). Each idea stays available as an option.
+
+| idea | option | heads-up (paired) | 6-max (paired) | verdict |
+| --- | --- | --- | --- | --- |
+| persona variance 0 (always the most likely action) | `--variance 0` | +5.3 [-18.6, +29.1] | -3.9 [-14.5, +6.7] | no effect; `tag` stays at 0.15 |
+| range-aware equity: `equityVsRangePct` against ranges inferred from this hand's actions | `--range-equity` | -9.1 [-19.8, +1.6] | +0.2 [-6.4, +6.8] | no benefit; opt-in |
+| preflop from a position chart in code, Jev postflop only | `--preflop chart` | **-37.3 [-61.7, -12.9]** | +13.9 [+2.6, +25.1], but **-2.0 [-14.9, +11.0]** on base seed 300001 | not established; opt-in (cuts 6-max API calls by 85%: 1,157 vs 7,476) |
+| opponent session statistics (VPIP / PFR / postflop aggression per opponent kind) | `--profile` | -2.8 [-15.4, +9.8] | **-10.6 [-18.7, -2.5]** | hurts six-handed; opt-in |
+| another model | `--model jev-preview` | -3.4 [-11.1, +4.3] | -4.5 [-12.6, +3.7] | both aliases answer as `jev-1.13.0`: not a comparison, but a measure of run-to-run noise |
+
+Two diagnostics without a policy change:
+
+- **Big-blind defence.** With every seat's actions now logged (`hands[].actions`), Jev in the big
+  blind folds 77-90% against a single 3 bb open. Against `rules` that is right: the bot opens only
+  its top ~7% of hands, and the hands Jev does continue with show a positive average result. It
+  would be a leak against a wide opener; this benchmark cannot show that.
+- **What the classifier adds.** `--hero heuristic` seats a fixed rule set that reads exactly the
+  features Jev is given. Against `rules` it scores heads-up +3.8 / +31.1 and 6-max +17.4 / +10.2
+  (base seeds 200001 / 300001). Paired with the Jev agent on the same deals: **heads-up Jev is
+  ahead by +49.5 [+27.1, +72.0] and +31.6 [+14.8, +48.4]; six-handed there is no difference**
+  (-7.4 [-22.8, +8.1] and +2.7 [-14.4, +19.9]). Six-handed, the computed features and a dozen
+  rules already capture what this benchmark rewards.
+
+Lessons:
+
+- A gain seen once is not a gain. The chart's +13.9 six-handed had a CI clear of zero and did
+  not replicate on the next seed set. Decide on one seed set, confirm on another.
+- Two runs of the *same* configuration differ by 3-5 bb/100 (the `jev-preview` row). Paired
+  differences smaller than about 10 bb/100 are not resolvable at 1,000 seeds.
+- More information is not automatically better for the classifier: an explicit `actor` object,
+  range-aware equity and opponent statistics each left play unchanged or made it worse, while the
+  per-row `isMe` flag helps six-handed.
+
 ## Reproduce / 再現
 
 ```sh
