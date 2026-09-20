@@ -10,8 +10,10 @@ describe('compressState', () => {
     const s = compressState(view, legal, getPersona('tag'));
     expect(s.persona.name).toBe('TAG');
     expect(s.hand).toMatchObject({ street: 'flop', holeCards: 'Ah Kh', board: 'Qh Jh 2c', madeHand: 'high_card', draws: ['flush_draw', 'gutshot'], preflopStrength: 'premium' });
-    expect(s.table).toMatchObject({ position: 'BTN', playersInHand: 3, playersToAct: 1, potBB: 12, toCallBB: 4, potOddsPct: 25, effectiveStackBB: 50 });
-    expect(s.history).toEqual([{ street: 'preflop', seat: 1, action: 'raise', amountBB: 3 }]);
+    expect(s.table).toMatchObject({ position: 'BTN', playersInHand: 3, opponentsNotAllIn: 1, potBB: 12, toCallBB: 4, potOddsPct: 25, effectiveStackBB: 50 });
+    expect(s.history).toEqual([{ street: 'preflop', seat: 1, isMe: false, action: 'raise', amountBB: 3 }]);
+    expect(s.actor).toEqual({ seat: 0, position: 'BTN' });
+    expect(s.table.stacksBB.map((x) => x.isMe)).toEqual([true, false, false]);
     expect(s).toMatchSnapshot();
   });
   it('never includes other hole cards', () => {
@@ -44,9 +46,9 @@ describe('compressState omissions', () => {
     expect(s.table.toCallBB).toBe(0);
     expect(s.table.potBB).toBe(12.5);
     expect(s.table.stacksBB).toEqual([
-      { seat: 0, stackBB: 90, isAllIn: false, folded: false },
-      { seat: 1, stackBB: 50, isAllIn: false, folded: false },
-      { seat: 2, stackBB: 0, isAllIn: true, folded: false },
+      { seat: 0, isMe: true, stackBB: 90, isAllIn: false, folded: false },
+      { seat: 1, isMe: false, stackBB: 50, isAllIn: false, folded: false },
+      { seat: 2, isMe: false, stackBB: 0, isAllIn: true, folded: false },
     ]);
   });
   it('marks a folded seat', () => {
@@ -57,13 +59,13 @@ describe('compressState omissions', () => {
     const s = compressState({ ...base, stacks }, legal, getPersona('rock'));
     expect(s.table.playersInHand).toBe(1);
     expect(s.table.stacksBB).toEqual([
-      { seat: 0, stackBB: 90, isAllIn: false, folded: false },
-      { seat: 1, stackBB: 50, isAllIn: false, folded: true },
+      { seat: 0, isMe: true, stackBB: 90, isAllIn: false, folded: false },
+      { seat: 1, isMe: false, stackBB: 50, isAllIn: false, folded: true },
     ]);
   });
   it('tolerates an empty stack list', () => {
     const s = compressState({ ...base, stacks: [] }, legal, getPersona('rock'));
-    expect(s.table).toMatchObject({ playersInHand: 0, playersToAct: 0, effectiveStackBB: 0 });
+    expect(s.table).toMatchObject({ playersInHand: 0, opponentsNotAllIn: 0, effectiveStackBB: 0 });
   });
 });
 

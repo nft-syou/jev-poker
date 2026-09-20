@@ -20,10 +20,11 @@ export const COMMON_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
+  'actor.seat is you: entries with isMe true in stacksBB and history are your own stack and your own earlier actions.',
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'Before calling, compare your equity with requiredEquityPct (the pot odds).',
-  'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
-  'stackToPotRatio is your remaining stack divided by the pot. Below about 1 you are pot-committed: never fold a hand with decent equity there, call or go all in instead. Never make a raise that commits most of your stack unless you are willing to call an all-in with that hand.',
+  'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
+  'stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.',
 ];
 
 /** Split format: preflop-only guidance. */
@@ -32,7 +33,7 @@ export const PREFLOP_CONTEXT: readonly string[] = [
   'When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
   'Once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds.',
-  'When myBetWasRaisedThisStreet is true, your raise has been re-raised: continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.',
+  'When myBetWasRaisedThisStreet is true, your raise has been re-raised: continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. 4-bet bluffs are rarely profitable against tight opponents.',
   'raisesThisStreet counts the raises so far; two or more means someone is very strong.',
   'Sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet.',
 ];
@@ -41,7 +42,7 @@ export const PREFLOP_CONTEXT: readonly string[] = [
 export const POSTFLOP_CONTEXT: readonly string[] = [
   'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
   'Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
-  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Never bluff re-raise and then fold.',
+  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.',
   'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
   'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
   'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
@@ -53,19 +54,20 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
   'Amounts are in big blinds.',
   "You cannot see other players' hole cards.",
   'Stay in character as the persona.',
+  'actor.seat is you: entries with isMe true in stacksBB and history are your own stack and your own earlier actions.',
   'equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.',
   'beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).',
   'Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.',
-  'Do not raise as a bluff if you would fold to a re-raise; a bluff only works when the opponent can fold.',
-  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Never bluff re-raise and then fold.',
+  'A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.',
+  'When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.',
   'raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.',
   'On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.',
   'pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.',
   'Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.',
   'When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.',
-  'Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. Never 4-bet as a bluff.',
+  'Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. 4-bet bluffs are rarely profitable against tight opponents.',
   'Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.',
-  'stackToPotRatio is your remaining stack divided by the pot. Below about 1 you are pot-committed: never fold a hand with decent equity there, call or go all in instead. Never make a raise that commits most of your stack unless you are willing to call an all-in with that hand.',
+  'stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.',
 ];
 
 export interface JevHand {
@@ -90,6 +92,8 @@ export interface JevHand {
 
 export interface JevSeat {
   seat: SeatId;
+  /** True for the acting player's own row. */
+  isMe: boolean;
   stackBB: number;
   isAllIn: boolean;
   /** A folded seat is still listed, so the model can tell "0 bb, all-in" from "out of the hand". */
@@ -99,7 +103,8 @@ export interface JevSeat {
 export interface JevTable {
   position: Position;
   playersInHand: number;
-  playersToAct: number;
+  /** Live opponents who still have chips behind (not all-in). It is not the number of actions left on this street. */
+  opponentsNotAllIn: number;
   potBB: number;
   toCallBB: number;
   potOddsPct: number;
@@ -120,6 +125,8 @@ export interface JevTable {
 export interface JevHistoryEntry {
   street: Street;
   seat: SeatId;
+  /** True when the acting player made this action. */
+  isMe: boolean;
   action: Action['type'];
   amountBB?: number;
 }
@@ -128,6 +135,8 @@ export interface JevState {
   task: string;
   persona: { name: string; description: string };
   importantContext: string[];
+  /** Who is deciding: without this the seat numbers in `stacksBB` and `history` cannot be tied to the player. */
+  actor: { seat: SeatId; position: Position };
   hand: JevHand;
   table: JevTable;
   history: JevHistoryEntry[];
@@ -200,7 +209,7 @@ export function compressState(
   const table: JevTable = {
     position: view.position,
     playersInHand: live.length,
-    playersToAct: live.filter((s) => s.seat !== view.seat && !s.isAllIn).length,
+    opponentsNotAllIn: live.filter((s) => s.seat !== view.seat && !s.isAllIn).length,
     potBB: bb(view.pot, bigBlind),
     toCallBB: bb(view.toCall, bigBlind),
     potOddsPct,
@@ -214,6 +223,7 @@ export function compressState(
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,
+      isMe: s.seat === view.seat,
       stackBB: bb(s.stack, bigBlind),
       isAllIn: s.isAllIn,
       folded: s.folded,
@@ -223,6 +233,7 @@ export function compressState(
   const history: JevHistoryEntry[] = view.history.map((h) => ({
     street: h.street,
     seat: h.seat,
+    isMe: h.seat === view.seat,
     action: h.action.type,
     ...(h.action.type === 'bet' || h.action.type === 'raise'
       ? { amountBB: bb(h.action.amount, bigBlind) }
@@ -233,6 +244,7 @@ export function compressState(
     task,
     persona: { name: persona.name.en, description: persona.description.en },
     importantContext,
+    actor: { seat: view.seat, position: view.position },
     hand,
     table,
     history,
