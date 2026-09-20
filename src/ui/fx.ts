@@ -54,6 +54,12 @@ export interface TableFx {
   readonly winners: readonly SeatId[];
   /** When they won it, which is what restarts their glow. */
   readonly winnersAt: number;
+  /**
+   * True from the moment the pot starts flying to its winners until the next hand begins.
+   * The engine leaves `contributed` — and so the snapshot's pot — standing until then, but
+   * as far as the felt is concerned the middle is empty the instant it has been paid.
+   */
+  readonly potPaid: boolean;
   /** When hole cards were last revealed, which is what restarts the card flip. */
   readonly flipAt: number;
   readonly feed: readonly FeedEntry[];
@@ -78,6 +84,7 @@ export const EMPTY_FX: TableFx = {
   chipMoves: [],
   winners: [],
   winnersAt: 0,
+  potPaid: false,
   flipAt: 0,
   feed: [],
   handTimes: [],
@@ -134,6 +141,7 @@ export function reduceFx(fx: TableFx, event: GameEvent, at: number): TableFx {
         ...fx,
         nextId: nextId + 1,
         streetBets: {},
+        potPaid: false,
         feed: tail(fx.feed, [{ id: nextId, type: "street", street: "preflop", at }], MAX_FEED),
       };
 
@@ -225,6 +233,7 @@ export function reduceFx(fx: TableFx, event: GameEvent, at: number): TableFx {
         ...fx,
         nextId,
         streetBets: {},
+        potPaid: true,
         chipMoves: tail(fx.chipMoves, moves, MAX_CHIP_MOVES),
         winners: winners.length === 0 ? fx.winners : winners,
         winnersAt: winners.length === 0 ? fx.winnersAt : at,

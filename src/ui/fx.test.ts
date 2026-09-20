@@ -105,6 +105,40 @@ describe("reduceFx", () => {
     expect(fx.streetBets).toEqual({});
   });
 
+  it("calls the pot paid the moment it starts flying, and only until the next hand", () => {
+    expect(EMPTY_FX.potPaid).toBe(false);
+    const paid = play([
+      [took(0, "bet", 6, 6), 1],
+      [
+        {
+          type: "PotAwarded",
+          pots: [{ amount: 6, eligible: [0] }],
+          awards: [{ seat: 0, amount: 6, potIndex: 0 }],
+        },
+        2,
+      ],
+    ]);
+    // The engine keeps the snapshot's pot standing until the next hand; the felt must not.
+    expect(paid.potPaid).toBe(true);
+
+    // It survives the end of the hand, which is the whole between-hands gap.
+    const ended = reduceFx(paid, { type: "HandEnded", handNumber: 0, stacks: [] }, 3);
+    expect(ended.potPaid).toBe(true);
+
+    const next = reduceFx(
+      ended,
+      {
+        type: "HandStarted",
+        handNumber: 1,
+        button: 0,
+        blinds: { small: 1, big: 2, ante: 0 },
+        seats: [],
+      },
+      4,
+    );
+    expect(next.potPaid).toBe(false);
+  });
+
   it("restarts the card flip on every showdown", () => {
     expect(EMPTY_FX.flipAt).toBe(0);
     const fx = play([[{ type: "Showdown", hands: [] }, 77]]);

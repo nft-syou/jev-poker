@@ -43,9 +43,11 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 /**
  * How far from the rail a seat's chips sit, as a fraction of the seat's own distance from
- * the middle: the bet lands a third of the way in, between the player and the pot.
+ * the middle: the bet lands two fifths of the way in, between the player and the pot. Far
+ * enough in to clear the seat box and the callout thrown the same way, and — at every seat
+ * count the table allows — still well outside the board and the pot in the middle.
  */
-const BET_SPOT = 0.65;
+const BET_SPOT = 0.6;
 
 function mediaMatches(query: string): boolean {
   // jsdom (and any non-browser host) has no matchMedia; treat those as a wide, moving screen.
@@ -148,6 +150,9 @@ export function TableView({
       y: 50 + dy,
       betX: 50 + dx * BET_SPOT,
       betY: 50 + dy * BET_SPOT,
+      // Unit vector from the seat towards the middle. A seat only ever has felt on this
+      // side of it, which is why the callout is thrown this way and never downwards.
+      inward: { x: -Math.cos(angle), y: -Math.sin(angle) },
     };
   });
   const spots = new Map(
@@ -159,6 +164,10 @@ export function TableView({
   const calloutBySeat = new Map<SeatId, (typeof fx.callouts)[number]>();
   for (const callout of fx.callouts) calloutBySeat.set(callout.seat, callout);
   const rate = handsPerMinute(fx.handTimes);
+  // The engine keeps `contributed` — and so `snapshot.pot` — until the next hand starts, but
+  // the chips have visibly flown to the winner by then. Once the pot is paid the middle is
+  // empty and the seats have nothing in front of them, whatever the snapshot still says.
+  const pot = fx.potPaid ? 0 : (snapshot?.pot ?? 0);
   /** Durations the felt's animations read; one place to change, one place to speed up. */
   const feltVars = {
     "--callout-ms": `${timings.calloutMs}ms`,
@@ -235,7 +244,7 @@ export function TableView({
 
         {showFelt && (
           <div className="felt" style={feltVars}>
-            {layout.map(({ seat, player, x, y }) => {
+            {layout.map(({ seat, player, x, y, inward }) => {
               const style = { left: `${x}%`, top: `${y}%` };
               const thinking = state.thinkingSeat === seat.id;
               // A seat is narrated while it thinks, and for a moment after it has decided.
@@ -268,6 +277,7 @@ export function TableView({
                   bigBlind={bigBlind}
                   winnerAt={fx.winners.includes(seat.id) ? fx.winnersAt : 0}
                   flipAt={revealAll ? fx.flipAt : 0}
+                  inward={inward}
                 />
               );
             })}
@@ -280,7 +290,7 @@ export function TableView({
               <ChipStack
                 key={seat.id}
                 className="bet-stack"
-                amount={player?.streetBet ?? 0}
+                amount={fx.potPaid ? 0 : (player?.streetBet ?? 0)}
                 bigBlind={bigBlind}
                 style={{ left: `${betX}%`, top: `${betY}%` }}
               />
@@ -299,7 +309,7 @@ export function TableView({
               </div>
               {snapshot !== null && (
                 <PotView
-                  pot={snapshot.pot}
+                  pot={pot}
                   bigBlind={bigBlind}
                   ms={reducedMotion ? 0 : timings.potCountMs}
                 />

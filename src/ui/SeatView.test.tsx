@@ -80,6 +80,56 @@ describe("SeatView callouts", () => {
     expect(container.querySelector(".seat-flash")).toBeNull();
   });
 
+  it("throws the callout towards the middle, never below the seat", () => {
+    // A seat on the bottom rail: the middle is up.
+    const bottom = render(
+      <SeatView
+        seat={SEAT}
+        player={PLAYER}
+        isButton={false}
+        isActing={false}
+        isThinking={false}
+        revealCards={true}
+        style={{}}
+        bigBlind={2}
+        callout={callout("bet", 12)}
+        inward={{ x: 0, y: -1 }}
+      />,
+    );
+    const bottomSpot = bottom.container.querySelector(".callout-spot") as HTMLElement | null;
+    expect(bottomSpot).not.toBeNull();
+    expect(Number(bottomSpot?.style.getPropertyValue("--in-y"))).toBeLessThan(0);
+    // The label lives inside the placed wrapper; it does not position itself.
+    expect(bottomSpot?.querySelector(".callout")).not.toBeNull();
+    bottom.unmount();
+
+    // A seat on the top rail: the middle is down.
+    const top = render(
+      <SeatView
+        seat={SEAT}
+        player={PLAYER}
+        isButton={false}
+        isActing={false}
+        isThinking={false}
+        revealCards={true}
+        style={{}}
+        bigBlind={2}
+        callout={callout("bet", 12)}
+        inward={{ x: 0, y: 1 }}
+      />,
+    );
+    const topSpot = top.container.querySelector(".callout-spot") as HTMLElement | null;
+    expect(Number(topSpot?.style.getPropertyValue("--in-y"))).toBeGreaterThan(0);
+    top.unmount();
+  });
+
+  it("keeps the shout out of the accessibility tree", () => {
+    // The action is in the feed, the log and the seat's own state already.
+    const { container } = renderSeat({ callout: callout("fold") });
+    expect(container.querySelector(".callout-spot")).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".seat-flash")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("glows only for a seat that has just won a pot", () => {
     const { container, rerender } = renderSeat();
     expect(container.querySelector(".winner-glow")).toBeNull();

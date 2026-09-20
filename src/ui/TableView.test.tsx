@@ -276,8 +276,58 @@ describe("TableView", () => {
   it("puts the action feed under the felt on a wide screen", () => {
     stubViewport(false);
     const { container } = renderTable({ fx: FEED_FX });
-    expect(container.querySelector(".action-feed")).not.toBeNull();
+    const feed = container.querySelector(".action-feed");
+    expect(feed).not.toBeNull();
     expect(screen.getByText("Flop")).toBeInTheDocument();
+    // Decoration next to the hand history, which is the readable record.
+    expect(feed).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("throws every callout inwards, whichever rail its seat is on", () => {
+    stubViewport(false);
+    // The human seat anchors the bottom of the table and the other seat faces it.
+    const { container } = renderTable({
+      fx: {
+        ...EMPTY_FX,
+        callouts: [
+          { id: 1, seat: 0, kind: "check", amount: 0, at: 10 },
+          { id: 2, seat: 1, kind: "bet", amount: 12, at: 11 },
+        ],
+      },
+    });
+    const spots = [...container.querySelectorAll(".callout-spot")] as HTMLElement[];
+    expect(spots).toHaveLength(2);
+    const inY = spots.map((spot) => Number(spot.style.getPropertyValue("--in-y")));
+    // Opposite rails point opposite ways, and neither points nowhere.
+    expect(inY[0]).toBeLessThan(0);
+    expect(inY[1]).toBeGreaterThan(0);
+    // Nothing places itself below its seat any more: every label sits in a placed wrapper.
+    expect(container.querySelectorAll(".callout")).toHaveLength(2);
+    for (const callout of container.querySelectorAll(".callout")) {
+      expect(callout.parentElement?.classList.contains("callout-spot")).toBe(true);
+    }
+  });
+
+  it("empties the middle as soon as the pot has been paid out", () => {
+    stubViewport(false);
+    const { container } = renderTable({
+      fx: { ...EMPTY_FX, potPaid: true, winners: [0], winnersAt: 12 },
+    });
+    // The snapshot still says 3 — the engine keeps `contributed` until the next hand — but
+    // the chips have flown to the winner, so the felt shows an empty middle counting down.
+    expect(screen.getByText("Pot: 0")).toBeInTheDocument();
+    expect(screen.queryByText("Pot: 3")).not.toBeInTheDocument();
+    expect(container.querySelector(".chip-stack.pot")).toBeNull();
+    // And nothing is left in front of the seats either.
+    expect(container.querySelectorAll(".bet-stack")).toHaveLength(0);
+  });
+
+  it("follows the snapshot's pot again once the next hand has started", () => {
+    stubViewport(false);
+    const { container } = renderTable({ fx: { ...EMPTY_FX, potPaid: false } });
+    expect(screen.getByText("Pot: 3")).toBeInTheDocument();
+    expect(container.querySelector(".chip-stack.pot")).not.toBeNull();
+    expect(container.querySelectorAll(".bet-stack")).toHaveLength(2);
   });
 
   it("keeps the feed off a phone until the table is being recorded", () => {

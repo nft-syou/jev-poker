@@ -1,4 +1,5 @@
 import type { TFunction } from "i18next";
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { CalloutKind } from "./fx";
 import { showNumber, toBB } from "./showcase";
@@ -29,14 +30,44 @@ export function calloutText(
   }
 }
 
+/** The unit direction from a seat towards the middle of the felt. */
+export interface Inward {
+  x: number;
+  y: number;
+}
+
+/** Straight up, which is where a seat with no angle of its own points. */
+export const INWARD_UP: Inward = { x: 0, y: -1 };
+
 interface Props {
   kind: CalloutKind;
   amount: number;
   bigBlind: number;
+  /** Which way the middle of the table is from this seat. */
+  inward?: Inward;
 }
 
-/** The big coloured label that flashes at a seat the moment it acts. */
-export function CalloutView({ kind, amount, bigBlind }: Props) {
+/**
+ * The big coloured label that flashes at a seat the moment it acts.
+ *
+ * It is placed *inwards*, along the seat's own line to the middle, rather than below the
+ * seat: a seat on the bottom rail has nothing below it but the felt's edge, the action feed
+ * and — for a human — their own buttons, and a label there would cover all three. Inwards
+ * there is always table. The offset is short enough to stay nearer the seat than its chip
+ * stack and clear of the recording-mode bubble, which grows the other way.
+ *
+ * Decoration only: the action is in the feed, the log and the seat's own state, so the label
+ * is hidden from the accessibility tree rather than read out on every single action.
+ */
+export function CalloutView({ kind, amount, bigBlind, inward = INWARD_UP }: Props) {
   const { t } = useTranslation();
-  return <div className={`callout callout-${kind}`}>{calloutText(t, kind, amount, bigBlind)}</div>;
+  return (
+    <div
+      className="callout-spot"
+      aria-hidden="true"
+      style={{ "--in-x": inward.x, "--in-y": inward.y } as CSSProperties}
+    >
+      <div className={`callout callout-${kind}`}>{calloutText(t, kind, amount, bigBlind)}</div>
+    </div>
+  );
 }

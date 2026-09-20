@@ -41,6 +41,15 @@ describe("chipBreakdown", () => {
     expect(chipBreakdown(0.25, 2)).toHaveLength(1);
   });
 
+  it("makes the sub-half-blind chip a partial one worth what is left", () => {
+    // Nothing divides below half a big blind, so the token chip carries the remainder
+    // itself rather than claiming a full white chip's worth.
+    expect(chipBreakdown(0.1, 2)).toEqual([{ tier: "white", value: 0.1 }]);
+    expect(chipBreakdown(0.99, 2)).toEqual([{ tier: "white", value: 0.99 }]);
+    // Exactly half a blind is a real white chip again.
+    expect(chipBreakdown(1, 2)).toEqual([{ tier: "white", value: 1 }]);
+  });
+
   it("caps the drawn stack and keeps the biggest chips", () => {
     const big = chipBreakdown(20000, 2);
     expect(big).toHaveLength(MAX_STACK_CHIPS);
@@ -59,8 +68,9 @@ describe("chipBreakdown", () => {
     ]);
   });
 
-  it("never draws more than the amount it was given", () => {
-    for (const amount of [1, 3, 7, 13, 64, 199, 1234]) {
+  it("never draws more than the amount it was given, at any size", () => {
+    // Including the fractional amounts that fall through to the partial chip.
+    for (const amount of [0.01, 0.1, 0.5, 0.99, 1, 3, 7, 13, 64, 199, 1234]) {
       const total = chipBreakdown(amount, 2).reduce((sum, chip) => sum + chip.value, 0);
       expect(total, `${amount}`).toBeLessThanOrEqual(amount);
     }

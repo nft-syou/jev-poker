@@ -31,6 +31,10 @@ const EPSILON = 1e-9;
  * `MAX_STACK_CHIPS` of them. The result is for drawing, not for accounting — once the cap is
  * reached the remainder is dropped, because the amount is always printed next to the stack
  * anyway. Any positive amount draws at least one chip.
+ *
+ * Invariant: the drawn chips never total more than `amount`. Below half a big blind there is
+ * no denomination that divides, so that last chip is a *partial* one worth exactly what is
+ * left rather than a full white — it is drawn the same, and it keeps the sum honest.
  */
 export function chipBreakdown(amount: number, bigBlind: number): Chip[] {
   if (!Number.isFinite(amount) || amount <= 0) return [];
@@ -46,7 +50,7 @@ export function chipBreakdown(amount: number, bigBlind: number): Chip[] {
     }
     if (chips.length >= MAX_STACK_CHIPS) break;
   }
-  // Below half a big blind nothing divides evenly; a token white chip still has to show.
-  if (chips.length === 0) chips.push({ tier: "white", value: unit / 2 });
+  // Below half a big blind nothing divides; a token white chip worth the remainder shows.
+  if (chips.length === 0) chips.push({ tier: "white", value: amount });
   return chips;
 }

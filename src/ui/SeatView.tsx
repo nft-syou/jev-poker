@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { HandPlayerSnapshot } from "../engine/types";
-import { CalloutView } from "./CalloutView";
+import { CalloutView, INWARD_UP, type Inward } from "./CalloutView";
 import { CardView } from "./CardView";
 import type { Callout } from "./fx";
 import type { GameSeat } from "./useGame";
@@ -23,6 +23,8 @@ interface Props {
   winnerAt?: number;
   /** When cards were last revealed at showdown; a new value restarts the flip. */
   flipAt?: number;
+  /** Which way the middle of the felt is, so the callout can be thrown that way. */
+  inward?: Inward;
 }
 
 export function SeatView({
@@ -38,6 +40,7 @@ export function SeatView({
   bigBlind = 0,
   winnerAt = 0,
   flipAt = 0,
+  inward = INWARD_UP,
 }: Props) {
   const { t } = useTranslation();
   const folded = player?.folded ?? false;
@@ -78,6 +81,7 @@ export function SeatView({
           kind={callout.kind}
           amount={callout.amount}
           bigBlind={bigBlind}
+          inward={inward}
         />
       )}
       {overlay}

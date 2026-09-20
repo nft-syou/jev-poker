@@ -94,6 +94,14 @@ describe("ActionFeed", () => {
     expect(texts(container)).toEqual(["Max ALL IN", "Lars BET 6 BB"]);
   });
 
+  it("stays out of the accessibility tree", () => {
+    // Everything in the strip is in the hand history too, which is the readable record.
+    const { container } = render(
+      <ActionFeed entries={[acted(0, "fold")]} nameOf={nameOf} bigBlind={2} />,
+    );
+    expect(container.querySelector(".action-feed")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("renders nothing before anything has happened", () => {
     const { container } = render(<ActionFeed entries={[]} nameOf={nameOf} bigBlind={2} />);
     expect(container.firstChild).toBeNull();

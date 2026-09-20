@@ -25,8 +25,10 @@ export function ActionFeed({ entries, nameOf, bigBlind, max = FEED_SIZE }: Props
   const shown = entries.length > max ? entries.slice(entries.length - max) : entries;
   if (shown.length === 0) return null;
 
+  // Decoration: every entry is already in the hand history, which is the readable record.
+  // Announcing the strip as well would read the whole table out again on every action.
   return (
-    <div className="action-feed">
+    <div className="action-feed" aria-hidden="true">
       {shown.map((entry) =>
         entry.type === "street" ? (
           <span key={entry.id} className="action-feed-entry feed-street">
