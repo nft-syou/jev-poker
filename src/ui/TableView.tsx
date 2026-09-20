@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
 import { ActionBar } from "./ActionBar";
+import { ActionFeed } from "./ActionFeed";
 import { CardView } from "./CardView";
 import { ChipStack } from "./ChipStack";
 import { DecisionBubble } from "./DecisionBubble";
@@ -305,6 +306,11 @@ export function TableView({
               )}
             </div>
           </div>
+        )}
+
+        {/* The strip belongs to the felt; a phone has no room for it unless it is the shot. */}
+        {showFelt && (!phone || showcase) && (
+          <ActionFeed entries={fx.feed} nameOf={nameOf} bigBlind={bigBlind} />
         )}
 
         {state.gameOver && (

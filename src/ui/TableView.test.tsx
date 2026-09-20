@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HandSnapshot, LegalActions } from "../engine/types";
 import { initI18n } from "../i18n";
-import { EMPTY_FX } from "./fx";
+import { EMPTY_FX, type TableFx } from "./fx";
 import { TableView } from "./TableView";
 import type { GameController, GameSeat } from "./useGame";
 
@@ -61,6 +61,15 @@ const SNAPSHOT: HandSnapshot = {
   bigBlind: 2,
   pot: 3,
   complete: false,
+};
+
+/** An effects slice with something in the feed, so the strip has a reason to be up. */
+const FEED_FX: TableFx = {
+  ...EMPTY_FX,
+  feed: [
+    { id: 1, type: "street", street: "flop", at: 10 },
+    { id: 2, type: "action", seat: 1, kind: "raise", amount: 12, at: 11 },
+  ],
 };
 
 const LEGAL: LegalActions = {
@@ -235,6 +244,49 @@ describe("TableView", () => {
     renderTable();
     expect(screen.queryByRole("button", { name: "⚡ Prefetch on" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Prefetch off" })).not.toBeInTheDocument();
+  });
+
+  it("draws each seat's bet as chips out on the felt", () => {
+    stubViewport(false);
+    const { container } = renderTable();
+    // One stack per seat with chips in front of it, plus the pot's own stack.
+    expect(container.querySelectorAll(".bet-stack")).toHaveLength(2);
+    expect(container.querySelector(".chip-stack.pot")).not.toBeNull();
+    expect(screen.getByText("Pot: 3")).toBeInTheDocument();
+    // The old number pill is gone.
+    expect(container.querySelector(".seat-bet")).toBeNull();
+  });
+
+  it("flies the chips of whatever the effects layer recorded", () => {
+    stubViewport(false);
+    const { container } = renderTable({
+      fx: {
+        ...EMPTY_FX,
+        chipMoves: [{ id: 1, seat: 1, kind: "toBet", amount: 6, at: 10 }],
+        callouts: [{ id: 2, seat: 1, kind: "raise", amount: 12, at: 10 }],
+        winners: [0],
+        winnersAt: 11,
+      },
+    });
+    expect(container.querySelectorAll(".chip-fly")).toHaveLength(1);
+    expect(screen.getByText("RAISE 6 BB")).toBeInTheDocument();
+    expect(container.querySelector(".winner-glow")).not.toBeNull();
+  });
+
+  it("puts the action feed under the felt on a wide screen", () => {
+    stubViewport(false);
+    const { container } = renderTable({ fx: FEED_FX });
+    expect(container.querySelector(".action-feed")).not.toBeNull();
+    expect(screen.getByText("Flop")).toBeInTheDocument();
+  });
+
+  it("keeps the feed off a phone until the table is being recorded", () => {
+    stubViewport(true);
+    const { container } = renderTable({ fx: FEED_FX });
+    expect(container.querySelector(".action-feed")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Recording mode" }));
+    expect(container.querySelector(".action-feed")).not.toBeNull();
   });
 
   it("shows the billing pause notice only while paused for billing", () => {

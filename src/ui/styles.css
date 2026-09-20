@@ -1059,6 +1059,84 @@ body.showcase .app {
   }
 }
 
+/* --- Action feed ---------------------------------------------------------- */
+.action-feed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  margin: 0 0 12px;
+  padding: 6px 4px;
+  min-height: 34px;
+}
+.action-feed-entry {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  /* Each entry is mounted once, keyed by its effect id, so this runs on arrival only. */
+  animation: feed-in 260ms ease-out;
+}
+/* The strip reads right to left: the newest is loudest, the oldest is nearly gone. */
+.action-feed-entry:nth-last-child(n + 4) {
+  opacity: 0.7;
+}
+.action-feed-entry:nth-last-child(n + 6) {
+  opacity: 0.45;
+}
+.action-feed-entry:nth-last-child(n + 8) {
+  opacity: 0.25;
+}
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.feed-name {
+  font-weight: 800;
+}
+.feed-street {
+  background: transparent;
+  border: 1px dashed #4b6c5a;
+  color: #9fb3a6;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+.feed-fold {
+  background: #4a544f;
+  color: #cdd6d1;
+}
+.feed-check {
+  background: #1d6b64;
+  color: #d6fbf6;
+}
+.feed-call {
+  background: #2b57a8;
+  color: #e6efff;
+}
+.feed-bet,
+.feed-raise {
+  background: #b96c14;
+  color: #fff3e0;
+}
+.feed-allin {
+  background: #b32c23;
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .action-feed {
+    margin-bottom: 6px;
+  }
+}
+
 /* --- Reduced motion ------------------------------------------------------- */
 /* Nothing slides, flips, shakes or pulses. The overlays still have to clear themselves,
    so they keep a plain opacity fade over the same window instead of a movement. */
