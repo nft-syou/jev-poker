@@ -127,6 +127,7 @@ describe('parseArgs', () => {
       hero: 'jev',
       preflop: 'jev',
       rangeEquity: false,
+      profile: false,
     }));
 
   it('parses values', () =>

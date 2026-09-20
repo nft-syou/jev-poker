@@ -73,7 +73,23 @@ export const IMPORTANT_CONTEXT: readonly string[] = [
 export interface CompressOptions {
   /** Add `equityVsRangePct` and the guidance that refers to it. */
   rangeEquity?: boolean;
+  /** Session statistics for a seat, or `null` when too few hands have been seen. Adds `table.opponentStats`. */
+  opponentStatsFor?: (seat: SeatId) => OpponentStats | null;
 }
+
+/** How an opponent has played so far in this session. */
+export interface OpponentStats {
+  hands: number;
+  /** Share of hands in which they voluntarily put chips in preflop. */
+  vpipPct: number;
+  /** Share of hands in which they raised preflop. */
+  pfrPct: number;
+  /** Share of their postflop actions that were bets or raises. */
+  postflopAggressionPct: number;
+}
+
+const OPPONENT_STATS_GUIDANCE =
+  'opponentStats describes how each live opponent has played so far in this session: vpipPct is how often they enter a pot, pfrPct how often they raise preflop, postflopAggressionPct how often their postflop actions are bets or raises. A raise from an opponent with a low pfrPct means a very strong hand, and their blinds are easy to steal; against an opponent with a high vpipPct who rarely folds, bluff less and bet good hands for value.';
 
 const RANGE_WORDING: readonly (readonly [string, string])[] = [
   [
@@ -151,6 +167,8 @@ export interface JevTable {
   raisesThisStreet: number;
   /** True when the acting player bet or raised on this street and an opponent raised after that. */
   myBetWasRaisedThisStreet: boolean;
+  /** Session statistics of live opponents; present only when the caller supplies them and some are known. */
+  opponentStats?: ({ seat: SeatId } & OpponentStats)[];
   stacksBB: JevSeat[];
 }
 
@@ -203,7 +221,6 @@ export function compressState(
     style === 'split'
       ? [...COMMON_CONTEXT, ...(preflop ? PREFLOP_CONTEXT : POSTFLOP_CONTEXT)]
       : [...IMPORTANT_CONTEXT];
-  const context = options.rangeEquity === true ? importantContext.map(withRangeWording) : importantContext;
   const { bigBlind } = view;
   const live = view.stacks.filter((s) => !s.folded);
   const me = view.stacks.find((s) => s.seat === view.seat);
@@ -249,6 +266,16 @@ export function compressState(
   const myBetWasRaisedThisStreet =
     myLastAggression !== undefined &&
     thisStreet.slice(myLastAggression.i + 1).some((h) => h.seat !== view.seat && aggressive(h.action.type));
+  const opponentStats = options.opponentStatsFor
+    ? live
+        .filter((o) => o.seat !== view.seat)
+        .flatMap((o) => {
+          const stats = options.opponentStatsFor?.(o.seat) ?? null;
+          return stats === null ? [] : [{ seat: o.seat, ...stats }];
+        })
+    : [];
+  const withRange = options.rangeEquity === true ? importantContext.map(withRangeWording) : importantContext;
+  const context = opponentStats.length > 0 ? [...withRange, OPPONENT_STATS_GUIDANCE] : withRange;
   const table: JevTable = {
     position: view.position,
     playersInHand: live.length,
@@ -263,6 +290,7 @@ export function compressState(
       : {}),
     raisesThisStreet,
     myBetWasRaisedThisStreet,
+    ...(opponentStats.length > 0 ? { opponentStats } : {}),
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,

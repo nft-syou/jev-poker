@@ -9,6 +9,7 @@ import type { JevBackend } from '../src/jev/backend.js';
 import type { Persona } from '../src/jev/personas.js';
 import type { PromptStyle } from '../src/jev/questions.js';
 import { rotations, seatCount } from './matchups.js';
+import { ProfileTracker } from './profile.js';
 import type { Format, HandAction, HandRecord, Opponent } from './types.js';
 
 const SMALL_BLIND = 50;
@@ -35,6 +36,8 @@ export interface RunOptions {
   backend: JevBackend;
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
+  /** Feed the Jev agent per-opponent session statistics accumulated over the matchup. */
+  profile?: boolean;
   /** Opt-in range-aware equity feature for the Jev agent. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent uses the preflop chart in code and asks Jev only after the flop. */
@@ -61,6 +64,8 @@ export interface PlayHandArgs {
   hero?: 'jev' | 'heuristic';
   preflop?: 'jev' | 'chart';
   rangeEquity?: boolean;
+  /** Shared session memory; when present the Jev agent sees opponent statistics and the hand is recorded into it. */
+  tracker?: ProfileTracker;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: TableEvent) => void;
 }
@@ -90,6 +95,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
             ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
             ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
             ...(args.rangeEquity !== undefined ? { rangeEquity: args.rangeEquity } : {}),
+            ...(args.tracker !== undefined ? { opponentStatsFor: (s: number) => (s === jevSeat ? null : (args.tracker?.statsFor(opponent) ?? null)) } : {}),
           })
         : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
     );
@@ -171,6 +177,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       decisions,
       actions,
     };
+    // (the tracker is updated by the caller once the record exists)
   } finally {
     unsubscribe();
   }
@@ -198,6 +205,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
   const total = jobs.length;
   const hands: HandRecord[] = [];
   const play = opts.playHandImpl ?? playHand;
+  const tracker = opts.profile === true ? new ProfileTracker() : undefined;
   let nextJob = 0;
   let done = 0;
   // Set by the first worker whose hand throws, so the others stop claiming jobs
@@ -227,12 +235,18 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           ...(opts.hero !== undefined ? { hero: opts.hero } : {}),
           ...(opts.preflop !== undefined ? { preflop: opts.preflop } : {}),
           ...(opts.rangeEquity !== undefined ? { rangeEquity: opts.rangeEquity } : {}),
+          ...(tracker !== undefined ? { tracker } : {}),
         });
       } catch (err) {
         failed = true;
         throw err;
       }
       hands.push(record);
+      if (tracker !== undefined && record.actions !== undefined) {
+        const seats = new Map<number, string>();
+        for (let s = 0; s < seatCount(format); s++) if (s !== record.jevSeat) seats.set(s, opponent);
+        tracker.record(record.actions, seats);
+      }
       for (const decision of record.decisions) {
         onDecision?.(decision);
         if (!failFastChecked && firstDecisions.length < FAIL_FAST_DECISIONS) firstDecisions.push(decision);

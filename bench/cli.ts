@@ -85,6 +85,7 @@ async function main(): Promise<void> {
       hero: opts.hero,
       preflop: opts.preflop,
       rangeEquity: opts.rangeEquity,
+      profile: opts.profile,
       signal: controller.signal,
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
@@ -117,6 +118,7 @@ async function main(): Promise<void> {
         ...(opts.hero !== 'jev' ? { hero: opts.hero } : {}),
         ...(opts.preflop !== 'jev' ? { preflop: opts.preflop } : {}),
         ...(opts.rangeEquity ? { rangeEquity: true } : {}),
+        ...(opts.profile ? { profile: true } : {}),
       },
       summary: summarize(hands, matchup.format),
       hands,

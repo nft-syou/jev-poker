@@ -72,6 +72,8 @@ export interface BenchConfig {
   gitCommit: string | null;
   /** Absent in results written before the split-format experiment (= `unified`). */
   promptStyle?: 'unified' | 'split';
+  /** Opponent session statistics were fed to the Jev agent. */
+  profile?: boolean;
   /** The opt-in range-aware equity feature was on. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent takes its preflop decisions from the chart in code. */

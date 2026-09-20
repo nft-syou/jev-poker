@@ -4,7 +4,7 @@ import type { Agent } from '../agents/types.js';
 import { Rng } from '../engine/rng.js';
 import type { Action, LegalActions, PlayerView, Street } from '../engine/types.js';
 import type { JevAnswers, JevBackend } from './backend.js';
-import { compressState } from './compress.js';
+import { compressState, type OpponentStats } from './compress.js';
 import { chartPreflop } from './heuristic-agent.js';
 import { buildQuestions, legalChoices, SIZING_LABELS, type ActionChoice, type PromptStyle } from './questions.js';
 import type { Persona } from './personas.js';
@@ -47,6 +47,8 @@ export interface JevAgentOptions {
   preflop?: 'jev' | 'chart';
   /** Add the range-aware equity feature to the state (off by default, see `CompressOptions`). */
   rangeEquity?: boolean;
+  /** Session statistics lookup for opponents (adds `table.opponentStats`). */
+  opponentStatsFor?: (seat: number) => OpponentStats | null;
 }
 
 function clamp(x: number, min: number, max: number): number {
@@ -186,6 +188,7 @@ export class JevAgent implements Agent {
   private readonly promptStyle: PromptStyle;
   private readonly preflop: 'jev' | 'chart';
   private readonly rangeEquity: boolean;
+  private readonly opponentStatsFor: ((seat: number) => OpponentStats | null) | undefined;
 
   constructor(opts: JevAgentOptions) {
     this.persona = opts.persona;
@@ -195,6 +198,7 @@ export class JevAgent implements Agent {
     this.promptStyle = opts.promptStyle ?? 'unified';
     this.preflop = opts.preflop ?? 'jev';
     this.rangeEquity = opts.rangeEquity ?? false;
+    this.opponentStatsFor = opts.opponentStatsFor;
     this.id = `jev:${opts.persona.id}`;
   }
 
@@ -205,7 +209,10 @@ export class JevAgent implements Agent {
     try {
       // Inside the try: building the state can throw too (e.g. a malformed view),
       // and that must fail open rather than stall the table.
-      const state = compressState(view, legal, this.persona, this.promptStyle, { rangeEquity: this.rangeEquity });
+      const state = compressState(view, legal, this.persona, this.promptStyle, {
+        rangeEquity: this.rangeEquity,
+        ...(this.opponentStatsFor !== undefined ? { opponentStatsFor: this.opponentStatsFor } : {}),
+      });
       if (this.preflop === 'chart' && view.street === 'preflop') {
         const action = chartPreflop(state, view, legal);
         const choice: ActionChoice =
