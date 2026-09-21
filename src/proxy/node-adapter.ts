@@ -1,5 +1,22 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+/** A Jev request body is a few KB; anything past this is not worth buffering in the dev server. */
+export const MAX_REQUEST_BODY_BYTES = 1024 * 1024;
+
+export class PayloadTooLargeError extends Error {
+  constructor() {
+    super(`request body exceeds ${MAX_REQUEST_BODY_BYTES} bytes`);
+    this.name = "PayloadTooLargeError";
+  }
+}
+
+export function payloadTooLargeResponse(): Response {
+  return new Response(JSON.stringify({ error: "payload_too_large" }), {
+    status: 413,
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
+  });
+}
+
 /**
  * Bridges Node's http objects to the WHATWG pair `handleJevProxy` speaks, so the Vite dev
  * server can run the very same proxy code as the deployed Pages Function.
@@ -16,7 +33,13 @@ export async function toWebRequest(req: IncomingMessage, origin: string): Promis
   const init: RequestInit = { method, headers };
   if (method !== "GET" && method !== "HEAD") {
     const chunks: Uint8Array[] = [];
-    for await (const chunk of req) chunks.push(Buffer.from(chunk as Buffer | string));
+    let size = 0;
+    for await (const chunk of req) {
+      const buffer = Buffer.from(chunk as Buffer | string);
+      size += buffer.byteLength;
+      if (size > MAX_REQUEST_BODY_BYTES) throw new PayloadTooLargeError();
+      chunks.push(buffer);
+    }
     init.body = Buffer.concat(chunks);
   }
   return new Request(url, init);

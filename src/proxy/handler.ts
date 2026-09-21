@@ -1,5 +1,6 @@
 import {
   ALLOWED_PATHS,
+  API_KEY_HEADER,
   CF_ACCOUNT_HEADER,
   CF_GATEWAY_HEADER,
   CF_PROVIDER_HEADER,
@@ -14,6 +15,8 @@ import {
 export type ProxyEnv = UpstreamEnv;
 
 export const DEFAULT_UPSTREAM = TYPESAFE_UPSTREAM;
+
+const NULL_BODY_STATUSES = new Set([204, 205, 304]);
 
 const PASSTHROUGH_RESPONSE_HEADERS = [
   "content-type",
@@ -41,7 +44,7 @@ export async function handleJevProxy(
   if (method === undefined) return json(404, { error: "not_found" });
   if (request.method !== method) return json(405, { error: "method_not_allowed" });
 
-  const key = request.headers.get("x-typesafe-key")?.trim() ?? "";
+  const key = request.headers.get(API_KEY_HEADER)?.trim() ?? "";
   if (!SECRET_PATTERN.test(key)) return json(401, { error: "missing_api_key" });
 
   const routeId = request.headers.get(ROUTE_HEADER);
@@ -88,7 +91,9 @@ export async function handleJevProxy(
     const value = upstream.headers.get(name);
     if (value !== null) responseHeaders.set(name, value);
   }
-  return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
+  // Constructing a `Response` with a body for one of these statuses throws.
+  const body = NULL_BODY_STATUSES.has(upstream.status) ? null : upstream.body;
+  return new Response(body, { status: upstream.status, headers: responseHeaders });
 }
 
 function json(status: number, body: Record<string, string>): Response {

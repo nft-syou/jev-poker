@@ -128,6 +128,18 @@ describe("handleJevProxy", () => {
     expect(response.status).toBe(502);
   });
 
+  it("passes a 204 through, which a Response may not carry a body for", async () => {
+    const { fetch } = fakeFetch(new Response(null, { status: 204 }));
+    const response = await handleJevProxy(
+      post({ "x-typesafe-key": "k" }),
+      "v1/systemone",
+      {},
+      fetch,
+    );
+    expect(response.status).toBe(204);
+    expect(response.body).toBeNull();
+  });
+
   it("rejects a key that is not printable ascii, without contacting upstream", async () => {
     const { fetch, calls } = fakeFetch(new Response("{}"));
     for (const key of ["   ", "~".repeat(513)]) {

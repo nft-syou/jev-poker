@@ -1,7 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { toWebRequest, writeWebResponse } from "./node-adapter";
+import {
+  MAX_REQUEST_BODY_BYTES,
+  PayloadTooLargeError,
+  payloadTooLargeResponse,
+  toWebRequest,
+  writeWebResponse,
+} from "./node-adapter";
 
 function nodeRequest(
   method: string,
@@ -55,6 +61,27 @@ describe("toWebRequest", () => {
     expect(request.method).toBe("GET");
     expect(request.body).toBeNull();
     expect(request.headers.get("accept")).toBe("a/b, c/d");
+  });
+
+  it("refuses to buffer a body past the cap", async () => {
+    const big = "a".repeat(MAX_REQUEST_BODY_BYTES + 1);
+    await expect(
+      toWebRequest(nodeRequest("POST", "/v1/systemone", {}, big), "http://localhost"),
+    ).rejects.toBeInstanceOf(PayloadTooLargeError);
+
+    // The cap itself is still allowed through.
+    const atCap = await toWebRequest(
+      nodeRequest("POST", "/v1/systemone", {}, "a".repeat(MAX_REQUEST_BODY_BYTES)),
+      "http://localhost",
+    );
+    expect((await atCap.text()).length).toBe(MAX_REQUEST_BODY_BYTES);
+  });
+
+  it("answers an oversized body with 413", async () => {
+    const response = payloadTooLargeResponse();
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: "payload_too_large" });
+    expect(response.headers.get("content-type")).toBe("application/json");
   });
 
   it("drops http/2 pseudo headers, which a Headers bag refuses", async () => {
