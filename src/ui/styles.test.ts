@@ -43,3 +43,24 @@ describe("layout stability guards", () => {
     expect(rule(":root")).toMatch(/scrollbar-gutter:\s*stable/);
   });
 });
+
+// Measured at 390x844 and 375x667: the fixed action bar used to sit on top of the bottom seat,
+// the player's own, hiding 145px of it (all of it) on their own turn.
+describe("action bar guards", () => {
+  it("keeps room under the felt for the bar and scrolls the felt clear of it", () => {
+    const phone = css.slice(css.indexOf("@media (max-width: 720px)"));
+    expect(phone).toMatch(/padding-bottom:\s*calc\([^;]*var\(--turn-bar-height, 0px\)/);
+    expect(phone).toMatch(/scroll-margin-bottom:\s*calc\([^;]*var\(--turn-bar-height, 0px\)/);
+  });
+
+  it("gives fold, call and raise a fixed slot each, whichever of them are on offer", () => {
+    expect(rule(".action-main")).toMatch(/grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+    expect(rule(".action-main .passive")).toMatch(/grid-column:\s*2/);
+    expect(rule(".action-main .aggressive")).toMatch(/grid-column:\s*3/);
+  });
+
+  it("sizes the amount inputs to their grid cell, padding included", () => {
+    // Without it the 84px number box rendered 110px wide and ran under the + button.
+    expect(rule('.sizing-fine input[type="number"]')).toMatch(/box-sizing:\s*border-box/);
+  });
+});

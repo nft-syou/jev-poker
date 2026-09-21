@@ -193,7 +193,28 @@
     "bet": "ベット {{amount}}",
     "raise": "レイズ to {{amount}}",
     "allin": "オールイン ({{amount}})",
-    "amount": "額"
+    "amount": "額",
+    "less": "1 BB 減らす",
+    "more": "1 BB 増やす",
+    "sizeInfo": "{{bb}} BB · ポットの {{percent}}%",
+    "sizeInfoNoPot": "{{bb}} BB",
+    "short": {
+      "call": "コール",
+      "bet": "ベット",
+      "raise": "レイズ to",
+      "allin": "オールイン"
+    },
+    "size": {
+      "min": "最小",
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "pot": "ポット",
+      "x2_5": "2.5x",
+      "x3": "3x",
+      "x4": "4x",
+      "allin": "オールイン"
+    }
   },
   "history": {
     "title": "ハンド履歴",

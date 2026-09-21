@@ -193,7 +193,28 @@
     "bet": "Bet {{amount}}",
     "raise": "Raise to {{amount}}",
     "allin": "All in ({{amount}})",
-    "amount": "Amount"
+    "amount": "Amount",
+    "less": "One big blind less",
+    "more": "One big blind more",
+    "sizeInfo": "{{bb}} BB · {{percent}}% of the pot",
+    "sizeInfoNoPot": "{{bb}} BB",
+    "short": {
+      "call": "Call",
+      "bet": "Bet",
+      "raise": "Raise to",
+      "allin": "All in"
+    },
+    "size": {
+      "min": "Min",
+      "third": "1/3",
+      "half": "1/2",
+      "twoThirds": "2/3",
+      "pot": "Pot",
+      "x2_5": "2.5x",
+      "x3": "3x",
+      "x4": "4x",
+      "allin": "All in"
+    }
   },
   "history": {
     "title": "Hand history",
