@@ -70,13 +70,35 @@ function useMediaQuery(query: string): boolean {
   return on;
 }
 
-/** The pot, drawn as chips, with its number rolling to whatever the last action made it. */
-function PotView({ pot, bigBlind, ms }: { pot: number; bigBlind: number; ms: number }) {
+interface PotViewProps {
+  /** Chips already swept into the middle. */
+  pot: number;
+  /** The same plus every bet still in front of a seat: what a caller is really playing for. */
+  total: number;
+  bigBlind: number;
+  ms: number;
+}
+
+/**
+ * The pot, drawn as chips, with its number rolling to whatever the last sweep made it. Only
+ * collected chips count here: a bet still out on the felt is drawn in front of its seat, and
+ * counting it in the middle as well showed the same chips twice. The total is spelled out
+ * underneath while the two differ, because that is the number pot odds are worked from.
+ */
+function PotView({ pot, total, bigBlind, ms }: PotViewProps) {
   const { t } = useTranslation();
   const shown = useCountUp(pot, ms);
   const label = `${t("table.pot")}: ${shown}`;
-  if (pot <= 0) return <div className="pot">{label}</div>;
-  return <ChipStack className="pot" amount={pot} bigBlind={bigBlind} label={label} />;
+  return (
+    <>
+      {pot <= 0 ? (
+        <div className="pot">{label}</div>
+      ) : (
+        <ChipStack className="pot" amount={pot} bigBlind={bigBlind} label={label} />
+      )}
+      {total > pot && <div className="pot-total">{`${t("table.potTotal")}: ${total}`}</div>}
+    </>
+  );
 }
 
 export function TableView({
@@ -167,7 +189,11 @@ export function TableView({
   // The engine keeps `contributed` — and so `snapshot.pot` — until the next hand starts, but
   // the chips have visibly flown to the winner by then. Once the pot is paid the middle is
   // empty and the seats have nothing in front of them, whatever the snapshot still says.
-  const pot = fx.potPaid ? 0 : (snapshot?.pot ?? 0);
+  const total = fx.potPaid ? 0 : (snapshot?.pot ?? 0);
+  // `snapshot.pot` is everything contributed, this street's bets included, and those are still
+  // drawn in front of their seats until the street ends: the middle holds only the rest.
+  const outstanding = snapshot?.players.reduce((sum, p) => sum + p.streetBet, 0) ?? 0;
+  const pot = Math.max(0, total - outstanding);
   /** Durations the felt's animations read; one place to change, one place to speed up. */
   const feltVars = {
     "--callout-ms": `${timings.calloutMs}ms`,
@@ -310,6 +336,7 @@ export function TableView({
               {snapshot !== null && (
                 <PotView
                   pot={pot}
+                  total={total}
                   bigBlind={bigBlind}
                   ms={reducedMotion ? 0 : timings.potCountMs}
                 />

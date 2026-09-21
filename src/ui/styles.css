@@ -552,6 +552,13 @@ a {
   margin-top: 8px;
   font-weight: 600;
 }
+/* Bets still in front of their seats, added to the pot: the number pot odds come from. */
+.pot-total {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
 .chip-stack.pot {
   --chip-width: 34px;
   --chip-height: 11px;

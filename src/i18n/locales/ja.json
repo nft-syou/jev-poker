@@ -88,6 +88,7 @@
   },
   "table": {
     "pot": "ポット",
+    "potTotal": "合計",
     "hand": "ハンド #{{number}}",
     "dealer": "D",
     "hiddenCard": "裏向きのカード",
