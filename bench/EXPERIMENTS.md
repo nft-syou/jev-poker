@@ -200,6 +200,91 @@ Differences: Jev - heuristic 0.0 [-25.4, +25.5]; Jev - rules +1.0 [-23.9, +26.0]
   not reduce variance here: its sd is 16-18 bb per hand against about 10 for these heroes, so the
   baseline-adjusted figure is noisier than the raw one and is reported only in the result files.
 
+## exp10: per-player session tendencies at mixed tables (2026-09-22) / プレイヤー別のセッション傾向
+
+Question: if the CPU is told how each opponent has played so far in the session, does it win more?
+The earlier `--profile` run said no (6-max -10.6), but every opponent there was the same `rules`
+bot, so there was nobody to tell apart. This round uses tables of different players. Every player
+keeps an id across seat rotations and the session memory is keyed by it.
+
+Four conditions on identical deals (`tag` hero, 6-max, paired by seed):
+
+| condition | what the hero is given |
+| --- | --- |
+| none | nothing (the default agent) |
+| `--profile numbers` | VPIP, PFR, postflop aggression and fold-to-bet per live opponent, plus one line of guidance |
+| `--profile label` | a player type per live opponent from fixed thresholds in code (`calling_station`, `nit`, `maniac`, `regular`) and one line of counter-strategy for each type in the hand |
+| `--profile jev-label` | the same types and lines, but the type is judged by Jev from the numbers in a separate `systemOne` call, refreshed every 25 hands of that player |
+
+Thresholds, type descriptions and guidance were written before the pilot (base seed 1, 300 seeds)
+and not changed after it. Decision runs are on base seed 400001, never used before. Code `1430de3`
+(`4eeb4ca` for the window rows), model `jev-1.13.0`, 0 fail-open everywhere.
+
+### Stage 1: bots with extreme tendencies (`--opponent mixed`: rules, caller, random, heuristic, rules)
+
+1,000 seeds = 6,000 hands per condition.
+
+| condition | hero bb/100 | paired difference vs none |
+| --- | --- | --- |
+| none | +199.7 [+141.8, +257.6] | — |
+| numbers | +249.1 [+187.4, +310.8] | +49.4 [+15.3, +83.5] |
+| label | +322.7 [+250.4, +395.1] | **+123.0 [+74.9, +171.1]** |
+| jev-label | +332.5 [+262.1, +402.9] | **+132.8 [+86.7, +178.9]** |
+| label, only the last 100 hands of each player remembered | +327.2 [+256.3, +398.1] | **+127.5 [+81.4, +173.5]** |
+| jev-label, last 100 hands | +310.6 [+239.3, +381.9] | **+110.9 [+65.9, +155.8]** |
+
+- Telling the hero who is who helps, and a label helps more than the raw numbers
+  (label - numbers +73.6 [+32.9, +114.3]; jev-label - numbers +83.4 [+39.0, +127.8]).
+  The pilot had the numbers at -39.7 [-79.3, -0.2] on 300 seeds, so the numbers are the unstable
+  form; the labels were positive in both.
+- Who judges the type makes no difference here (jev-label - label +9.8 [-25.1, +44.7]). Both call
+  `caller` a calling station, `random` a maniac and `rules` a nit; Jev's 1,200 labels were stable
+  (two of them disagreed with the rest). The separate calls cost 12% more requests.
+- The gain comes from the weak players: `caller` loses 538 bb/100 without labels and about 610 with
+  them, `random` 429 and about 460; the nits' results do not move. The hero reaches showdown a
+  little more often (13.5% to about 15%) and wins a little more of them (56.5% to about 58.5%).
+- A memory of 100 hands per player is enough; the effect is the same as with unlimited memory.
+- For scale: the fixed heuristic, seated as one of the opponents, earns about +380 to +390 at this table, more than the Jev hero in any condition.
+
+### Stage 2: Jev personas (`--opponent mixed-jev`: rock, lag, maniac, station, tag, all Jev CPUs)
+
+700 seeds = 4,200 hands per condition (every seat calls the API, roughly six times the requests of stage 1).
+
+| condition | hero bb/100 | paired difference vs none |
+| --- | --- | --- |
+| none | +5.3 [-12.7, +23.3] | — |
+| label | +30.4 [+5.3, +55.5] | +25.1 [+0.2, +50.0] |
+| jev-label | +26.6 [-4.8, +58.0] | +21.3 [-7.9, +50.6] |
+
+- Against players whose leaks are mild the effect is about a fifth of stage 1 and only borderline:
+  +20 to +25 bb/100, with the interval starting at zero. jev-label - label is -3.8 [-30.1, +22.6].
+- The personas are much less extreme in numbers than in their texts (the maniac raises preflop in
+  about 16% of hands), so the fixed thresholds see `rock` and `tag` as nits, `maniac` as a maniac
+  and `lag` and `station` as regular. Jev's own judgement is closer to the characters: `station`
+  is a calling station in all 168 labels and `lag` a maniac in 165. It did not turn into more chips.
+- Without any profile the `tag` CPU is level with this table (+5.3), so there is little to take.
+
+### Verdict
+
+Per-player session tendencies make the CPU stronger when the table has players with real leaks,
+and the form matters: a type word plus one line of counter-strategy beats the numbers. Whether
+code or Jev assigns the type does not change the result; the code version is free and the Jev
+version copes with players the thresholds were not written for. All of it stays opt-in on this
+branch; the default agent is unchanged.
+
+問い: セッション中の相手ごとの傾向を CPU に伝えると強くなるか。以前の `--profile` は逆効果でしたが
+(6-max -10.6)、相手が全員同じ `rules` で打ち分ける余地がありませんでした。今回は傾向の違うプレイヤーが
+混ざった卓で、席が変わっても同じ人物として傾向を蓄積します。
+
+- 傾向の極端なボットの卓では大きく効きます。タイプ名と対策の一言で **+123 〜 +133 bb/100**、数値だけだと +49。
+  形が重要で、ラベルは数値より +74 〜 +83 上です。直近 100 ハンドの記憶でも同じ効果でした。
+- タイプをコードの閾値で決めても Jev に判定させても結果は同じです (差 +9.8、有意差なし)。Jev の判定は
+  安定していて人格の意図にも近いですが、呼び出しが 12% 増えます。
+- 得をした相手は弱いプレイヤー (`caller` と `random`) で、タイトな相手からの収支は変わりません。
+- Jev 人格だけの卓では効果は +20 〜 +25 bb/100 で、信頼区間の下端がほぼ 0 です。人格の個性は統計上は穏やかで、
+  そもそも取れるものが少ない卓でした。
+- すべてこのブランチ上のオプションで、既定の CPU は変えていません。
+
 ## Reproduce / 再現
 
 ```sh

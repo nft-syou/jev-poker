@@ -105,7 +105,9 @@ pnpm bench:slumbot:report                                       # 同じ構成�
 | `--prompt split` | プリフロップ用とポストフロップ用で、タスク文・指針・サイズの選択肢を分ける |
 | `--range-equity` | 相手のこのハンドの行動から推定したレンジに対するエクイティ `equityVsRangePct` を状態に足す |
 | `--preflop chart` | プリフロップは位置別チャート (コード) で決め、Jev にはポストフロップだけ聞く。6-max の API 呼び出しが約 85% 減る |
-| `--profile` | マッチ内で蓄積した相手の参加率・レイズ率・ポストフロップの攻撃頻度を状態に足す |
+| `--opponent mixed` / `mixed-jev` | 傾向の違うプレイヤーが混ざった 6-max 卓。`mixed` は rules / caller / random / heuristic / rules、`mixed-jev` は rock / lag / maniac / station / tag の Jev CPU。席が変わっても同じ人物として扱う |
+| `--profile [numbers|label|jev-label]` | マッチ内で蓄積した相手ごとの傾向を状態に足す。`numbers` (既定) は参加率・レイズ率・ポストフロップの攻撃頻度・ベットに降りる率、`label` はコードの閾値で決めたタイプ名と対策の一言、`jev-label` は同じタイプを Jev に別呼び出しで判定させる (exp10) |
+| `--profile-window N` | 相手ごとに直近 N ハンドだけを覚える (既定はマッチ全体) |
 | `--hero heuristic` | 計測席に Jev ではなく「Jev と同じ特徴量だけを読む固定ルール」を座らせる (API 不要)。分類器が何を上乗せしているかの物差し |
 | `--model <名前>` | SDK に渡すモデル。2026-09-21 時点で `jev-latest` と `jev-preview` はどちらも `jev-1.13.0` として応答する |
 
