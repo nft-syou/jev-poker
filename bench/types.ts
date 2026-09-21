@@ -79,6 +79,8 @@ export interface BenchConfig {
   promptStyle?: "unified" | "split";
   /** Opponent session tendencies were fed to the Jev agent; `true` in older files means `numbers`. */
   profile?: boolean | ProfileMode;
+  /** Opponents' hands remembered by the session memory; absent = the whole matchup. */
+  profileWindow?: number;
   /** Requests spent on asking Jev for player types (`jev-label` only). */
   profileLabelCalls?: number;
   /** Player types the hero was given: the final one for `label`, every one in order for `jev-label`. */

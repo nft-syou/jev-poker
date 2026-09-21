@@ -107,6 +107,7 @@ async function main(): Promise<void> {
       preflop: opts.preflop,
       rangeEquity: opts.rangeEquity,
       profile: opts.profile,
+      ...(opts.profileWindow !== null ? { profileWindow: opts.profileWindow } : {}),
       onLabelCalls: (calls) => {
         labelCalls = calls;
       },
@@ -147,6 +148,9 @@ async function main(): Promise<void> {
         ...(opts.preflop !== "jev" ? { preflop: opts.preflop } : {}),
         ...(opts.rangeEquity ? { rangeEquity: true } : {}),
         ...(opts.profile !== false ? { profile: opts.profile } : {}),
+        ...(opts.profile !== false && opts.profileWindow !== null
+          ? { profileWindow: opts.profileWindow }
+          : {}),
         ...(labelCalls > 0 ? { profileLabelCalls: labelCalls } : {}),
         ...(playerTypes !== null ? { profilePlayerTypes: playerTypes } : {}),
       },

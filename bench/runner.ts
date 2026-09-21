@@ -53,6 +53,8 @@ export interface RunOptions {
   /** Feed the Jev agent per-opponent session statistics accumulated over the matchup. */
   profile?: boolean | ProfileMode;
   /** Reports how many requests the `jev-label` mode spent on player types. */
+  /** Remember only each opponent's most recent hands (a realistic session length); unlimited when absent. */
+  profileWindow?: number;
   onLabelCalls?: (calls: number) => void;
   /** Called once at the end with the player types the hero was given (`label` and `jev-label`). */
   onPlayerTypes?: (types: Record<string, string[]>) => void;
@@ -281,7 +283,7 @@ export async function runMatch(
       : opts.profile === true
         ? "numbers"
         : opts.profile;
-  const tracker = profileMode === null ? undefined : new ProfileTracker();
+  const tracker = profileMode === null ? undefined : new ProfileTracker(opts.profileWindow);
   const labeler =
     tracker !== undefined && profileMode === "jev-label"
       ? new JevTypeLabeler(tracker, backend, opts.model)

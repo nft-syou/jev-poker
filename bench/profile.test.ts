@@ -648,3 +648,45 @@ describe("runMatch with --profile", () => {
     expect(off.states.every((s) => s.table.opponentStats === undefined)).toBe(true);
   });
 });
+
+describe("ProfileTracker window", () => {
+  const players = new Map([[0, "villain"]]);
+
+  it("forgets hands older than the window, so the statistics follow a change of play", () => {
+    const t = new ProfileTracker(30);
+    recordTimes(t, 30, players, foldsPreflop(0));
+    expect(t.statsFor("villain")).toMatchObject({ hands: 30, vpipPct: 0 });
+    expect(t.typeFor("villain")).toBe("nit");
+    recordTimes(t, 15, players, callsDown(0));
+    expect(t.statsFor("villain")).toMatchObject({ hands: 30, vpipPct: 50 });
+    recordTimes(t, 15, players, callsDown(0));
+    expect(t.statsFor("villain")).toMatchObject({ hands: 30, vpipPct: 100, foldToBetPct: 0 });
+    expect(t.typeFor("villain")).toBe("calling_station");
+    expect(t.handsSeen("villain")).toBe(60);
+  });
+
+  it("remembers everything without a window", () => {
+    const t = new ProfileTracker();
+    recordTimes(t, 30, players, foldsPreflop(0));
+    recordTimes(t, 30, players, callsDown(0));
+    expect(t.statsFor("villain")).toMatchObject({ hands: 60, vpipPct: 50 });
+    expect(t.handsSeen("villain")).toBe(60);
+    expect(t.handsSeen("nobody")).toBe(0);
+  });
+
+  it("keeps asking Jev every 25 hands once the window is full", async () => {
+    const t = new ProfileTracker(20);
+    const backend = labelBackend(() => "nit");
+    const labeler = new JevTypeLabeler(t, backend);
+    recordTimes(t, 20, players, foldsPreflop(0));
+    await labeler.refresh();
+    recordTimes(t, 24, players, foldsPreflop(0));
+    await labeler.refresh();
+    expect(labeler.calls).toBe(1);
+    recordTimes(t, 1, players, foldsPreflop(0));
+    await labeler.refresh();
+    expect(labeler.calls).toBe(2);
+    // The sample Jev is shown never exceeds the window.
+    expect(backend.requests.map((r) => r.opponent.hands)).toEqual([20, 20]);
+  });
+});

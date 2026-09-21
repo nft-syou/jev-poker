@@ -146,6 +146,7 @@ describe("parseArgs", () => {
       preflop: "jev",
       rangeEquity: false,
       profile: false,
+      profileWindow: null,
     }));
 
   it("parses values", () =>

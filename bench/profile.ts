@@ -19,6 +19,28 @@ interface Tally {
   foldedToBet: number;
 }
 
+function emptyTally(): Tally {
+  return {
+    hands: 0,
+    vpip: 0,
+    pfr: 0,
+    postflopActions: 0,
+    postflopAggressive: 0,
+    facedBet: 0,
+    foldedToBet: 0,
+  };
+}
+
+function addTally(into: Tally, hand: Tally, sign: 1 | -1): void {
+  into.hands += sign * hand.hands;
+  into.vpip += sign * hand.vpip;
+  into.pfr += sign * hand.pfr;
+  into.postflopActions += sign * hand.postflopActions;
+  into.postflopAggressive += sign * hand.postflopAggressive;
+  into.facedBet += sign * hand.facedBet;
+  into.foldedToBet += sign * hand.foldedToBet;
+}
+
 /**
  * Session memory for the benchmark: how each player at the table has played so far in this
  * matchup. Keyed by player id, not by seat, because Jev rotates through the seats while the
@@ -29,6 +51,15 @@ interface Tally {
  */
 export class ProfileTracker {
   private readonly tallies = new Map<string, Tally>();
+  /** Per-hand tallies of each player, oldest first; kept only when a window is set. */
+  private readonly recent = new Map<string, Tally[]>();
+  private readonly seen = new Map<string, number>();
+
+  /**
+   * `windowHands`: remember only each player's most recent hands, like a player who has sat at
+   * the table for that long. Unlimited when omitted.
+   */
+  constructor(private readonly windowHands?: number) {}
 
   /** Fold one finished hand into the tallies; `players` maps each opponent's seat to its player id. */
   record(actions: readonly HandAction[], players: ReadonlyMap<number, string>): void {
@@ -41,28 +72,35 @@ export class ProfileTracker {
       const answered = post.filter(
         (a) => a.type === "fold" || a.type === "call" || a.type === "raise",
       );
-      const t = this.tallies.get(playerId) ?? {
-        hands: 0,
-        vpip: 0,
-        pfr: 0,
-        postflopActions: 0,
-        postflopAggressive: 0,
-        facedBet: 0,
-        foldedToBet: 0,
+      const hand: Tally = {
+        hands: 1,
+        vpip: pre.some((a) => a.type === "call" || aggressive(a.type)) ? 1 : 0,
+        pfr: pre.some((a) => aggressive(a.type)) ? 1 : 0,
+        postflopActions: post.length,
+        postflopAggressive: post.filter((a) => aggressive(a.type)).length,
+        facedBet: answered.length,
+        foldedToBet: answered.filter((a) => a.type === "fold").length,
       };
-      t.hands += 1;
-      if (pre.some((a) => a.type === "call" || aggressive(a.type))) t.vpip += 1;
-      if (pre.some((a) => aggressive(a.type))) t.pfr += 1;
-      t.postflopActions += post.length;
-      t.postflopAggressive += post.filter((a) => aggressive(a.type)).length;
-      t.facedBet += answered.length;
-      t.foldedToBet += answered.filter((a) => a.type === "fold").length;
+      this.seen.set(playerId, (this.seen.get(playerId) ?? 0) + 1);
+      const t = this.tallies.get(playerId) ?? emptyTally();
+      addTally(t, hand, 1);
+      if (this.windowHands !== undefined) {
+        const queue = this.recent.get(playerId) ?? [];
+        queue.push(hand);
+        while (queue.length > this.windowHands) addTally(t, queue.shift() as Tally, -1);
+        this.recent.set(playerId, queue);
+      }
       this.tallies.set(playerId, t);
     }
   }
 
   playerIds(): string[] {
     return [...this.tallies.keys()];
+  }
+
+  /** Hands of this player recorded since the start, whatever the window still remembers. */
+  handsSeen(playerId: string): number {
+    return this.seen.get(playerId) ?? 0;
   }
 
   /** `null` until a few hands have been seen: a percentage over three hands is noise. */
@@ -122,13 +160,15 @@ export class JevTypeLabeler {
       const stats = this.tracker.statsFor(id);
       if (stats === null) return false;
       const known = this.labels.get(id);
-      return known === undefined || stats.hands - known.hands >= RELABEL_EVERY;
+      return known === undefined || this.tracker.handsSeen(id) - known.hands >= RELABEL_EVERY;
     });
     await Promise.all(
       due.map(async (id) => {
         const stats = this.tracker.statsFor(id);
         if (stats === null) return;
         this.pending.add(id);
+        // The label describes the sample as it was when Jev was asked, not when it answered.
+        const seenWhenAsked = this.tracker.handsSeen(id);
         try {
           this.calls += 1;
           const type = await classifyWithJev(
@@ -139,7 +179,7 @@ export class JevTypeLabeler {
           // A failed request keeps the previous label; it is asked again only after another
           // `RELABEL_EVERY` hands, so a broken backend is not hammered once per hand.
           const previous = this.labels.get(id)?.type ?? null;
-          this.labels.set(id, { type: type ?? previous, hands: stats.hands });
+          this.labels.set(id, { type: type ?? previous, hands: seenWhenAsked });
           if (type !== null) this.given.set(id, [...(this.given.get(id) ?? []), type]);
         } finally {
           this.pending.delete(id);

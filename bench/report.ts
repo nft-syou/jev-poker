@@ -17,6 +17,8 @@ export interface CliOptions {
   preflop: "jev" | "chart";
   rangeEquity: boolean;
   profile: false | ProfileMode;
+  /** Only with `--profile`: how many recent hands of each opponent are remembered. */
+  profileWindow: number | null;
 }
 
 export const USAGE = `Usage: pnpm bench [options]
@@ -35,6 +37,7 @@ export const USAGE = `Usage: pnpm bench [options]
   --profile [numbers|label|jev-label]  feed Jev each opponent's session tendencies accumulated over the matchup:
                                        numbers (default) = VPIP/PFR/aggression/fold-to-bet, label = a player type
                                        from fixed thresholds, jev-label = a player type Jev itself judges from the numbers
+  --profile-window N                   remember only each opponent's most recent N hands (default: the whole matchup)
   --range-equity                       add the opt-in equityVsRangePct feature to the state
   --preflop jev|chart                  chart: preflop from the position chart in code, Jev decides postflop only
   --hero jev|heuristic                 who sits in the measured seat: Jev (default) or the fixed heuristic over the same features
@@ -105,6 +108,7 @@ function conditions(r: BenchResult): string {
   if (r.config.rangeEquity === true) parts.push("range");
   const profile = r.config.profile === true ? "numbers" : (r.config.profile ?? false);
   if (profile !== false) parts.push(profile === "numbers" ? "profile" : `profile:${profile}`);
+  if (r.config.profileWindow !== undefined) parts.push(`window ${r.config.profileWindow}`);
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === "mock") parts.push("mock");
   if (r.config.model !== null) parts.push(r.config.model);
@@ -126,6 +130,7 @@ export function configKey(r: BenchResult): string {
     c.preflop ?? "jev",
     c.rangeEquity ?? false,
     c.profile ?? false,
+    c.profileWindow ?? null,
     c.seeds,
     c.baseSeed,
     c.gitCommit,
@@ -244,6 +249,7 @@ export function parseArgs(argv: string[]): CliOptions {
     preflop: "jev",
     rangeEquity: false,
     profile: false,
+    profileWindow: null,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -284,6 +290,9 @@ export function parseArgs(argv: string[]): CliOptions {
         break;
       case "--format":
         options.format = enumValue<Format | "all">(flag, take(), FORMAT_VALUES);
+        break;
+      case "--profile-window":
+        options.profileWindow = positiveInt(flag, take());
         break;
       case "--seeds":
         options.seeds = positiveInt(flag, take());
