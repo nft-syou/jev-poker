@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "bench": "tsx bench/cli.ts",
-    "bench:report": "tsx bench/report-cli.ts"
+    "bench:report": "tsx bench/report-cli.ts",
+    "bench:slumbot": "tsx bench/slumbot/cli.ts"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0"
