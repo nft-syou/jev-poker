@@ -37,3 +37,20 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   }
   return result;
 }
+
+/** Mixes integers into one 32-bit seed, so independent streams can be derived from parts. */
+export function hashSeed(...parts: number[]): number {
+  let h = 0x9e3779b9;
+  for (const p of parts) {
+    h ^= (p | 0) + 0x7f4a7c15 + (h << 6) + (h >>> 2);
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+    h ^= h >>> 16;
+  }
+  return h >>> 0;
+}
+
+/** Uniform integer in [0, n). */
+export function randomInt(rng: Rng, n: number): number {
+  return Math.floor(rng.next() * n);
+}

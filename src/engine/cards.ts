@@ -19,6 +19,10 @@ export function createDeck(): Card[] {
   return deck;
 }
 
+export function rankChar(rank: Rank): string {
+  return RANK_CHARS.charAt(rank - 2);
+}
+
 export function formatCard(card: Card): string {
   return `${RANK_CHARS.charAt(card.rank - 2)}${card.suit}`;
 }

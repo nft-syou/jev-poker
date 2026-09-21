@@ -200,22 +200,30 @@ interface LegalActions {
   persona: { name, description },                 // 人格の説明文 (常に英語で送る)
   importantContext: [ "Only legal actions are offered.", "Amounts are in big blinds.", ... ],
   hand: {
-    street, holeCards, board,
-    madeHand: "high_card" | "pair" | "two_pair" | ... ,   // コードで判定
-    draws: ["flush_draw", "open_ended", "gutshot"],       // コードで判定
+    street, holeCards, board,                             // カードは "As Kd" 形式の文字列
+    madeHand?: "high_card" | "pair" | "two_pair" | ... ,  // フロップ以降。コードで判定
+    pairKind?: "overpair" | "top_pair" | ... ,            // madeHand が pair のときだけ
+    draws?: ["flush_draw", "open_ended", "gutshot"],      // フロップとターンだけ
     preflopStrength: "premium" | "strong" | "medium" | "weak" | "trash",  // 169 ハンド表
+    equityVsRandomPct,                                    // モンテカルロ (カードから決定論的にシード)
+    beatsPctOfHands?, board_texture?,                     // フロップ以降。全相手ハンドに対する現在の強さ
   },
   table: {
-    position: "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO",
-    playersInHand, playersToAct,
-    potBB, toCallBB, potOddsPct, effectiveStackBB,
-    stacksBB: [{ seat, stackBB, isAllIn }],
+    position: "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO",  // ヘッズアップのボタンは "BTN"
+    playersInHand, opponentsNotAllIn,
+    potBB, toCallBB, potOddsPct, requiredEquityPct, effectiveStackBB, stackToPotRatio,
+    unopenedPot?,                                         // プリフロップのみ
+    raisesThisStreet, myBetWasRaisedThisStreet,
+    stacksBB: [{ seat, isMe?, stackBB, isAllIn, folded }],  // isMe は 3 席以上のときだけ
   },
-  history: [ { street, seat, action, committedBB } ]   // 今ハンドのみ
-  // committedBB: このアクションでポットに投入したチップ (BB 換算)。
-  // 「raise to X」の合計額は action の文字列側に入る。
+  history: [ { street, seat, isMe?, action, amountBB? } ]   // 今ハンドのみ。オールインのベット/レイズは "allin"
 }
 ```
+
+この形と `importantContext` の文面はベンチマークで計測して決めたもの (`bench/EXPERIMENTS.md`)。
+席の識別フラグや指針文の 1 行で bb/100 が 10 以上動くので、変更するときは `pnpm bench` で測り直す。
+状態はエンジンの `PlayerView` (`src/engine/view.ts`) から作る。`buildFeatures` はスナップショットを
+`playerView` に通すだけなので、ゲーム外のハンド (Slumbot との対戦など) でも同じ判断コードが動く。
 
 ### 5.3 質問 (1 回の `systemOne`)
 
@@ -236,8 +244,10 @@ interface LegalActions {
 
 1. `action.probabilities` を人格の `variance` (0..1) で平滑化し (`variance=0` で argmax、
    `1` で確率通りサンプリング)、`seed` 付き PRNG で 1 つ選ぶ。
-2. `bet_or_raise` なら `sizing.score` (連続値) を額に写像し、`LegalActions` の
-   `minRaiseTo..maxRaiseTo` にクランプ。`check_or_call` は `canCheck ? check : call`。
+2. `bet_or_raise` なら `sizing.score` を四捨五入してルーブリックの段に写像する。プリフロップは
+   オープンが 2 / 2.5 / 3 / 3.5 / 4 BB、リレイズが直面しているレイズ額の同じ倍率。ポストフロップは
+   `currentBet + 割合 × (pot + toCall)` (割合は 最小 / 1/3 / 2/3 / 1 / 1.5、最上段はオールイン)。
+   最後に `minRaiseTo..maxRaiseTo` にクランプ。`check_or_call` は `canCheck ? check : call`。
 3. 結果と Jev の生の確率 (`probabilities`, `bluff_intent`) を `DecisionRecord` として履歴に残す。
 
 ### 5.5 失敗時
@@ -257,6 +267,9 @@ interface JevBackend { kind: 'typesafe' | 'mock'; systemOne(req, opts?): Promise
   SDK も `Authorization` を付けるが、Function 側で `X-TypeSafe-Key` から作り直して上書きする。
 - `mock`: 決定論的 (ハンド強度から確率を作る)。テストと開発用。
   本番 UI にはキー無しで遊ぶ導線を置かない。
+
+`src/agents/jev.ts` の `JevAgent` は、この `featuresFromView` + `decideAction` を `Agent` インターフェース
+(`src/agents/types.ts`、ベンチマーク spec §3) の後ろに置いたもの。ベンチマークはこれを測る。
 
 ## 6. 人格 (`src/jev/personas.ts`)
 
@@ -291,6 +304,9 @@ interface Persona {
   削除ボタン付き。
 - 状態管理は React の `useReducer` + エンジンのイベント購読。外部ライブラリ不要。
 - i18n: 全文字列を `locales/*.json` に置く。初期言語はブラウザ言語、切替は設定に保存。
+
+(未実装) `src/agents` の `random` / `caller` / `rules` は同じ `Agent` インターフェースなので、
+キー無しで動く CPU として席に座らせる余地がある。現在の UI から選べるのは Jev の人格だけ。
 
 ## 8. プロキシ (`functions/api/jev/[[path]].ts`)
 

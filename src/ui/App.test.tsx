@@ -66,7 +66,12 @@ function stubJevFetch(): ReturnType<typeof vi.fn> {
 }
 
 describe("App", () => {
-  it("goes from setup to a spectated table with Jev decisions and back", async () => {
+  // The features of every decision (and of every speculated one) now include a Monte Carlo
+  // equity and an exact hand-strength enumeration, 15-30 ms each: alongside the other test
+  // files this no longer fits the default 5 s.
+  it("goes from setup to a spectated table with Jev decisions and back", {
+    timeout: 20_000,
+  }, async () => {
     // A key saved before the gateway routes existed still gets you to the table.
     localStorage.setItem(LEGACY_API_KEY_STORAGE_KEY, "sk-test");
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(CPU_ONLY));
@@ -83,7 +88,7 @@ describe("App", () => {
 
     // Every CPU action carries the Jev decision the history panel expands.
     await waitFor(() => expect(screen.getAllByText("Jev").length).toBeGreaterThan(0), {
-      timeout: 5000,
+      timeout: 15_000,
     });
     // The decisions came from the proxied backend, not from the fail-open fallback.
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/jev/v1/systemone");

@@ -19,6 +19,10 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.functions.json",
     "lint": "biome check .",
     "format": "biome check --write .",
+    "bench": "tsx bench/cli.ts",
+    "bench:report": "tsx bench/report-cli.ts",
+    "bench:slumbot": "tsx bench/slumbot/cli.ts",
+    "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
@@ -38,6 +42,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.0.1",
+    "tsx": "^4.19.0",
     "typescript": "~5.9.3",
     "vite": "^8.3.0",
     "vitest": "^5.0.1",

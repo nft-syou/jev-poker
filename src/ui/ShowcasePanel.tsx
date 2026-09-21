@@ -38,8 +38,8 @@ function Decision({ last, personaName, bigBlind }: Omit<Props, "model">) {
   // What Jev was told about the cards: the made hand (post-flop), what it is drawing to,
   // and how the two hole cards rank before the flop.
   const summary = [
-    ...(hand.madeHand === null ? [] : [t(`hands.${hand.madeHand}`)]),
-    ...hand.draws.map((draw) => t(`showcase.draw_${draw}`)),
+    ...(hand.madeHand === undefined ? [] : [t(`hands.${hand.madeHand}`)]),
+    ...(hand.draws ?? []).map((draw) => t(`showcase.draw_${draw}`)),
     t(`showcase.strength_${hand.preflopStrength}`),
   ].join(" · ");
 

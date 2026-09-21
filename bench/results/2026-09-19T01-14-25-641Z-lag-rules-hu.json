@@ -1,0 +1,5970 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-19T01:14:25.641Z",
+  "finishedAt": "2026-09-19T01:14:31.272Z",
+  "partial": false,
+  "config": {
+    "opponent": "rules",
+    "format": "hu",
+    "seeds": 100,
+    "persona": "lag",
+    "backend": "typesafe",
+    "model": null,
+    "baseSeed": 1,
+    "concurrency": 8,
+    "sdkVersion": "0.6.0",
+    "gitCommit": "aee7ca1"
+  },
+  "summary": {
+    "jev": {
+      "bb100": -66.785,
+      "ci95": [
+        -208.52320325116702,
+        74.95320325116703
+      ],
+      "n": 100,
+      "hands": 200,
+      "decisions": 147,
+      "apiCalls": 147,
+      "failOpen": 0,
+      "latencyMs": {
+        "mean": 282.8205040816325,
+        "p50": 262.27369999999064,
+        "p95": 414.5243099999992
+      },
+      "vpip": 0.5,
+      "pfr": 0.445,
+      "showdownWinRate": 0
+    },
+    "opponent": {
+      "bb100PerSeat": 66.785,
+      "vpip": 0.105,
+      "pfr": 0.065
+    }
+  },
+  "hands": [
+    {
+      "seedIndex": 0,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.25,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.57
+          },
+          "sizingScore": 2.23,
+          "bluffIntent": 0.79,
+          "latencyMs": 263.9403999999922,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 0,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 1,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.19,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.63
+          },
+          "sizingScore": 1.91,
+          "bluffIntent": 0.73,
+          "latencyMs": 209.7832000000053,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 1,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 2,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -6.77,
+        6.77
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.34,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.45
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 272.6339999999909,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 577
+          },
+          "probabilities": {
+            "fold": 0.34,
+            "check_or_call": 0.28,
+            "bet_or_raise": 0.38
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.78,
+          "latencyMs": 220.2210999999952,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.56,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.29
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.75,
+          "latencyMs": 225.0914000000048,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 2,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 3,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.11,
+            "bet_or_raise": 0.88
+          },
+          "sizingScore": 1.98,
+          "bluffIntent": 0.3,
+          "latencyMs": 262.27369999999064,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 3,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.61,
+            "bet_or_raise": 0.39
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.78,
+          "latencyMs": 286.36370000001625,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.31,
+            "bet_or_raise": 0.69
+          },
+          "sizingScore": 2.38,
+          "bluffIntent": 0.23,
+          "latencyMs": 414.8735999999917,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 4,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.23,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.11,
+          "bluffIntent": 0.77,
+          "latencyMs": 216.46239999998943,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 4,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 5,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.33,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.5
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.82,
+          "latencyMs": 264.7415000000037,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 5,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 6,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.22,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.62
+          },
+          "sizingScore": 2,
+          "bluffIntent": 0.78,
+          "latencyMs": 310.0197000000044,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 6,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 7,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.84
+          },
+          "sizingScore": 1.97,
+          "bluffIntent": 0.4,
+          "latencyMs": 328.16479999999865,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 7,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.57,
+            "bet_or_raise": 0.43
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.78,
+          "latencyMs": 234.80079999999725,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.51,
+            "bet_or_raise": 0.49
+          },
+          "sizingScore": 1.75,
+          "bluffIntent": 0.87,
+          "latencyMs": 389.2134000000078,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 8,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.54
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.8,
+          "latencyMs": 284.331199999986,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 8,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 9,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.26,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.58
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.8,
+          "latencyMs": 364.91500000000815,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 9,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 10,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.92
+          },
+          "sizingScore": 2.22,
+          "bluffIntent": 0.18,
+          "latencyMs": 354.17660000000615,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 10,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        3,
+        -3
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.58,
+            "check_or_call": 0.14,
+            "bet_or_raise": 0.28
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 308.14930000001914,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.51,
+            "bet_or_raise": 0.49
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.83,
+          "latencyMs": 258.0329999999958,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.47,
+            "check_or_call": 0.26,
+            "bet_or_raise": 0.27
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.8,
+          "latencyMs": 247.29320000001462,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 11,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.03,
+            "bet_or_raise": 0.97
+          },
+          "sizingScore": 2.17,
+          "bluffIntent": 0.08,
+          "latencyMs": 217.29259999998612,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 11,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        9,
+        -9
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 900
+          },
+          "probabilities": {
+            "fold": 0.53,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.32
+          },
+          "sizingScore": 2.49,
+          "bluffIntent": 0.82,
+          "latencyMs": 189.9039000000048,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.78,
+            "check_or_call": 0.07,
+            "bet_or_raise": 0.15
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.77,
+          "latencyMs": 300.0252000000037,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 12,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.24,
+            "check_or_call": 0.13,
+            "bet_or_raise": 0.63
+          },
+          "sizingScore": 2.07,
+          "bluffIntent": 0.78,
+          "latencyMs": 356.1743000000133,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 12,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 13,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.5
+          },
+          "sizingScore": 2.28,
+          "bluffIntent": 0.83,
+          "latencyMs": 452.90769999998156,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 13,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 14,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.14,
+            "bet_or_raise": 0.57
+          },
+          "sizingScore": 1.97,
+          "bluffIntent": 0.8,
+          "latencyMs": 213.4671999999846,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 14,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 15,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.25,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.13,
+          "bluffIntent": 0.78,
+          "latencyMs": 274.58599999998114,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 15,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 16,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.14,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.64
+          },
+          "sizingScore": 2,
+          "bluffIntent": 0.71,
+          "latencyMs": 286.70470000000205,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 16,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 17,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.14,
+            "bet_or_raise": 0.86
+          },
+          "sizingScore": 1.76,
+          "bluffIntent": 0.33,
+          "latencyMs": 357.8523999999743,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 17,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.66,
+            "bet_or_raise": 0.34
+          },
+          "sizingScore": 2.81,
+          "bluffIntent": 0.82,
+          "latencyMs": 230.93170000001555,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 18,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.5
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.8,
+          "latencyMs": 263.96429999999236,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 18,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 19,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.13,
+            "bet_or_raise": 0.86
+          },
+          "sizingScore": 1.82,
+          "bluffIntent": 0.39,
+          "latencyMs": 207.24069999999483,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 19,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.53,
+            "bet_or_raise": 0.47
+          },
+          "sizingScore": 2.74,
+          "bluffIntent": 0.79,
+          "latencyMs": 238.24030000000494,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 20,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.14,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.67
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.7,
+          "latencyMs": 373.90380000000005,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 300
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.92
+          },
+          "sizingScore": 2.67,
+          "bluffIntent": 0.14,
+          "latencyMs": 350.7913000000117,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 20,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 21,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.39,
+            "check_or_call": 0.13,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.84,
+          "latencyMs": 309.7898999999743,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.76
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.82,
+          "latencyMs": 372.8059999999823,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 21,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 22,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.28,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": 2.11,
+          "bluffIntent": 0.79,
+          "latencyMs": 249.54230000000098,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 22,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 23,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": 2.03,
+          "bluffIntent": 0.82,
+          "latencyMs": 334.3391999999876,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 23,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 24,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.36,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.46
+          },
+          "sizingScore": 2.38,
+          "bluffIntent": 0.82,
+          "latencyMs": 378.71429999999236,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 24,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 25,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.47
+          },
+          "sizingScore": 2.14,
+          "bluffIntent": 0.8,
+          "latencyMs": 292.72789999999804,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 25,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 26,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.33,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.46
+          },
+          "sizingScore": 2.01,
+          "bluffIntent": 0.81,
+          "latencyMs": 246.2110999999859,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 26,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 27,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.92
+          },
+          "sizingScore": 2.25,
+          "bluffIntent": 0.19,
+          "latencyMs": 259.66150000001653,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 27,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -3,
+        3
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.3,
+            "bet_or_raise": 0.43
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.78,
+          "latencyMs": 255.52939999999944,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 500
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.32,
+            "bet_or_raise": 0.68
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.52,
+          "latencyMs": 291.5726999999897,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 28,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.1,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.66
+          },
+          "sizingScore": 2.01,
+          "bluffIntent": 0.68,
+          "latencyMs": 289.92209999999614,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 28,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 29,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.37,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.45
+          },
+          "sizingScore": 2.25,
+          "bluffIntent": 0.83,
+          "latencyMs": 222.75680000000284,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 29,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 30,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.14,
+            "bet_or_raise": 0.85
+          },
+          "sizingScore": 1.74,
+          "bluffIntent": 0.3,
+          "latencyMs": 203.3365000000049,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 30,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.64,
+            "bet_or_raise": 0.36
+          },
+          "sizingScore": 2.58,
+          "bluffIntent": 0.8,
+          "latencyMs": 303.948699999979,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 31,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.17,
+            "check_or_call": 0.25,
+            "bet_or_raise": 0.58
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.72,
+          "latencyMs": 226.5057000000088,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.23,
+            "bet_or_raise": 0.77
+          },
+          "sizingScore": 1.67,
+          "bluffIntent": 0.66,
+          "latencyMs": 350.2435000000114,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 31,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 32,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.09,
+            "check_or_call": 0.25,
+            "bet_or_raise": 0.66
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.64,
+          "latencyMs": 306.34460000001127,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.92
+          },
+          "sizingScore": 2.27,
+          "bluffIntent": 0.51,
+          "latencyMs": 300.23670000000857,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 32,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 33,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -3.33,
+        3.33
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.47
+          },
+          "sizingScore": 2.2,
+          "bluffIntent": 0.8,
+          "latencyMs": 211.47410000002128,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.7,
+            "check_or_call": 0.04,
+            "bet_or_raise": 0.26
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.8,
+          "latencyMs": 441.1372000000265,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 33,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 34,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.52
+          },
+          "sizingScore": 2.26,
+          "bluffIntent": 0.8,
+          "latencyMs": 250.27530000000843,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 34,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 35,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.1,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.69
+          },
+          "sizingScore": 1.85,
+          "bluffIntent": 0.7,
+          "latencyMs": 546.0657000000065,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 35,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 36,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.41,
+            "check_or_call": 0.2,
+            "bet_or_raise": 0.39
+          },
+          "sizingScore": 2.48,
+          "bluffIntent": 0.81,
+          "latencyMs": 285.820699999982,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 36,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 37,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.14,
+            "check_or_call": 0.23,
+            "bet_or_raise": 0.63
+          },
+          "sizingScore": 1.92,
+          "bluffIntent": 0.7,
+          "latencyMs": 308.23809999998775,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 37,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 38,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.29,
+          "bluffIntent": 0.8,
+          "latencyMs": 199.0345999999845,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 38,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 39,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.26,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.19,
+          "bluffIntent": 0.79,
+          "latencyMs": 335.4948999999906,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 39,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 40,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.13,
+          "bluffIntent": 0.78,
+          "latencyMs": 323.29329999999027,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 40,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 41,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.4,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.45
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.82,
+          "latencyMs": 332.88219999999274,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.44,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.9,
+          "latencyMs": 244.37450000000536,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "turn",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.45,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.02,
+          "bluffIntent": 0.9,
+          "latencyMs": 410.1107999999949,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 41,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 42,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.08,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.7
+          },
+          "sizingScore": 2,
+          "bluffIntent": 0.65,
+          "latencyMs": 250.56669999999576,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 42,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 43,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.92
+          },
+          "sizingScore": 2.12,
+          "bluffIntent": 0.21,
+          "latencyMs": 219.35949999999139,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 43,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.62,
+            "check_or_call": 0.11,
+            "bet_or_raise": 0.27
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.83,
+          "latencyMs": 220.40220000001136,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 44,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.19,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.62
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.72,
+          "latencyMs": 204.48639999999432,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 44,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 45,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.8,
+          "latencyMs": 275.3968000000168,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 45,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 46,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.22,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.62
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.76,
+          "latencyMs": 255.68599999998696,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 46,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 47,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -100,
+        100
+      ],
+      "wentToShowdown": true,
+      "jevWonShowdown": false,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.13,
+            "bet_or_raise": 0.87
+          },
+          "sizingScore": 1.95,
+          "bluffIntent": 0.27,
+          "latencyMs": 369.03800000000047,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 3663
+          },
+          "probabilities": {
+            "fold": 0.04,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.77
+          },
+          "sizingScore": 2.57,
+          "bluffIntent": 0.36,
+          "latencyMs": 297.79689999998664,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.23,
+            "check_or_call": 0.77,
+            "bet_or_raise": 0
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.36,
+          "latencyMs": 232.39609999998356,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 47,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.31,
+            "bet_or_raise": 0.69
+          },
+          "sizingScore": 3.01,
+          "bluffIntent": 0.2,
+          "latencyMs": 378.88959999999497,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 48,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.38,
+            "check_or_call": 0.2,
+            "bet_or_raise": 0.42
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 284.9048999999941,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.33,
+            "bet_or_raise": 0.67
+          },
+          "sizingScore": 1.87,
+          "bluffIntent": 0.84,
+          "latencyMs": 255.54149999999208,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 48,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 49,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.21,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.63
+          },
+          "sizingScore": 2.13,
+          "bluffIntent": 0.78,
+          "latencyMs": 321.84520000001066,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 49,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 50,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.33,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.5
+          },
+          "sizingScore": 2.18,
+          "bluffIntent": 0.8,
+          "latencyMs": 194.58069999999134,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 50,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 51,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.13,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.65
+          },
+          "sizingScore": 1.86,
+          "bluffIntent": 0.69,
+          "latencyMs": 344.72970000002533,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 51,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 52,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.3,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.52
+          },
+          "sizingScore": 2.4,
+          "bluffIntent": 0.8,
+          "latencyMs": 224.84269999997923,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 52,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 53,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.03,
+            "bet_or_raise": 0.97
+          },
+          "sizingScore": 2.6,
+          "bluffIntent": 0.07,
+          "latencyMs": 250.30429999998887,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 53,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.44,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.35
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.79,
+          "latencyMs": 292.535200000013,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 54,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.13,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.66
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.7,
+          "latencyMs": 348.6021999999939,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.2,
+            "bet_or_raise": 0.8
+          },
+          "sizingScore": 2.14,
+          "bluffIntent": 0.8,
+          "latencyMs": 239.2326999999932,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 54,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 55,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.03,
+            "bet_or_raise": 0.97
+          },
+          "sizingScore": 2.44,
+          "bluffIntent": 0.06,
+          "latencyMs": 254.90129999999772,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 55,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        11,
+        -11
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 1100
+          },
+          "probabilities": {
+            "fold": 0.41,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.37
+          },
+          "sizingScore": 2.57,
+          "bluffIntent": 0.8,
+          "latencyMs": 299.3642000000109,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.74,
+            "check_or_call": 0.09,
+            "bet_or_raise": 0.17
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.76,
+          "latencyMs": 382.8980000000156,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 56,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.07,
+            "bet_or_raise": 0.93
+          },
+          "sizingScore": 2.36,
+          "bluffIntent": 0.19,
+          "latencyMs": 219.0844999999972,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 56,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        100,
+        -100
+      ],
+      "wentToShowdown": true,
+      "jevWonShowdown": false,
+      "jevVpip": true,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.39,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.37
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.79,
+          "latencyMs": 229.42069999998785,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 500
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.33,
+            "bet_or_raise": 0.67
+          },
+          "sizingScore": 2.07,
+          "bluffIntent": 0.57,
+          "latencyMs": 213.68619999999646,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 5123
+          },
+          "probabilities": {
+            "fold": 0.21,
+            "check_or_call": 0.37,
+            "bet_or_raise": 0.42
+          },
+          "sizingScore": 2.45,
+          "bluffIntent": 0.6,
+          "latencyMs": 229.5108000000182,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "call"
+          },
+          "probabilities": {
+            "fold": 0.4,
+            "check_or_call": 0.6,
+            "bet_or_raise": 0
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.38,
+          "latencyMs": 238.81080000000657,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 57,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.26,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.79,
+          "latencyMs": 220.70250000001397,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 57,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 58,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.53
+          },
+          "sizingScore": 2.28,
+          "bluffIntent": 0.8,
+          "latencyMs": 236.8641999999818,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 58,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 59,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.38,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.47
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.82,
+          "latencyMs": 223.44150000001537,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 59,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 60,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.56
+          },
+          "sizingScore": 2.32,
+          "bluffIntent": 0.81,
+          "latencyMs": 355.7618000000075,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 60,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 61,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.31,
+            "check_or_call": 0.15,
+            "bet_or_raise": 0.54
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.79,
+          "latencyMs": 248.42560000001686,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 61,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 62,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.05,
+            "bet_or_raise": 0.95
+          },
+          "sizingScore": 2.16,
+          "bluffIntent": 0.16,
+          "latencyMs": 428.4414000000106,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 62,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.61,
+            "check_or_call": 0.12,
+            "bet_or_raise": 0.27
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 268.41560000000754,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 63,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.11,
+            "bet_or_raise": 0.89
+          },
+          "sizingScore": 2.2,
+          "bluffIntent": 0.19,
+          "latencyMs": 317.7951999999932,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 63,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.66,
+            "check_or_call": 0.13,
+            "bet_or_raise": 0.21
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 219.24079999999958,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 64,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.34,
+            "check_or_call": 0.11,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.28,
+          "bluffIntent": 0.83,
+          "latencyMs": 180.80160000000615,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 64,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 65,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.14,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.62
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.7,
+          "latencyMs": 329.33969999998226,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 65,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 66,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.1,
+            "check_or_call": 0.24,
+            "bet_or_raise": 0.66
+          },
+          "sizingScore": 1.79,
+          "bluffIntent": 0.67,
+          "latencyMs": 312.6608000000124,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 66,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 67,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.1,
+            "check_or_call": 0.26,
+            "bet_or_raise": 0.64
+          },
+          "sizingScore": 2,
+          "bluffIntent": 0.65,
+          "latencyMs": 329.83009999999194,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 67,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 68,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.32,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.5
+          },
+          "sizingScore": 2.39,
+          "bluffIntent": 0.84,
+          "latencyMs": 344.73319999998785,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 68,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 69,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.2,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.64
+          },
+          "sizingScore": 2.26,
+          "bluffIntent": 0.74,
+          "latencyMs": 287.20309999998426,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 69,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 70,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -29.97,
+        29.97
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.14,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.64
+          },
+          "sizingScore": 2.02,
+          "bluffIntent": 0.72,
+          "latencyMs": 226.4195999999938,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 2997
+          },
+          "probabilities": {
+            "fold": 0.42,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.39
+          },
+          "sizingScore": 2.34,
+          "bluffIntent": 0.71,
+          "latencyMs": 220.42990000001737,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.78,
+            "check_or_call": 0.08,
+            "bet_or_raise": 0.14
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.76,
+          "latencyMs": 211.89610000001267,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 70,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 71,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.08,
+          "bluffIntent": 0.77,
+          "latencyMs": 498.218200000003,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 71,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 72,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.81
+          },
+          "sizingScore": 1.77,
+          "bluffIntent": 0.45,
+          "latencyMs": 253.76050000000396,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 72,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.62,
+            "bet_or_raise": 0.38
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.79,
+          "latencyMs": 212.65890000000945,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 233
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.27,
+            "bet_or_raise": 0.73
+          },
+          "sizingScore": 2.37,
+          "bluffIntent": 0.19,
+          "latencyMs": 469.31890000001295,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 73,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.28,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.51
+          },
+          "sizingScore": 2.23,
+          "bluffIntent": 0.79,
+          "latencyMs": 383.206199999986,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 73,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 74,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.53
+          },
+          "sizingScore": 2.26,
+          "bluffIntent": 0.81,
+          "latencyMs": 348.7462999999989,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 74,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 75,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.11,
+            "check_or_call": 0.21,
+            "bet_or_raise": 0.68
+          },
+          "sizingScore": 1.95,
+          "bluffIntent": 0.71,
+          "latencyMs": 246.92869999998948,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 75,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 76,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.24,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.57
+          },
+          "sizingScore": 2.09,
+          "bluffIntent": 0.77,
+          "latencyMs": 193.77310000002035,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 76,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 77,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": 2.34,
+          "bluffIntent": 0.81,
+          "latencyMs": 314.7374000000127,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 77,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 78,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.3,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.53
+          },
+          "sizingScore": 2.19,
+          "bluffIntent": 0.8,
+          "latencyMs": 380.35920000000624,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 78,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 79,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.15,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.63
+          },
+          "sizingScore": 2.12,
+          "bluffIntent": 0.73,
+          "latencyMs": 238.6661000000022,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 79,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 80,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.26,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.79,
+          "latencyMs": 270.10579999999027,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 80,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 81,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 400
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.03,
+            "bet_or_raise": 0.97
+          },
+          "sizingScore": 2.58,
+          "bluffIntent": 0.08,
+          "latencyMs": 257.9759999999951,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 81,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 1,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.6,
+            "check_or_call": 0.1,
+            "bet_or_raise": 0.3
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.84,
+          "latencyMs": 413.7093000000168,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 82,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.27,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": 2.1,
+          "bluffIntent": 0.78,
+          "latencyMs": 252.94709999999031,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 82,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 83,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.19,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.65
+          },
+          "sizingScore": 2.37,
+          "bluffIntent": 0.76,
+          "latencyMs": 239.8803000000189,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 83,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 84,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.33,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.51
+          },
+          "sizingScore": 2.37,
+          "bluffIntent": 0.79,
+          "latencyMs": 207.40439999999944,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 84,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 85,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.45,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.39
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.83,
+          "latencyMs": 481.1438999999955,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 85,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 86,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.17,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.67
+          },
+          "sizingScore": 2.36,
+          "bluffIntent": 0.76,
+          "latencyMs": 217.47889999998733,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 86,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 87,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.29,
+            "check_or_call": 0.18,
+            "bet_or_raise": 0.53
+          },
+          "sizingScore": 2.23,
+          "bluffIntent": 0.78,
+          "latencyMs": 357.6253999999899,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 87,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 88,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.08,
+            "check_or_call": 0.23,
+            "bet_or_raise": 0.69
+          },
+          "sizingScore": 1.9,
+          "bluffIntent": 0.65,
+          "latencyMs": 223.9261000000115,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 88,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 89,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.01,
+            "check_or_call": 0.16,
+            "bet_or_raise": 0.83
+          },
+          "sizingScore": 1.93,
+          "bluffIntent": 0.34,
+          "latencyMs": 201.93780000001425,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 89,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -1,
+        1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 1,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.56,
+            "bet_or_raise": 0.44
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.81,
+          "latencyMs": 218.82690000001458,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "flop",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.42,
+            "bet_or_raise": 0.58
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.85,
+          "latencyMs": 272.85819999998785,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "turn",
+          "choice": "check_or_call",
+          "action": {
+            "type": "check"
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.45,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.83,
+          "latencyMs": 244.74849999998696,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        },
+        {
+          "street": "river",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "bet",
+            "amount": 300
+          },
+          "probabilities": {
+            "fold": 0,
+            "check_or_call": 0.39,
+            "bet_or_raise": 0.61
+          },
+          "sizingScore": 3.19,
+          "bluffIntent": 0.42,
+          "latencyMs": 248.61209999999846,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 90,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.35,
+            "check_or_call": 0.14,
+            "bet_or_raise": 0.51
+          },
+          "sizingScore": 1.95,
+          "bluffIntent": 0.78,
+          "latencyMs": 195.52630000002682,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 90,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 91,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.26,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.55
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.77,
+          "latencyMs": 242.00580000001355,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 91,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 92,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.23,
+            "check_or_call": 0.17,
+            "bet_or_raise": 0.6
+          },
+          "sizingScore": 2.2,
+          "bluffIntent": 0.76,
+          "latencyMs": 275.9690000000119,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 92,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 93,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.33,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": 2.34,
+          "bluffIntent": 0.81,
+          "latencyMs": 199.97349999999278,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 93,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 94,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.21,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.6
+          },
+          "sizingScore": 2.07,
+          "bluffIntent": 0.77,
+          "latencyMs": 222.69980000000214,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 94,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 95,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.28,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.53
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.8,
+          "latencyMs": 260.32199999998556,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 95,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 96,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.32,
+            "check_or_call": 0.2,
+            "bet_or_raise": 0.48
+          },
+          "sizingScore": 2.22,
+          "bluffIntent": 0.82,
+          "latencyMs": 237.86899999997695,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 96,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 97,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.31,
+            "check_or_call": 0.22,
+            "bet_or_raise": 0.47
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.82,
+          "latencyMs": 218.09599999999045,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 97,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 98,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "fold",
+          "action": {
+            "type": "fold"
+          },
+          "probabilities": {
+            "fold": 0.39,
+            "check_or_call": 0.19,
+            "bet_or_raise": 0.42
+          },
+          "sizingScore": null,
+          "bluffIntent": 0.83,
+          "latencyMs": 200.98810000001686,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 98,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    },
+    {
+      "seedIndex": 99,
+      "rotation": 0,
+      "jevSeat": 0,
+      "net": [
+        1,
+        -1
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": true,
+      "jevPfr": true,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": [
+        {
+          "street": "preflop",
+          "choice": "bet_or_raise",
+          "action": {
+            "type": "raise",
+            "amount": 333
+          },
+          "probabilities": {
+            "fold": 0.15,
+            "check_or_call": 0.26,
+            "bet_or_raise": 0.59
+          },
+          "sizingScore": 1.92,
+          "bluffIntent": 0.71,
+          "latencyMs": 268.53549999999814,
+          "apiCall": true,
+          "model": "jev-1.13.0"
+        }
+      ]
+    },
+    {
+      "seedIndex": 99,
+      "rotation": 1,
+      "jevSeat": 1,
+      "net": [
+        -0.5,
+        0.5
+      ],
+      "wentToShowdown": false,
+      "jevWonShowdown": null,
+      "jevVpip": false,
+      "jevPfr": false,
+      "oppVpip": 0,
+      "oppPfr": 0,
+      "decisions": []
+    }
+  ]
+}

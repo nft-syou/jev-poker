@@ -5,10 +5,16 @@ import {
   PermissionDeniedError,
 } from "@typesafe-ai/sdk";
 import type { Rng } from "../engine/rng";
-import type { Action, HandSnapshot, LegalActions, SeatId } from "../engine/types";
+import type {
+  Action,
+  HandPlayerSnapshot,
+  HandSnapshot,
+  LegalActions,
+  SeatId,
+} from "../engine/types";
 import type { JevBackend } from "./backend";
 import type { DecisionFeatures } from "./features";
-import { type ActionLabel, buildQuestions, legalLabels } from "./questions";
+import { type ActionLabel, buildQuestions, legalLabels, type PromptStyle } from "./questions";
 
 export interface DecisionJev {
   readonly chosen: ActionLabel;
@@ -29,12 +35,19 @@ export interface DecisionRecord {
   readonly latencyMs: number;
 }
 
+/** The part of a hand's state that sizing a bet needs; a `HandSnapshot` is one. */
+export type SizingSnapshot = Pick<HandSnapshot, "street" | "currentBet" | "pot" | "bigBlind"> & {
+  readonly players: readonly Pick<HandPlayerSnapshot, "seat" | "streetBet">[];
+};
+
 export interface DecideInput {
   backend: JevBackend;
   seat: SeatId;
   features: DecisionFeatures;
   legal: LegalActions;
-  snapshot: HandSnapshot;
+  snapshot: SizingSnapshot;
+  /** Must match the style the features were built with; default `unified`. */
+  promptStyle?: PromptStyle;
   /** Persona variance, 0..1. */
   variance: number;
   rng: Rng;
@@ -68,7 +81,10 @@ export async function decideAction(input: DecideInput): Promise<DecisionRecord> 
     const result = await input.backend.systemOne(
       {
         state: input.features as unknown as EntryType,
-        questions: buildQuestions(input.legal),
+        questions: buildQuestions(input.legal, {
+          street: input.snapshot.street,
+          ...(input.promptStyle === undefined ? {} : { style: input.promptStyle }),
+        }),
         ...(input.model === undefined ? {} : { model: input.model }),
       },
       input.signal === undefined ? undefined : { signal: input.signal },
@@ -122,8 +138,11 @@ function fallbackLabel(legal: LegalActions): ActionLabel {
   return legal.canCheck ? "check_or_call" : "fold";
 }
 
+/** Below this, tempering is numerically pointless: take the most likely label instead. */
+const MIN_VARIANCE = 0.05;
+
 /**
- * Picks a label. `variance` 0 → argmax; 1 → sample by probability;
+ * Picks a label. `variance` near 0 → argmax; 1 → sample by probability;
  * in between → sharpen with exponent 1/variance.
  */
 export function sampleLabel(
@@ -137,12 +156,12 @@ export function sampleLabel(
   });
   if (entries.length === 0) throw new Error("no labels to sample");
   const v = Math.min(1, Math.max(0, variance));
-  if (v === 0) {
-    return entries.reduce((best, entry) => (entry[1] > best[1] ? entry : best))[0];
-  }
+  const mostLikely = () => entries.reduce((best, entry) => (entry[1] > best[1] ? entry : best))[0];
+  if (v <= MIN_VARIANCE) return mostLikely();
   const exponent = 1 / v;
   const weights = entries.map(([, p]) => p ** exponent);
   const total = weights.reduce((sum, w) => sum + w, 0);
+  if (!(total > 0) || !Number.isFinite(total)) return mostLikely();
   let roll = rng.next() * total;
   for (let i = 0; i < entries.length; i++) {
     roll -= weights[i] ?? 0;
@@ -151,38 +170,48 @@ export function sampleLabel(
   return (entries[entries.length - 1] as [ActionLabel, number])[0];
 }
 
-/** Rubric index → pot fraction: [min, 1/3, 2/3, 1, 1.5, all-in]; interpolates between levels. */
+/** Postflop size as a fraction of the pot after calling, by rubric level (the last is all-in). */
+const POT_FRACTIONS: readonly number[] = [0, 1 / 3, 2 / 3, 1, 1.5];
+/**
+ * Preflop sizes by rubric level: big blinds for an open, a multiple of the raise faced for a
+ * re-raise. Preflop sizes are conventionally expressed that way, not as a fraction of the pot.
+ */
+const PREFLOP_FACTORS: readonly number[] = [2, 2.5, 3, 3.5, 4];
+
+/** Rubric level (rounded) → total bet or raise-to amount, clamped to what is legal. */
 export function sizingToAmount(
   score: number,
   legal: LegalActions,
-  snapshot: HandSnapshot,
+  snapshot: SizingSnapshot,
   seat: SeatId,
 ): number {
   if (legal.minRaiseTo === null || legal.maxRaiseTo === null) {
     throw new Error("raising is not legal");
   }
-  if (score >= 4.5) return legal.maxRaiseTo;
-  const fractions = [0, 1 / 3, 2 / 3, 1, 1.5];
-  const clamped = Math.min(4, Math.max(0, score));
-  const index = Math.min(3, Math.floor(clamped));
-  const t = clamped - index;
-  const fraction =
-    (fractions[index] ?? 0) + ((fractions[index + 1] ?? 0) - (fractions[index] ?? 0)) * t;
-  const me = snapshot.players.find((p) => p.seat === seat);
-  const streetBet = me?.streetBet ?? 0;
-  const toCall = Math.max(0, snapshot.currentBet - streetBet);
-  const target =
-    fraction === 0
-      ? legal.minRaiseTo
-      : Math.round(snapshot.currentBet + fraction * (snapshot.pot + toCall));
-  return Math.max(legal.minRaiseTo, Math.min(legal.maxRaiseTo, target));
+  const level = Math.min(5, Math.max(0, Math.round(score)));
+  if (level === 5) return legal.maxRaiseTo;
+  let target: number;
+  if (snapshot.street === "preflop") {
+    const factor = PREFLOP_FACTORS[level] ?? 2;
+    const raiseFaced = snapshot.currentBet > snapshot.bigBlind ? snapshot.currentBet : null;
+    target = factor * (raiseFaced ?? snapshot.bigBlind);
+  } else {
+    const fraction = POT_FRACTIONS[level] ?? 0;
+    const me = snapshot.players.find((p) => p.seat === seat);
+    const toCall = Math.max(0, snapshot.currentBet - (me?.streetBet ?? 0));
+    // A pot-fraction bet is measured against the pot after calling, and a raise-to total adds
+    // that to the bet being matched. The minimum raise is only a floor, not a base.
+    target =
+      fraction === 0 ? legal.minRaiseTo : snapshot.currentBet + fraction * (snapshot.pot + toCall);
+  }
+  return Math.round(Math.max(legal.minRaiseTo, Math.min(legal.maxRaiseTo, target)));
 }
 
 function toAction(
   label: ActionLabel,
   sizingScore: number,
   legal: LegalActions,
-  snapshot: HandSnapshot,
+  snapshot: SizingSnapshot,
   seat: SeatId,
 ): Action {
   switch (label) {

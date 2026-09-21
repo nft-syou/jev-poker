@@ -145,7 +145,7 @@ describe("key-derived randomness", () => {
 describe("representativeActions", () => {
   it("offers fold, call and a pot-sized raise when facing a bet", () => {
     const hand = handWith(3);
-    // Pot 15, 10 to call: a pot-sized raise is 10 + (15 + 10) = 35.
+    // Preflop the "about the pot" rubric level is an open to 3.5 big blinds: 35.
     expect(representativeActions(hand.legalActions(0), hand.snapshot(), 0)).toEqual<Action[]>([
       { type: "fold" },
       { type: "call" },
@@ -162,6 +162,33 @@ describe("representativeActions", () => {
     const seat = hand.actingSeat as SeatId;
     expect(representativeActions(hand.legalActions(seat), hand.snapshot(), seat)).toEqual<Action[]>(
       [{ type: "check" }, { type: "bet", amount: 30 }],
+    );
+  });
+
+  it("re-raises preflop to a multiple of the raise faced", () => {
+    const hand = handWith(3, {
+      seats: [0, 1, 2].map((seat) => ({ seat, stack: 1000 })),
+    });
+    hand.act(0, { type: "raise", amount: 30 });
+    // The same rubric level against a raise to 30 is 3.5 times that raise.
+    expect(representativeActions(hand.legalActions(1), hand.snapshot(), 1)).toEqual<Action[]>([
+      { type: "fold" },
+      { type: "call" },
+      { type: "raise", amount: 105 },
+    ]);
+  });
+
+  it("makes a pot-sized raise after the flop", () => {
+    const hand = handWith(3);
+    hand.act(0, { type: "call" });
+    hand.act(1, { type: "call" });
+    hand.act(2, { type: "check" });
+    const bettor = hand.actingSeat as SeatId;
+    hand.act(bettor, { type: "bet", amount: 10 });
+    const seat = hand.actingSeat as SeatId;
+    // Pot 40, 10 to call: a pot-sized raise is 10 + (40 + 10) = 60.
+    expect(representativeActions(hand.legalActions(seat), hand.snapshot(), seat)).toEqual<Action[]>(
+      [{ type: "fold" }, { type: "call" }, { type: "raise", amount: 60 }],
     );
   });
 

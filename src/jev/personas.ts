@@ -36,7 +36,8 @@ export const PRESET_PERSONAS: readonly Persona[] = [
       en: "Tight-aggressive. Plays a narrow range of strong hands but bets and raises them for value, continuation-bets often, semi-bluffs good draws, and folds marginal hands to pressure.",
       ja: "タイト・アグレッシブ。参加レンジは狭いが、入ったらバリューでベット・レイズする。CB を多用し、良いドローではセミブラフ。微妙なハンドは圧力に降りる。",
     },
-    variance: 0.4,
+    // Measured: at 0.3 a strong hand still folded about 9% of the time (bench/EXPERIMENTS.md).
+    variance: 0.15,
     isPreset: true,
   },
   {

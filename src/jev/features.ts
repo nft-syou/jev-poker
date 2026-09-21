@@ -1,141 +1,352 @@
-import { type Card, formatCard, RANKS, SUITS } from "../engine/cards";
-import { evaluateBest, HAND_CATEGORIES, type HandCategory } from "../engine/evaluator";
-import type { GameEvent, HandSnapshot, SeatId, Street } from "../engine/types";
+import { type Card, formatCard } from "../engine/cards";
+import { type BoardTexture, boardTexture, estimateEquity, handStrengthPct } from "../engine/equity";
+import { evaluateBest, type HandCategory } from "../engine/evaluator";
+import { estimateEquityVsRanges, inferRange } from "../engine/ranges";
+import {
+  type Draw,
+  detectDraws,
+  type PairKind,
+  type PreflopStrength,
+  pairKind,
+  preflopStrength,
+} from "../engine/strength";
+import type { Action, HandSnapshot, SeatId, Street } from "../engine/types";
+import { type ActionTakenEvent, type PlayerView, type Position, playerView } from "../engine/view";
+import type { PromptStyle } from "./questions";
 
-export type Position = "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO";
-export type PreflopStrength = "premium" | "strong" | "medium" | "weak" | "trash";
-export type Draw = "flush_draw" | "open_ended" | "gutshot";
-export type ActionTakenEvent = Extract<GameEvent, { type: "ActionTaken" }>;
+export { type Draw, detectDraws, type PreflopStrength, preflopStrength } from "../engine/strength";
+export { type ActionTakenEvent, type Position, positionOf } from "../engine/view";
 
 export type PersonaPrompt = { name: string; description: string };
+
+export const TASK = "Decide the next poker action for the acting player in No-Limit Texas Hold'em.";
+
+/** Split format: one task line per street group. */
+export const PREFLOP_TASK =
+  "Decide the acting player's PREFLOP action in No-Limit Texas Hold'em: whether to enter the pot, and how to size a raise.";
+export const POSTFLOP_TASK =
+  "Decide the acting player's POSTFLOP action in No-Limit Texas Hold'em, weighing the made hand, draws, the board and the betting so far.";
+
+/** Split format: context every decision gets. */
+export const COMMON_CONTEXT: readonly string[] = [
+  "Only legal actions are offered.",
+  "Amounts are in big blinds.",
+  "You cannot see other players' hole cards.",
+  "Stay in character as the persona.",
+  "equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.",
+  "Before calling, compare your equity with requiredEquityPct (the pot odds).",
+  "A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.",
+  "stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.",
+];
+
+/** Split format: preflop-only guidance. */
+export const PREFLOP_CONTEXT: readonly string[] = [
+  "preflopStrength is a 169-hand tier: premium > strong > medium > weak > trash.",
+  "When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.",
+  "Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.",
+  "Once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds.",
+  "When myBetWasRaisedThisStreet is true, your raise has been re-raised: continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. 4-bet bluffs are rarely profitable against tight opponents.",
+  "raisesThisStreet counts the raises so far; two or more means someone is very strong.",
+  "Sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet.",
+];
+
+/** Split format: postflop-only guidance. */
+export const POSTFLOP_CONTEXT: readonly string[] = [
+  "beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).",
+  "Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.",
+  "When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.",
+  "raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.",
+  "On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.",
+  "pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.",
+  "Sizes: bet about two thirds of the pot for value; use the pot or an overbet only with very strong hands; use the minimum or one third of the pot for thin value or as a probe.",
+];
+
+export const IMPORTANT_CONTEXT: readonly string[] = [
+  "Only legal actions are offered.",
+  "Amounts are in big blinds.",
+  "You cannot see other players' hole cards.",
+  "Stay in character as the persona.",
+  "equityVsRandomPct is your estimated chance to win at showdown against random hands. Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.",
+  "beatsPctOfHands is exact: the share of all possible opponent holdings your hand beats right now. It is the main measure of strength after the flop; the hand category alone (e.g. two pair) can be misleading on paired or coordinated boards (see board_texture).",
+  "Before calling, compare your equity with requiredEquityPct (the pot odds). Do not call large bets or raises unless beatsPctOfHands is very high (about 85 or more) or you have a strong draw getting the right price.",
+  "A bluff raise only profits when opponents fold often enough; against an opponent who has already shown strength it rarely does. Whether to bluff and whether to continue against a re-raise are separate decisions.",
+  "When myBetWasRaisedThisStreet is true, your bet has been raised and the raiser is usually very strong: re-raise only with beatsPctOfHands of about 95 or more, call only with a strong hand or a draw at the right price, otherwise fold. Bluff re-raises are rarely profitable in this spot.",
+  "raisesThisStreet counts the bets and raises so far on this street; two or more means someone is very strong, so anything but a near-nut hand should fold.",
+  "On the turn and river, a bet from an opponent usually beats one pair; call with one pair only when the bet is small relative to the pot, and fold to big bets and raises.",
+  "pairKind tells how good a one-pair hand is: top_pair and overpair are decent, middle_pair, bottom_pair, underpair and board_pair are weak.",
+  "Heads-up, the button should open-raise most hands and the big blind should defend against small raises; folding the small blind too often bleeds chips.",
+  "When unopenedPot is true (everyone before you folded), open-raising to steal the blinds is very profitable: raise a wide range from late position (CO, BTN, SB), a medium range from MP, and a solid range from UTG. Limping (calling the big blind) is rarely right; raise or fold.",
+  "Preflop, once someone has already raised, only premium and strong hands should re-raise (3-bet); medium hands may call a single raise, everything else folds. If your own raise gets re-raised, continue only with premium hands (4-bet or call) and fold everything else, however big your earlier raise was. 4-bet bluffs are rarely profitable against tight opponents.",
+  'Preflop raise sizes: open to about 2.5-3 big blinds; 3-bet to about 3 times the raise; 4-bet to about 2.5 times the 3-bet. Use "minimum" or "about one third of the pot" for opens and "about two thirds of the pot" for re-raises rather than large sizes.',
+  "stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.",
+];
+
+/** How the state is phrased, and optional features that are off by default. */
+export interface FeatureOptions {
+  /** One shared format (default) or a preflop/postflop pair. */
+  style?: PromptStyle;
+  /** Add `equityVsRangePct` and the guidance that refers to it. */
+  rangeEquity?: boolean;
+  /** Session statistics for a seat, or `null` when too few hands have been seen. Adds `table.opponentStats`. */
+  opponentStatsFor?: (seat: SeatId) => OpponentStats | null;
+}
+
+/** How an opponent has played so far in this session. */
+export interface OpponentStats {
+  hands: number;
+  /** Share of hands in which they voluntarily put chips in preflop. */
+  vpipPct: number;
+  /** Share of hands in which they raised preflop. */
+  pfrPct: number;
+  /** Share of their postflop actions that were bets or raises. */
+  postflopAggressionPct: number;
+}
+
+const OPPONENT_STATS_GUIDANCE =
+  "opponentStats describes how each live opponent has played so far in this session: vpipPct is how often they enter a pot, pfrPct how often they raise preflop, postflopAggressionPct how often their postflop actions are bets or raises. A raise from an opponent with a low pfrPct means a very strong hand, and their blinds are easy to steal; against an opponent with a high vpipPct who rarely folds, bluff less and bet good hands for value.";
+
+const RANGE_WORDING: readonly (readonly [string, string])[] = [
+  [
+    "Opponents who have bet or raised usually hold far better than random hands, so discount it heavily against aggression.",
+    "equityVsRangePct is the same estimate against the hands opponents plausibly hold given their actions this hand; once anyone has bet or raised, judge calls and raises by equityVsRangePct, not by equityVsRandomPct.",
+  ],
+  [
+    "Before calling, compare your equity with requiredEquityPct",
+    "Before calling, compare equityVsRangePct with requiredEquityPct",
+  ],
+];
+
+function withRangeWording(line: string): string {
+  return RANGE_WORDING.reduce((acc, [from, to]) => acc.split(from).join(to), line);
+}
+
+export interface FeaturesHand {
+  street: Street;
+  /** Space separated, e.g. `"As Kd"`. */
+  holeCards: string;
+  board: string;
+  /** Present only once the board has at least three cards. */
+  madeHand?: HandCategory;
+  /** Present only when `madeHand` is `'pair'`: how the pair rates against the board. */
+  pairKind?: PairKind;
+  /** Present only on the flop and the turn, where a draw can still come in. */
+  draws?: Draw[];
+  preflopStrength: PreflopStrength;
+  /** Monte Carlo showdown equity against random hands for every live opponent, in percent. */
+  equityVsRandomPct: number;
+  /**
+   * The same estimate against the hands each live opponent plausibly holds given what they did
+   * this hand (an open raise is about the top fifth of hands, a re-raise the top few percent, a
+   * postflop bet the better half of that range). Opt-in (`rangeEquity`): measured on 1,000 seeds it
+   * changed nothing six-handed (+0.2 bb/100 [-6.4, +6.8]) and leaned negative heads-up
+   * (-9.1 [-19.8, +1.6]), so it is off by default.
+   */
+  equityVsRangePct?: number;
+  /** From the flop on: percentage of all possible opponent holdings the current hand beats right now. */
+  beatsPctOfHands?: number;
+  /** From the flop on: whether the board makes full houses, flushes or straights possible. */
+  board_texture?: BoardTexture;
+}
+
+export interface FeaturesSeat {
+  seat: SeatId;
+  /**
+   * True for the acting player's own row: the only marker of who "you" are among the seat numbers.
+   * A separate `actor: { seat, position }` object was tried and measurably hurt heads-up play
+   * (about -5 bb/100, see bench/EXPERIMENTS.md), so identity is carried by these flags alone.
+   * Present only at tables with three or more seats: heads-up the position already identifies the
+   * player, and measured on 1,000 fresh seeds the flags cost about 11 bb/100 there while they are
+   * worth about 14 bb/100 six-handed.
+   */
+  isMe?: boolean;
+  stackBB: number;
+  isAllIn: boolean;
+  /** A folded seat is still listed, so the model can tell "0 bb, all-in" from "out of the hand". */
+  folded: boolean;
+}
+
+export interface FeaturesTable {
+  position: Position;
+  playersInHand: number;
+  /** Live opponents who still have chips behind (not all-in). It is not the number of actions left on this street. */
+  opponentsNotAllIn: number;
+  potBB: number;
+  toCallBB: number;
+  potOddsPct: number;
+  /** Equity needed to break even on a call; equals the pot odds. 0 when nothing is due. */
+  requiredEquityPct: number;
+  effectiveStackBB: number;
+  /** Your remaining stack divided by the pot (one decimal). Below about 1 you are pot-committed. */
+  stackToPotRatio: number;
+  /** Preflop only: true when nobody has voluntarily put chips in yet (everyone before you folded). */
+  unopenedPot?: boolean;
+  /** Number of bets/raises made on the current street so far (by anyone). */
+  raisesThisStreet: number;
+  /** True when the acting player bet or raised on this street and an opponent raised after that. */
+  myBetWasRaisedThisStreet: boolean;
+  /** Session statistics of live opponents; present only when the caller supplies them and some are known. */
+  opponentStats?: ({ seat: SeatId } & OpponentStats)[];
+  stacksBB: FeaturesSeat[];
+}
+
+export interface FeaturesHistoryEntry {
+  street: Street;
+  seat: SeatId;
+  /** True when the acting player made this action. Present only with three or more seats (see `FeaturesSeat.isMe`). */
+  isMe?: boolean;
+  action: Action["type"];
+  amountBB?: number;
+}
 
 /** What Jev sees. Plain JSON, amounts in big blinds, no opponent hole cards. */
 export type DecisionFeatures = {
   task: string;
   persona: PersonaPrompt;
   importantContext: string[];
-  hand: {
-    street: Street;
-    holeCards: string[];
-    board: string[];
-    madeHand: HandCategory | null;
-    draws: Draw[];
-    preflopStrength: PreflopStrength;
-  };
-  table: {
-    position: Position;
-    playersInHand: number;
-    playersToAct: number;
-    potBB: number;
-    toCallBB: number;
-    potOddsPct: number | null;
-    effectiveStackBB: number;
-    stacksBB: { seat: SeatId; stackBB: number; isAllIn: boolean; folded: boolean }[];
-  };
-  history: {
-    street: Street;
-    seat: SeatId;
-    action: string;
-    /** Chips this action moved into the pot, in BB (for bet/raise the total is in `action`). */
-    committedBB: number;
-  }[];
+  hand: FeaturesHand;
+  table: FeaturesTable;
+  history: FeaturesHistoryEntry[];
 };
 
-export const TASK =
-  "Decide the next action for the acting player in a No-Limit Texas Hold'em cash game.";
-
-export const IMPORTANT_CONTEXT: readonly string[] = [
-  "Play in the style described by `persona`; it is the player's character.",
-  "Only legal actions are offered as choices; pick among them.",
-  "All chip amounts are in big blinds (BB).",
-  "Opponents' hole cards are unknown; judge from the board, betting history and positions.",
-  "`madeHand`, `draws` and `preflopStrength` were computed exactly by the game engine.",
-  "Folding strong hands to no pressure and calling with nothing are both mistakes.",
-];
-
-export function positionOf(seat: SeatId, snapshot: HandSnapshot): Position {
-  const seats = snapshot.players.map((p) => p.seat);
-  const n = seats.length;
-  const buttonIndex = seats.indexOf(snapshot.button);
-  if (buttonIndex < 0) throw new Error("button is not seated");
-  const order = seats.map((_, i) => seats[(buttonIndex + 1 + i) % n] as SeatId);
-  const index = order.indexOf(seat);
-  if (index < 0) throw new Error(`seat ${seat} is not in the hand`);
-  if (n === 2) return seat === snapshot.button ? "SB" : "BB";
-  if (index === 0) return "SB";
-  if (index === 1) return "BB";
-  if (index === n - 1) return "BTN";
-  if (index === n - 2) return "CO";
-  if (index === 2) return "UTG";
-  return "MP";
+/** Big blinds, rounded to one decimal so the state stays short and stable. */
+function bb(amount: number, bigBlind: number): number {
+  if (bigBlind <= 0) return 0;
+  return Math.round((amount / bigBlind) * 10) / 10;
 }
 
-export function preflopStrength([a, b]: readonly [Card, Card]): PreflopStrength {
-  const hi = Math.max(a.rank, b.rank);
-  const lo = Math.min(a.rank, b.rank);
-  const suited = a.suit === b.suit;
-  if (hi === lo) {
-    if (hi >= 11) return "premium";
-    if (hi >= 9) return "strong";
-    if (hi >= 5) return "medium";
-    return "weak";
-  }
-  if (hi === 14) {
-    if (lo === 13) return "premium";
-    if (lo >= 11) return "strong";
-    if (lo === 10) return suited ? "strong" : "medium";
-    return suited ? "medium" : "weak";
-  }
-  if (hi === 13) {
-    if (lo === 12) return suited ? "strong" : "medium";
-    if (lo >= 10) return suited ? "medium" : "weak";
-    return suited && lo === 9 ? "weak" : "trash";
-  }
-  if (hi === 12) {
-    if (lo >= 10) return suited ? "medium" : "weak";
-    return suited && lo === 9 ? "weak" : "trash";
-  }
-  if (hi === 11 && lo === 10) return suited ? "medium" : "weak";
-  if (suited && hi - lo <= 2 && lo >= 4) return "weak";
-  return "trash";
+function cards(cs: readonly Card[]): string {
+  return cs.map(formatCard).join(" ");
 }
 
-export function detectDraws(hole: readonly Card[], board: readonly Card[]): Draw[] {
-  if (board.length < 3 || board.length > 4) return [];
-  const all = [...hole, ...board];
-  const draws: Draw[] = [];
-
-  for (const suit of SUITS) {
-    const total = all.filter((c) => c.suit === suit).length;
-    const inHole = hole.filter((c) => c.suit === suit).length;
-    if (total === 4 && inHole >= 1) draws.push("flush_draw");
-  }
-
-  const made = evaluateBest(all);
-  const straightOrBetter =
-    HAND_CATEGORIES.indexOf(made.category) >= HAND_CATEGORIES.indexOf("straight");
-  if (!straightOrBetter) {
-    const present = new Set<number>(all.map((c) => c.rank));
-    const boardPresent = new Set<number>(board.map((c) => c.rank));
-    const boardOnlyOuts = new Set<number>(
-      RANKS.filter((rank) => !boardPresent.has(rank) && hasStraight([...boardPresent, rank])),
-    );
-    const outs = RANKS.filter(
-      (rank) => !present.has(rank) && hasStraight([...present, rank]) && !boardOnlyOuts.has(rank),
-    );
-    if (outs.length >= 2) draws.push("open_ended");
-    else if (outs.length === 1) draws.push("gutshot");
-  }
-  return draws;
+/** The `pairKind` key exists only for one-pair hands; it is left out otherwise. */
+function pairKindField(hole: readonly Card[], board: readonly Card[]): { pairKind?: PairKind } {
+  const kind = pairKind(hole, board);
+  return kind === null ? {} : { pairKind: kind };
 }
 
-function hasStraight(ranks: readonly number[]): boolean {
-  const set = new Set(ranks);
-  if (set.has(14)) set.add(1);
-  for (let high = 14; high >= 5; high--) {
-    if ([0, 1, 2, 3, 4].every((d) => set.has(high - d))) return true;
-  }
-  return false;
+/**
+ * Reduce a `PlayerView` to the compact, already-computed state Jev sees.
+ * Everything a program can work out exactly (hand category, draws, pot odds) is
+ * worked out here; no raw event log and no opponent hole cards are included.
+ */
+export function featuresFromView(
+  view: PlayerView,
+  persona: PersonaPrompt,
+  options: FeatureOptions = {},
+): DecisionFeatures {
+  const style = options.style ?? "unified";
+  const preflop = view.street === "preflop";
+  const task = style === "split" ? (preflop ? PREFLOP_TASK : POSTFLOP_TASK) : TASK;
+  const importantContext =
+    style === "split"
+      ? [...COMMON_CONTEXT, ...(preflop ? PREFLOP_CONTEXT : POSTFLOP_CONTEXT)]
+      : [...IMPORTANT_CONTEXT];
+  const { bigBlind } = view;
+  const live = view.stacks.filter((s) => !s.folded);
+  const me = view.stacks.find((s) => s.seat === view.seat);
+  const otherStacks = live.filter((s) => s.seat !== view.seat).map((s) => s.stack);
+  const maxOther = otherStacks.length > 0 ? Math.max(...otherStacks) : 0;
+
+  // A seat always holds exactly two hole cards; `preflopStrength` throws otherwise,
+  // and `JevAgent` fails open on that. `madeHand`/`draws` depend only on the board.
+  const showMade = view.board.length >= 3;
+  const showDraws = view.board.length === 3 || view.board.length === 4;
+
+  const hand: FeaturesHand = {
+    street: view.street,
+    holeCards: cards(view.holeCards),
+    board: cards(view.board),
+    ...(showMade ? { madeHand: evaluateBest([...view.holeCards, ...view.board]).category } : {}),
+    ...(showMade ? pairKindField(view.holeCards, view.board) : {}),
+    ...(showDraws ? { draws: detectDraws(view.holeCards, view.board) } : {}),
+    preflopStrength: preflopStrength(view.holeCards),
+    equityVsRandomPct: estimateEquity(view.holeCards, view.board, Math.max(1, live.length - 1)),
+    ...(options.rangeEquity === true
+      ? {
+          equityVsRangePct: estimateEquityVsRanges(
+            view.holeCards,
+            view.board,
+            live
+              .filter((o) => o.seat !== view.seat)
+              .map((o) => inferRange(o.seat, view.history, view.board, view.holeCards)),
+          ),
+        }
+      : {}),
+    // Both return `null` only before the flop, which `showMade` rules out.
+    ...(showMade ? { beatsPctOfHands: handStrengthPct(view.holeCards, view.board) as number } : {}),
+    ...(showMade ? { board_texture: boardTexture(view.board) as BoardTexture } : {}),
+  };
+
+  // Heads-up the position says who you are; with more seats the rows need an explicit marker.
+  const markIdentity = view.stacks.length > 2;
+  const potOddsPct =
+    view.toCall > 0 ? Math.round((100 * view.toCall) / (view.pot + view.toCall)) : 0;
+  const aggressive = (t: Action["type"]) => t === "bet" || t === "raise" || t === "allin";
+  const thisStreet = view.history.filter((h) => h.street === view.street);
+  const raisesThisStreet = thisStreet.filter((h) => aggressive(h.action.type)).length;
+  const myLastAggression = thisStreet
+    .map((h, i) => ({ h, i }))
+    .filter(({ h }) => h.seat === view.seat && aggressive(h.action.type))
+    .pop();
+  const myBetWasRaisedThisStreet =
+    myLastAggression !== undefined &&
+    thisStreet
+      .slice(myLastAggression.i + 1)
+      .some((h) => h.seat !== view.seat && aggressive(h.action.type));
+  const opponentStats = options.opponentStatsFor
+    ? live
+        .filter((o) => o.seat !== view.seat)
+        .flatMap((o) => {
+          const stats = options.opponentStatsFor?.(o.seat) ?? null;
+          return stats === null ? [] : [{ seat: o.seat, ...stats }];
+        })
+    : [];
+  const withRange =
+    options.rangeEquity === true ? importantContext.map(withRangeWording) : importantContext;
+  const context = opponentStats.length > 0 ? [...withRange, OPPONENT_STATS_GUIDANCE] : withRange;
+  const table: FeaturesTable = {
+    position: view.position,
+    playersInHand: live.length,
+    opponentsNotAllIn: live.filter((s) => s.seat !== view.seat && !s.isAllIn).length,
+    potBB: bb(view.pot, bigBlind),
+    toCallBB: bb(view.toCall, bigBlind),
+    potOddsPct,
+    requiredEquityPct: potOddsPct,
+    stackToPotRatio: view.pot > 0 ? Math.round((10 * (me?.stack ?? 0)) / view.pot) / 10 : 99,
+    ...(view.street === "preflop"
+      ? { unopenedPot: !thisStreet.some((h) => h.seat !== view.seat && h.action.type !== "fold") }
+      : {}),
+    raisesThisStreet,
+    myBetWasRaisedThisStreet,
+    ...(opponentStats.length > 0 ? { opponentStats } : {}),
+    effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
+    stacksBB: view.stacks.map((s) => ({
+      seat: s.seat,
+      ...(markIdentity ? { isMe: s.seat === view.seat } : {}),
+      stackBB: bb(s.stack, bigBlind),
+      isAllIn: s.isAllIn,
+      folded: s.folded,
+    })),
+  };
+
+  const history: FeaturesHistoryEntry[] = view.history.map((h) => ({
+    street: h.street,
+    seat: h.seat,
+    ...(markIdentity ? { isMe: h.seat === view.seat } : {}),
+    action: h.action.type,
+    ...(h.action.type === "bet" || h.action.type === "raise"
+      ? { amountBB: bb(h.action.amount, bigBlind) }
+      : {}),
+  }));
+
+  return {
+    task,
+    persona: { name: persona.name, description: persona.description },
+    importantContext: context,
+    hand,
+    table,
+    history,
+  };
 }
 
 export interface BuildFeaturesInput {
@@ -143,64 +354,10 @@ export interface BuildFeaturesInput {
   seat: SeatId;
   actions: readonly ActionTakenEvent[];
   persona: PersonaPrompt;
+  options?: FeatureOptions;
 }
 
 export function buildFeatures(input: BuildFeaturesInput): DecisionFeatures {
-  const { snapshot, seat } = input;
-  const me = snapshot.players.find((p) => p.seat === seat);
-  if (me === undefined) throw new Error(`seat ${seat} is not in the hand`);
-  const bb = snapshot.bigBlind;
-  const toBB = (chips: number) => Math.round((chips / bb) * 100) / 100;
-
-  const toCall = Math.min(Math.max(0, snapshot.currentBet - me.streetBet), me.stack);
-  const potOddsPct = toCall > 0 ? Math.round((toCall / (snapshot.pot + toCall)) * 100) : null;
-  const opponents = snapshot.players.filter((p) => p.seat !== seat && !p.folded);
-  const biggestOpponent = Math.max(0, ...opponents.map((p) => p.stack + p.streetBet));
-  const effective = Math.min(me.stack + me.streetBet, biggestOpponent);
-
-  return {
-    task: TASK,
-    persona: { name: input.persona.name, description: input.persona.description },
-    importantContext: [...IMPORTANT_CONTEXT],
-    hand: {
-      street: snapshot.street,
-      holeCards: me.holeCards.map(formatCard),
-      board: snapshot.board.map(formatCard),
-      madeHand:
-        snapshot.board.length >= 3
-          ? evaluateBest([...me.holeCards, ...snapshot.board]).category
-          : null,
-      draws: detectDraws(me.holeCards, snapshot.board),
-      preflopStrength: preflopStrength(me.holeCards),
-    },
-    table: {
-      position: positionOf(seat, snapshot),
-      playersInHand: snapshot.players.filter((p) => !p.folded).length,
-      playersToAct: snapshot.toAct.filter((s) => s !== seat).length,
-      potBB: toBB(snapshot.pot),
-      toCallBB: toBB(toCall),
-      potOddsPct,
-      effectiveStackBB: toBB(effective),
-      stacksBB: snapshot.players.map((p) => ({
-        seat: p.seat,
-        stackBB: toBB(p.stack),
-        isAllIn: p.allIn,
-        folded: p.folded,
-      })),
-    },
-    history: input.actions.map((event) => ({
-      street: event.street,
-      seat: event.seat,
-      action: describeAction(event, toBB),
-      committedBB: toBB(event.amount),
-    })),
-  };
-}
-
-function describeAction(event: ActionTakenEvent, toBB: (chips: number) => number): string {
-  const action = event.action;
-  if (action.type === "bet" || action.type === "raise") {
-    return `${action.type} to ${toBB(action.amount)}${event.allIn ? " (all in)" : ""}`;
-  }
-  return `${action.type}${event.allIn ? " (all in)" : ""}`;
+  const view = playerView(input.snapshot, input.seat, input.actions);
+  return featuresFromView(view, input.persona, input.options);
 }

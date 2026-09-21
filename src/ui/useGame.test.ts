@@ -176,7 +176,8 @@ describe("useGame", () => {
     expect(result.current.state.seats.some((s) => s.id === last?.seat)).toBe(true);
     expect(last?.record.seat).toBe(last?.seat);
     // The features travel with the decision, so the panel can describe the hand it saw.
-    expect(last?.features.hand.holeCards).toHaveLength(2);
+    // Hole cards are a space-joined string now ("2d 9s"): exactly two cards.
+    expect(last?.features.hand.holeCards).toMatch(/^[2-9TJQKA][cdhs] [2-9TJQKA][cdhs]$/);
     expect(last?.features.table.potBB).toBeGreaterThanOrEqual(0);
     expect(last?.at).toBeGreaterThan(0);
     // The log carries them too, next to the decision it belongs to.

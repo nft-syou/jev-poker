@@ -42,7 +42,12 @@ function jevProxyDev(): Plugin {
 export default defineConfig({
   plugins: [react(), jevProxyDev()],
   test: {
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "functions/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "functions/**/*.test.ts",
+      "bench/**/*.test.ts",
+    ],
     passWithNoTests: true,
   },
 });

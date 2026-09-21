@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDeck, formatCard, parseCard, parseCards, sameCard } from "./cards";
+import { createDeck, formatCard, parseCard, parseCards, RANKS, rankChar, sameCard } from "./cards";
 
 describe("cards", () => {
   it("creates a 52-card deck without duplicates", () => {
@@ -14,6 +14,13 @@ describe("cards", () => {
     }
     expect(parseCard("as")).toEqual({ rank: 14, suit: "s" });
     expect(parseCard("Td")).toEqual({ rank: 10, suit: "d" });
+  });
+
+  it("names ranks with one character, matching formatCard", () => {
+    expect(RANKS.map(rankChar).join("")).toBe("23456789TJQKA");
+    expect(rankChar(10)).toBe("T");
+    expect(rankChar(14)).toBe("A");
+    for (const card of createDeck()) expect(formatCard(card).charAt(0)).toBe(rankChar(card.rank));
   });
 
   it("parses a space-separated list", () => {

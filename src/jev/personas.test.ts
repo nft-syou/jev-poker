@@ -37,6 +37,17 @@ describe("personas", () => {
     }
   });
 
+  it("keeps the measured variance of each preset", () => {
+    // TAG is 0.15: at 0.3 a strong hand still folded about 9% of the time (bench/EXPERIMENTS.md).
+    expect(Object.fromEntries(PRESET_PERSONAS.map((p) => [p.id, p.variance]))).toEqual({
+      rock: 0.2,
+      tag: 0.15,
+      lag: 0.6,
+      maniac: 0.8,
+      station: 0.5,
+    });
+  });
+
   it("loads presets plus stored custom personas", () => {
     const custom = duplicatePersona(PRESET_PERSONAS[0] as never, "custom-1");
     const storage = memoryStorage({ [PERSONA_STORAGE_KEY]: JSON.stringify([custom]) });
