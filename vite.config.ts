@@ -1,8 +1,9 @@
 /// <reference types="vitest/config" />
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
-import { handleJevProxy } from "./src/proxy/handler";
-import { toWebRequest, writeWebResponse } from "./src/proxy/node-adapter";
+// Explicit `.ts` extensions: Vite's native config loader rejects extensionless source imports.
+import { handleJevProxy } from "./src/proxy/handler.ts";
+import { toWebRequest, writeWebResponse } from "./src/proxy/node-adapter.ts";
 
 /**
  * `pnpm dev` serves `/api/jev/*` with the same handler the Cloudflare Pages Function runs,

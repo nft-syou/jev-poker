@@ -9,7 +9,7 @@ import {
   TYPESAFE_UPSTREAM,
   type UpstreamEnv,
   upstreamUrl,
-} from "../jev/connection";
+} from "../jev/connection.ts";
 
 export type ProxyEnv = UpstreamEnv;
 

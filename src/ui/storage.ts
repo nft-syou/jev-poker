@@ -1,8 +1,11 @@
 import type { SeatKind } from "../engine/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "../i18n";
+import { type Connection, validateConnection } from "../jev/connection";
 import { EMPTY_STATS, type PlayerStats, type StatsKey } from "./stats";
 
-export const API_KEY_STORAGE_KEY = "jev-poker.apiKey";
+export const CONNECTION_STORAGE_KEY = "jev-poker.connection";
+/** Versions before the gateway routes stored a bare TypeSafe key here. */
+export const LEGACY_API_KEY_STORAGE_KEY = "jev-poker.apiKey";
 export const SETTINGS_STORAGE_KEY = "jev-poker.settings";
 export const STATS_STORAGE_KEY = "jev-poker.stats";
 
@@ -75,17 +78,37 @@ function remove(key: string): void {
   }
 }
 
-export function loadApiKey(): string | null {
-  const key = read(API_KEY_STORAGE_KEY)?.trim() ?? "";
-  return key.length > 0 ? key : null;
+/**
+ * The saved connection, or `null` when there is none. A record written by an older version
+ * (a bare TypeSafe key) is migrated to the TypeSafe route once, then the old key is dropped.
+ * Anything unparseable or no longer valid is treated as absent rather than trusted.
+ */
+export function loadConnection(): Connection | null {
+  const raw = read(CONNECTION_STORAGE_KEY);
+  if (raw !== null) {
+    try {
+      const result = validateConnection(JSON.parse(raw));
+      if (result.ok) return result.connection;
+    } catch {
+      // Corrupt JSON: the modal asks for the credentials again.
+    }
+    return null;
+  }
+  const legacy = read(LEGACY_API_KEY_STORAGE_KEY)?.trim() ?? "";
+  const migrated = validateConnection({ route: "typesafe", apiKey: legacy });
+  if (!migrated.ok) return null;
+  saveConnection(migrated.connection);
+  remove(LEGACY_API_KEY_STORAGE_KEY);
+  return migrated.connection;
 }
 
-export function saveApiKey(key: string): void {
-  write(API_KEY_STORAGE_KEY, key.trim());
+export function saveConnection(connection: Connection): void {
+  write(CONNECTION_STORAGE_KEY, JSON.stringify(connection));
 }
 
-export function clearApiKey(): void {
-  remove(API_KEY_STORAGE_KEY);
+export function clearConnection(): void {
+  remove(CONNECTION_STORAGE_KEY);
+  remove(LEGACY_API_KEY_STORAGE_KEY);
 }
 
 export function loadSettings(): Settings {

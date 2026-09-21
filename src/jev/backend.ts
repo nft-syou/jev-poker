@@ -5,6 +5,7 @@ import {
   type SystemOneResult,
   TypeSafeClient,
 } from "@typesafe-ai/sdk";
+import { type Connection, connectionHeaders, modelFor } from "./connection";
 
 export interface JevBackend {
   readonly kind: "typesafe" | "mock";
@@ -15,11 +16,10 @@ export interface JevBackend {
 }
 
 export const DEFAULT_MODEL = "jev-latest";
-/** The browser sends the user's key in this header; the proxy turns it into `Authorization`. */
-export const API_KEY_HEADER = "X-TypeSafe-Key";
 
 export interface TypeSafeBackendOptions {
-  apiKey: string;
+  /** Which service the proxy should forward to, and the credentials for it. */
+  connection: Connection;
   /** e.g. `${location.origin}/api/jev`; the SDK appends `/v1/systemone`. */
   baseURL: string;
   model?: string;
@@ -28,12 +28,13 @@ export interface TypeSafeBackendOptions {
 }
 
 export function createTypeSafeBackend(options: TypeSafeBackendOptions): JevBackend {
+  const { connection } = options;
   const client = new TypeSafeClient({
-    apiKey: options.apiKey,
+    apiKey: connection.apiKey,
     baseURL: options.baseURL,
-    defaultModel: options.model ?? DEFAULT_MODEL,
+    defaultModel: modelFor(connection, options.model ?? DEFAULT_MODEL),
     dangerouslyAllowBrowser: true,
-    defaultHeaders: { [API_KEY_HEADER]: options.apiKey },
+    defaultHeaders: connectionHeaders(connection),
     timeout: options.timeoutMs ?? 10_000,
     logLevel: "off",
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
