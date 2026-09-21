@@ -15,7 +15,32 @@ Jev モジュール (`src/jev`) に移植したので、現在の `pnpm bench` �
 
 ## After the port / 移植後の確認
 
-<!-- PORT_RESULTS -->
+`tag` against `rules`, 1,000 seeds on base seed 300001 (never used for tuning), model `jev-1.13.0`,
+0 fail-open, code `e39461e` (the merge that ported the agent). Files: `results/*-port-rules-*.json`.
+
+| format | before the port (`1014659` behaviour) | after the port (the game's CPU) |
+| --- | --- | --- |
+| heads-up | +62.7 [+48.7, +76.8] | **+48.8 [+38.4, +59.1]** |
+| 6-max | +12.9 [+1.3, +24.5] | **+11.3 [-0.2, +22.8]** |
+
+- The conclusion carries over: the game's CPU beats the rule-based bot heads-up, and is ahead
+  six-handed by about the same margin as before (the interval now just touches zero).
+- The two columns are different deals (the game's shuffle) and a different `tag` text (the game's
+  preset), so the 14 bb/100 heads-up gap is within what those two changes plus run-to-run noise
+  (3 to 5 bb/100) can produce; the difference is about 1.6 standard errors. It was not tuned away.
+- The heuristic hero on the new engine, same seeds: heads-up +16.6 [+2.5, +30.7], 6-max +22.5
+  [+4.9, +40.0], in line with the earlier runs (Jev ahead of it heads-up, level six-handed).
+
+`tag` 対 `rules`、ベースシード 300001 (チューニング未使用) の 1,000 シード、モデル `jev-1.13.0`、
+フェイルオープン 0 件、コードは移植マージの `e39461e`。ファイルは `results/*-port-rules-*.json`。
+
+- 結論は変わりません。ゲームの CPU はヘッズアップでルールベースに勝ち、6-max でも移植前とほぼ同じ幅で
+  上回っています (信頼区間の下端がわずかに 0 にかかります)。
+- 2 つの列は配牌 (ゲームのシャッフル) と `tag` の文面 (ゲームのプリセット) が違います。ヘッズアップの
+  14 bb/100 の差は、その 2 点と run ごとの揺れ (3〜5 bb/100) で説明できる範囲で、標準誤差の約 1.6 倍です。
+  この差を消すためのチューニングはしていません。
+- 新エンジン上のヒューリスティック (同じシード): HU +16.6 [+2.5, +30.7]、6-max +22.5 [+4.9, +40.0]。
+  これまでの run と同じ傾向です (HU は Jev が上、6-max は互角)。
 
 ## Before the port / 移植前
 

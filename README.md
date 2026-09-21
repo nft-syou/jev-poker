@@ -78,10 +78,12 @@ What the measurements say (`tag` persona, 1,000 seeds on seeds never used for tu
 
 | opponent | heads-up bb/100 | 6-max bb/100 |
 | --- | --- | --- |
-| `rules` bot | **+62.7** [+48.7, +76.8] | **+12.9** [+1.3, +24.5] |
+| `rules` bot | **+48.8** [+38.4, +59.1] | **+11.3** [-0.2, +22.8] |
 | Slumbot (200 bb, 12,000 hands) | -49.4 [-65.8, -33.0] | — |
 
-<!-- PORT_SUMMARY -->
+The `rules` row is the game's CPU as shipped. The Slumbot row was measured before the agent was
+ported onto the game's engine, where the same agent scored +62.7 [+48.7, +76.8] and +12.9
+[+1.3, +24.5] against `rules`.
 
 - Out of the box the Jev CPU lost to the rule-based bot; it wins now because of what it is told
   (exact hand strength, equity against pot odds, whether its bet was raised, pot commitment,
