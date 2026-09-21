@@ -9,7 +9,13 @@ import {
   JevAgent,
 } from "../../src/agents";
 import { createMockBackend } from "../../src/jev/mock-backend";
-import { createNodeBackend, getPersona } from "../backend";
+import {
+  BENCH_ROUTES,
+  type BenchRoute,
+  createNodeBackend,
+  getPersona,
+  ROUTE_KEY_ENV,
+} from "../backend";
 import { SlumbotClient } from "./client";
 import { runSlumbot, type SlumbotSummary, summarizeSlumbot } from "./runner";
 
@@ -22,7 +28,8 @@ Be considerate: it is somebody else's server. Keep --sessions small.
 
   --hero jev|heuristic|rules|caller|random   who plays against Slumbot (default jev)
   --persona <id>                             Jev persona (default tag)
-  --backend typesafe|mock                    Jev backend (default typesafe; needs TYPESAFE_API_KEY)
+  --backend typesafe|mock                    Jev backend (default typesafe; needs the API key of the route)
+  --route typesafe|lolipop                   TypeSafe's API (TYPESAFE_API_KEY, default) or the Lolipop AI Gateway (LOLIPOP_API_KEY)
   --model <name>                             model passed to the SDK
   --variance X                               override the persona's variance (0..1)
   --hands N                                  hands to play (default 200)
@@ -36,6 +43,7 @@ interface Options {
   hero: Hero;
   persona: string;
   backend: "typesafe" | "mock";
+  route: BenchRoute;
   model: string | null;
   variance: number | null;
   hands: number;
@@ -53,6 +61,7 @@ function parse(argv: string[]): Options {
     hero: "jev",
     persona: "tag",
     backend: "typesafe",
+    route: "typesafe",
     model: null,
     variance: null,
     hands: 200,
@@ -92,6 +101,12 @@ function parse(argv: string[]): Options {
         const v = take();
         if (v !== "typesafe" && v !== "mock") fail(`invalid --backend: ${v}`);
         o.backend = v;
+        break;
+      }
+      case "--route": {
+        const v = take();
+        if (!(BENCH_ROUTES as readonly string[]).includes(v)) fail(`invalid --route: ${v}`);
+        o.route = v as BenchRoute;
         break;
       }
       case "--model":
@@ -180,9 +195,9 @@ async function main(): Promise<void> {
   if (
     opts.hero === "jev" &&
     opts.backend === "typesafe" &&
-    (process.env.TYPESAFE_API_KEY ?? "") === ""
+    (process.env[ROUTE_KEY_ENV[opts.route]] ?? "") === ""
   )
-    fail("TYPESAFE_API_KEY is not set");
+    fail(`${ROUTE_KEY_ENV[opts.route]} is not set`);
 
   const basePersona = getPersona(opts.persona);
   const persona =
@@ -191,7 +206,10 @@ async function main(): Promise<void> {
     opts.hero !== "jev"
       ? null
       : opts.backend === "typesafe"
-        ? createNodeBackend({ ...(opts.model !== null ? { model: opts.model } : {}) })
+        ? createNodeBackend({
+            route: opts.route,
+            ...(opts.model !== null ? { model: opts.model } : {}),
+          })
         : createMockBackend();
 
   const makeHero = (session: number, onDecision: (r: AgentDecision) => void): Agent => {

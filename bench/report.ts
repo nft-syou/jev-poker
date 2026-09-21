@@ -6,6 +6,7 @@ export interface CliOptions {
   seeds: number;
   persona: string;
   backend: "typesafe" | "mock";
+  route: "typesafe" | "lolipop";
   concurrency: number;
   baseSeed: number;
   label: string | null;
@@ -28,7 +29,9 @@ export const USAGE = `Usage: pnpm bench [options]
   --format   hu|6max|all               default all
   --seeds N                            default 100  (hands = seeds x seats)
   --persona <id>                       default tag
-  --backend  typesafe|mock             default typesafe (typesafe requires TYPESAFE_API_KEY)
+  --backend  typesafe|mock             default typesafe (needs the API key of the route)
+  --route    typesafe|lolipop          how Jev is reached: TypeSafe's API (TYPESAFE_API_KEY, default) or the
+                                       Lolipop AI Gateway (LOLIPOP_API_KEY, model typesafe/jev-latest)
   --concurrency N                      default 4
   --base-seed N                        default 1
   --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
@@ -111,6 +114,7 @@ function conditions(r: BenchResult): string {
   if (r.config.profileWindow !== undefined) parts.push(`window ${r.config.profileWindow}`);
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === "mock") parts.push("mock");
+  if ((r.config.route ?? "typesafe") !== "typesafe") parts.push(r.config.route as string);
   if (r.config.model !== null) parts.push(r.config.model);
   return parts.join(" ");
 }
@@ -123,6 +127,7 @@ export function configKey(r: BenchResult): string {
     c.format,
     c.persona,
     c.backend,
+    c.route ?? "typesafe",
     c.model,
     c.promptStyle ?? "unified",
     c.variance ?? null,
@@ -203,6 +208,7 @@ export function resultFileName(result: BenchResult, label: string | null): strin
 const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, "all"];
 const FORMAT_VALUES: readonly string[] = [...FORMAT_ORDER, "all"];
 const BACKEND_VALUES: readonly string[] = ["typesafe", "mock"];
+const ROUTE_VALUES: readonly string[] = ["typesafe", "lolipop"];
 const PROFILE_VALUES: readonly string[] = ["numbers", "label", "jev-label"];
 
 /** Thrown by `parseArgs` when `--help` / `-h` is given; the CLI prints `USAGE` and exits 0. */
@@ -239,6 +245,7 @@ export function parseArgs(argv: string[]): CliOptions {
     seeds: 100,
     persona: "tag",
     backend: "typesafe",
+    route: "typesafe",
     concurrency: 4,
     baseSeed: 1,
     label: null,
@@ -302,6 +309,9 @@ export function parseArgs(argv: string[]): CliOptions {
         break;
       case "--backend":
         options.backend = enumValue<"typesafe" | "mock">(flag, take(), BACKEND_VALUES);
+        break;
+      case "--route":
+        options.route = enumValue<"typesafe" | "lolipop">(flag, take(), ROUTE_VALUES);
         break;
       case "--concurrency":
         options.concurrency = positiveInt(flag, take());

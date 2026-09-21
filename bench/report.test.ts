@@ -136,6 +136,7 @@ describe("parseArgs", () => {
       seeds: 100,
       persona: "tag",
       backend: "typesafe",
+      route: "typesafe",
       concurrency: 4,
       baseSeed: 1,
       label: null,
@@ -394,5 +395,13 @@ describe("parseArgs --variance", () => {
     expect(parseArgs(["--variance=0.5"]).variance).toBe(0.5);
     expect(() => parseArgs(["--variance", "2"])).toThrow();
     expect(() => parseArgs(["--variance", "x"])).toThrow();
+  });
+});
+
+describe("--route", () => {
+  it("parses the route and rejects an unknown one", () => {
+    expect(parseArgs(["--route", "lolipop"]).route).toBe("lolipop");
+    expect(parseArgs(["--route=typesafe"]).route).toBe("typesafe");
+    expect(() => parseArgs(["--route", "vercel"])).toThrow("--route");
   });
 });

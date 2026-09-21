@@ -3,7 +3,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "@typesafe-ai/sdk";
 import { createMockBackend } from "../src/jev/mock-backend";
-import { createNodeBackend, getPersona } from "./backend";
+import { createNodeBackend, getPersona, ROUTE_KEY_ENV } from "./backend";
 import { expandMatchups } from "./matchups";
 import {
   type CliOptions,
@@ -55,9 +55,9 @@ async function main(): Promise<void> {
   if (
     opts.hero === "jev" &&
     opts.backend === "typesafe" &&
-    (process.env.TYPESAFE_API_KEY ?? "") === ""
+    (process.env[ROUTE_KEY_ENV[opts.route]] ?? "") === ""
   ) {
-    fail("TYPESAFE_API_KEY is not set");
+    fail(`${ROUTE_KEY_ENV[opts.route]} is not set`);
   }
 
   const basePersona = getPersona(opts.persona);
@@ -85,7 +85,10 @@ async function main(): Promise<void> {
     const backend =
       // The heuristic hero never asks the backend, so it needs no API key.
       opts.backend === "typesafe" && opts.hero !== "heuristic"
-        ? createNodeBackend({ ...(opts.model !== null ? { model: opts.model } : {}) })
+        ? createNodeBackend({
+            route: opts.route,
+            ...(opts.model !== null ? { model: opts.model } : {}),
+          })
         : createMockBackend();
 
     const startedAt = new Date().toISOString();
@@ -137,6 +140,7 @@ async function main(): Promise<void> {
         seeds: opts.seeds,
         persona: opts.persona,
         backend: opts.backend,
+        ...(opts.backend === "typesafe" && opts.route !== "typesafe" ? { route: opts.route } : {}),
         model: opts.model,
         baseSeed: opts.baseSeed,
         concurrency: opts.concurrency,

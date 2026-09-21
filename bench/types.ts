@@ -70,6 +70,8 @@ export interface BenchConfig {
   seeds: number;
   persona: string;
   backend: "typesafe" | "mock";
+  /** How Jev was reached; absent = TypeSafe's own API. */
+  route?: "typesafe" | "lolipop";
   model: string | null;
   baseSeed: number;
   concurrency: number;

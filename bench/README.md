@@ -105,6 +105,7 @@ pnpm bench:slumbot:report                                       # 同じ構成�
 | `--prompt split` | プリフロップ用とポストフロップ用で、タスク文・指針・サイズの選択肢を分ける |
 | `--range-equity` | 相手のこのハンドの行動から推定したレンジに対するエクイティ `equityVsRangePct` を状態に足す |
 | `--preflop chart` | プリフロップは位置別チャート (コード) で決め、Jev にはポストフロップだけ聞く。6-max の API 呼び出しが約 85% 減る |
+| `--route lolipop` | TypeSafe の API ではなくロリポップ！AIゲートウェイ (`https://ai-gateway.lolipop.jp`、モデル `typesafe/jev-latest`) 経由で Jev を呼ぶ。キーは環境変数 `LOLIPOP_API_KEY` (既定の `typesafe` は `TYPESAFE_API_KEY`)。`pnpm bench:slumbot` でも使える |
 | `--opponent mixed` / `mixed-jev` | 傾向の違うプレイヤーが混ざった 6-max 卓。`mixed` は rules / caller / random / heuristic / rules、`mixed-jev` は rock / lag / maniac / station / tag の Jev CPU。席が変わっても同じ人物として扱う |
 | `--profile [numbers|label|jev-label]` | マッチ内で蓄積した相手ごとの傾向を状態に足す。`numbers` (既定) は参加率・レイズ率・ポストフロップの攻撃頻度・ベットに降りる率、`label` はコードの閾値で決めたタイプ名と対策の一言、`jev-label` は同じタイプを Jev に別呼び出しで判定させる (exp10) |
 | `--profile-window N` | 相手ごとに直近 N ハンドだけを覚える (既定はマッチ全体) |
