@@ -72,8 +72,9 @@ TypeSafe のキーに加えてアカウント ID・ゲートウェイ ID・カ�
 The proxy never accepts a URL from the browser. It chooses one of three fixed
 hosts from a route id (`typesafe`, `vercel`, `cloudflare`) and interpolates only
 values that matched an anchored regex server-side — account id `[0-9a-f]{32}`,
-gateway id `[A-Za-z0-9_-]{1,64}`, provider slug `[a-z0-9][a-z0-9-]{0,62}`, keys
-and tokens printable ASCII up to 512 characters — after `encodeURIComponent`.
+gateway id `[A-Za-z0-9_-]{1,64}`, provider slug `[a-z0-9][a-z0-9-]{0,62}` with no
+`custom-` prefix left on it, keys and tokens printable ASCII up to 512
+characters — after `encodeURIComponent`.
 Anything else is a 400 and the upstream is never contacted. Only
 `POST /v1/systemone` and `GET /v1/models` are forwarded, upstream headers are
 built from scratch (none of the app's own `X-*` headers travel on), and nothing
@@ -104,7 +105,9 @@ to Node 24 for tools that read it.
 4. Functions in `functions/` are deployed automatically. No secrets are needed: players bring their own credentials.
 
 Optional variable `TYPESAFE_BASE_URL` overrides the upstream API root of the
-`typesafe` route only; the two gateway hosts are constants in the code.
+`typesafe` route only; the two gateway hosts are constants in the code. It is
+used only when it looks like `https://…` (or `http://localhost…` for local
+work); anything else falls back to the default.
 
 ## Personas / 人格
 

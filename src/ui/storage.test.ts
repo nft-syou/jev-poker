@@ -83,6 +83,15 @@ describe("storage", () => {
     expect(loadConnection()).toBeNull();
   });
 
+  it("drops a legacy key that cannot be migrated instead of leaving the secret behind", () => {
+    for (const legacy of ["   ", "sk with spaces", "~".repeat(513)]) {
+      localStorage.setItem(LEGACY_API_KEY_STORAGE_KEY, legacy);
+      expect(loadConnection(), legacy).toBeNull();
+      expect(localStorage.getItem(LEGACY_API_KEY_STORAGE_KEY), legacy).toBeNull();
+      expect(localStorage.getItem(CONNECTION_STORAGE_KEY)).toBeNull();
+    }
+  });
+
   it("returns defaults for missing or broken settings", () => {
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
     localStorage.setItem(SETTINGS_STORAGE_KEY, "{bad");

@@ -132,7 +132,8 @@ describe("ConnectionModal", () => {
     expect(onSave).toHaveBeenCalledWith({
       route: "cloudflare",
       apiKey: "sk-cf",
-      accountId: "0123456789ABCDEF0123456789abcdef",
+      // Typed in mixed case, saved lowercase.
+      accountId: "0123456789abcdef0123456789abcdef",
       gatewayId: "my-gateway",
       providerSlug: "typesafe",
     });

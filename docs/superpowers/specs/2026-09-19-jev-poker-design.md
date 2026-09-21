@@ -77,10 +77,17 @@ Pages Function 用にコンパイルするため)。ブラウザは `X-Jev-Route
 - 上流ホストは経路 id で選ぶ 3 つの定数のみ。文字列連結の材料は以下のみ。
 - 経路 id は `typesafe` | `vercel` | `cloudflare` の完全一致。それ以外は 400 `invalid_route`。
 - Cloudflare の各値はサーバー側で先頭・末尾を固定した正規表現に通し、さらに
-  `encodeURIComponent` してから埋め込む: `accountId` `/^[0-9a-f]{32}$/i`、
-  `gatewayId` `/^[A-Za-z0-9_-]{1,64}$/`、`providerSlug` `/^[a-z0-9][a-z0-9-]{0,62}$/`、
-  トークン `/^[\x21-\x7E]{1,512}$/`。1 つでも外れたら 400 `invalid_gateway_config` で、
-  上流には接続しない。
+  `encodeURIComponent` してから埋め込む: `accountId` `/^[0-9a-f]{32}$/i` (保存は小文字に統一)、
+  `gatewayId` `/^[A-Za-z0-9_-]{1,64}$/`、`providerSlug` `/^[a-z0-9][a-z0-9-]{0,62}$/`
+  かつ `custom-` 始まりでないこと、トークン `/^[\x21-\x7E]{1,512}$/`。
+  1 つでも外れたら 400 `invalid_gateway_config` で、上流には接続しない。
+- slug の判定 (`isProviderSlug`) は UI の `validateConnection` とプロキシの `upstreamUrl` が
+  同じ関数を共有する。正規化は `custom-` を 1 度だけ剥がすので `custom-custom-x` は
+  `custom-x` として残り、両層とも「フィールドエラー」として拒否する
+  (片方だけが受理すると、保存はできるのに毎ハンド 400 になって理由が見えない)。
+- `TYPESAFE_BASE_URL` は `https://…` か `http://localhost|127.0.0.1…` の形のときだけ採用し、
+  空文字・綴り間違い・他スキームは既定値にフォールバックする (相対 URL の生成や
+  平文での鍵送出を防ぐため)。
 - キーも `/^[\x21-\x7E]{1,512}$/` (trim 後)。外れたら 401 `missing_api_key`。
   印字可能 ASCII に限るのは、空白・改行によるヘッダインジェクションを構文的に排除するため。
 - パスの許可は従来どおり `v1/systemone` (POST) と `v1/models` (GET) を `Object.hasOwn` で
@@ -290,12 +297,17 @@ interface Persona {
   `content-type`、Cloudflare 経路でトークンがある場合のみ `cf-aig-authorization`。
   アプリ独自の `X-*` ヘッダは 1 つも上流に届かない。
 - 上流から: ステータス、`Content-Type`、`X-TypeSafe-Request-Id`、`Retry-After` 系、
-  ボディをそのまま。`Cache-Control: no-store` を付ける。
+  ボディをそのまま。`Cache-Control: no-store` を付ける。204 / 205 / 304 は
+  `Response` がボディを持てないため `null` で返す。
+- プロキシ自身が返す 400 (`invalid_route` / `invalid_gateway_config`) は、保存された接続が
+  どの上流も指せないという意味なので、`decideAction` はこれを `errorKind: "auth"` として扱い、
+  テーブルを止めて接続モーダルを開く (上流由来の他の 400 は通常の 1 手分の失敗のまま)。
 - ログ出力なし。`typesafe` 経路の上流 URL のみ環境変数 `TYPESAFE_BASE_URL` で上書き可
   (既定 `https://api.typesafe.ai`)。ゲートウェイ 2 経路のホストは定数。
 - `pnpm dev` も同じ `handleJevProxy` を Vite のミドルウェア
   (`src/proxy/node-adapter.ts` で Node ⇄ WHATWG 変換) から呼ぶので、3 経路とも
-  ローカルと本番で同じ挙動になる。
+  ローカルと本番で同じ挙動になる。dev のボディ読み込みは 1 MiB で打ち切り、
+  超過時は 413 `payload_too_large`。
 
 ## 9. テスト
 

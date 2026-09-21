@@ -55,6 +55,47 @@ describe("normalizeProviderSlug", () => {
   });
 });
 
+/**
+ * The UI saves what `validateConnection` accepts and the proxy rebuilds the URL from it, so a
+ * slug the one accepts and the other refuses would be a 400 on every hand with nothing to see
+ * in the modal. Both layers answer this table identically.
+ */
+describe("provider slug agreement between the validator and the url builder", () => {
+  const cases: [raw: string, accepted: boolean, slugInUrl: string][] = [
+    ["typesafe", true, "typesafe"],
+    ["custom-typesafe", true, "typesafe"],
+    ["Custom-TypeSafe", true, "typesafe"],
+    ["custom-custom-x", false, ""],
+    ["custom-", false, ""],
+  ];
+
+  for (const [raw, accepted, slug] of cases) {
+    it(`${accepted ? "accepts" : "refuses"} ${JSON.stringify(raw)} in both layers`, () => {
+      const result = validateConnection({ ...CF, providerSlug: raw });
+      expect(result.ok).toBe(accepted);
+      if (!result.ok) {
+        expect(result.errors.providerSlug).toBe("connection.error.providerSlug");
+        // Whatever the validator refuses, the builder refuses too — after normalization.
+        expect(
+          upstreamUrl(
+            "cloudflare",
+            "v1/systemone",
+            { ...CF_CONFIG, providerSlug: normalizeProviderSlug(raw) },
+            {},
+          ),
+        ).toEqual({ error: "invalid_gateway_config" });
+        return;
+      }
+      const connection = result.connection;
+      if (connection.route !== "cloudflare") throw new Error("expected the cloudflare route");
+      expect(connection.providerSlug).toBe(slug);
+      expect(upstreamUrl("cloudflare", "v1/systemone", connection, {})).toBe(
+        `https://gateway.ai.cloudflare.com/v1/${CF.accountId}/my-gateway/custom-${slug}/v1/systemone`,
+      );
+    });
+  }
+});
+
 describe("validateConnection", () => {
   it("accepts the three routes and rejects anything else", () => {
     expect(connectionOf({ route: "typesafe", apiKey: "sk-1" })).toEqual({
@@ -110,7 +151,9 @@ describe("validateConnection", () => {
         gatewayId: "  my-gateway ",
         providerSlug: " Custom-TypeSafe ",
       }),
-    ).toEqual({ ...CF, accountId: "0123456789ABCDEF0123456789ABCDEF" });
+      // Hex is case-insensitive but the id is stored lowercased, so one saved connection
+      // cannot differ from another only by case.
+    ).toEqual(CF);
 
     for (const accountId of [
       "",
@@ -270,6 +313,36 @@ describe("upstreamUrl", () => {
     expect(upstreamUrl("cloudflare", "v1/models", CF_CONFIG, {})).toBe(
       "https://gateway.ai.cloudflare.com/v1/0123456789abcdef0123456789abcdef/my-gateway/custom-typesafe/v1/models",
     );
+  });
+
+  it("ignores a TYPESAFE_BASE_URL that is not an https (or local http) origin", () => {
+    // A typo must never yield a relative URL or send keys somewhere unencrypted.
+    for (const TYPESAFE_BASE_URL of [
+      "",
+      "   ",
+      "api.typesafe.ai",
+      "/v1",
+      "//evil.test",
+      "http://evil.test",
+      "https:/api.typesafe.ai",
+      "ftp://api.typesafe.ai",
+      "javascript:alert(1)",
+      "https://api.typesafe.ai extra",
+    ]) {
+      expect(
+        upstreamUrl("typesafe", "v1/systemone", null, { TYPESAFE_BASE_URL }),
+        JSON.stringify(TYPESAFE_BASE_URL),
+      ).toBe("https://api.typesafe.ai/v1/systemone");
+    }
+    for (const base of [
+      "https://staging.typesafe.test",
+      "http://localhost:8787",
+      "http://127.0.0.1:1234/base",
+    ]) {
+      expect(upstreamUrl("typesafe", "v1/models", null, { TYPESAFE_BASE_URL: base }), base).toBe(
+        `${base}/v1/models`,
+      );
+    }
   });
 
   it("honours TYPESAFE_BASE_URL on the typesafe route only", () => {

@@ -94,12 +94,14 @@ export function loadConnection(): Connection | null {
     }
     return null;
   }
-  const legacy = read(LEGACY_API_KEY_STORAGE_KEY)?.trim() ?? "";
+  const legacy = read(LEGACY_API_KEY_STORAGE_KEY);
+  if (legacy === null) return null;
   const migrated = validateConnection({ route: "typesafe", apiKey: legacy });
-  if (!migrated.ok) return null;
-  saveConnection(migrated.connection);
+  // Either way the old record goes: a key that cannot be migrated is a secret with no use
+  // left, and keeping it would only leave it lying in storage.
+  if (migrated.ok) saveConnection(migrated.connection);
   remove(LEGACY_API_KEY_STORAGE_KEY);
-  return migrated.connection;
+  return migrated.ok ? migrated.connection : null;
 }
 
 export function saveConnection(connection: Connection): void {

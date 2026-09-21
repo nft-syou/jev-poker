@@ -98,6 +98,20 @@ function trimmed(value: unknown): string | null {
   return typeof value === "string" ? value.trim() : null;
 }
 
+/**
+ * The URL segment is `custom-<slug>`, so the slug itself must not carry that prefix — one
+ * `custom-` is stripped on the way in, and a second one (`custom-custom-x`) is a mistake the
+ * player has to see in the modal rather than a 400 on every hand.
+ */
+export function isProviderSlug(slug: string): boolean {
+  return CF_PROVIDER_SLUG_PATTERN.test(slug) && !slug.startsWith("custom-");
+}
+
+const SAFE_BASE_URL_PATTERNS = [
+  /^https:\/\/[^\s]+$/,
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/,
+] as const;
+
 export function validateConnection(input: unknown): ConnectionValidation {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, errors: { route: "connection.error.route" } };
@@ -115,13 +129,13 @@ export function validateConnection(input: unknown): ConnectionValidation {
     return { ok: true, connection: { route, apiKey } };
   }
 
-  const accountId = trimmed(raw.accountId) ?? "";
+  // Hex is case-insensitive; stored lowercased so the same account has one spelling.
+  const accountId = (trimmed(raw.accountId) ?? "").toLowerCase();
   if (!CF_ACCOUNT_ID_PATTERN.test(accountId)) errors.accountId = "connection.error.accountId";
   const gatewayId = trimmed(raw.gatewayId) ?? "";
   if (!CF_GATEWAY_ID_PATTERN.test(gatewayId)) errors.gatewayId = "connection.error.gatewayId";
   const providerSlug = normalizeProviderSlug(trimmed(raw.providerSlug) ?? "");
-  if (!CF_PROVIDER_SLUG_PATTERN.test(providerSlug))
-    errors.providerSlug = "connection.error.providerSlug";
+  if (!isProviderSlug(providerSlug)) errors.providerSlug = "connection.error.providerSlug";
 
   // The gateway token is optional: only a non-blank one has to look like a secret.
   const token = raw.gatewayToken === undefined ? "" : (trimmed(raw.gatewayToken) ?? "\u0000");
@@ -176,7 +190,11 @@ export function upstreamUrl(
   if (!Object.hasOwn(ALLOWED_PATHS, path)) return { error: "invalid_path" };
 
   if (id === "typesafe") {
-    const base = (env.TYPESAFE_BASE_URL ?? TYPESAFE_UPSTREAM).replace(/\/+$/, "");
+    // An empty or malformed override would otherwise build a relative URL, or ship the key
+    // over plain http to somewhere else entirely: fall back to the default instead.
+    const override = (env.TYPESAFE_BASE_URL ?? "").trim();
+    const safe = SAFE_BASE_URL_PATTERNS.some((pattern) => pattern.test(override));
+    const base = (safe ? override : TYPESAFE_UPSTREAM).replace(/\/+$/, "");
     return `${base}/${path}`;
   }
   if (id === "vercel") return `${VERCEL_UPSTREAM}/${path}`;
@@ -187,9 +205,7 @@ export function upstreamUrl(
   if (
     !CF_ACCOUNT_ID_PATTERN.test(accountId) ||
     !CF_GATEWAY_ID_PATTERN.test(gatewayId) ||
-    !CF_PROVIDER_SLUG_PATTERN.test(providerSlug) ||
-    // The URL segment adds `custom-` itself, so the slug must already be normalized.
-    providerSlug.startsWith("custom-")
+    !isProviderSlug(providerSlug)
   ) {
     return { error: "invalid_gateway_config" };
   }
