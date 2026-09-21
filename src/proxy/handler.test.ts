@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
+import {
+  CF_ACCOUNT_HEADER,
+  CF_GATEWAY_HEADER,
+  CF_PROVIDER_HEADER,
+  CF_TOKEN_HEADER,
+  ROUTE_HEADER,
+} from "../jev/connection";
 import { handleJevProxy } from "./handler";
+
+const CF_HEADERS = {
+  "x-typesafe-key": "sk-cf",
+  [ROUTE_HEADER]: "cloudflare",
+  [CF_ACCOUNT_HEADER]: "0123456789abcdef0123456789abcdef",
+  [CF_GATEWAY_HEADER]: "my-gateway",
+  [CF_PROVIDER_HEADER]: "typesafe",
+};
 
 type Call = { url: string; init: RequestInit | undefined };
 
@@ -111,5 +126,137 @@ describe("handleJevProxy", () => {
       fetch,
     );
     expect(response.status).toBe(502);
+  });
+
+  it("rejects a key that is not printable ascii, without contacting upstream", async () => {
+    const { fetch, calls } = fakeFetch(new Response("{}"));
+    for (const key of ["   ", "~".repeat(513)]) {
+      const response = await handleJevProxy(
+        post({ "x-typesafe-key": key }),
+        "v1/systemone",
+        {},
+        fetch,
+      );
+      expect(response.status, key).toBe(401);
+      expect(await response.json()).toEqual({ error: "missing_api_key" });
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  describe("routes", () => {
+    it("sends the vercel route to the AI Gateway with the key as a Bearer token", async () => {
+      const { fetch, calls } = fakeFetch(new Response('{"model":"typesafe-ai/jev"}'));
+      const response = await handleJevProxy(
+        post({
+          "content-type": "application/json",
+          "x-typesafe-key": "vck_1",
+          [ROUTE_HEADER]: "vercel",
+        }),
+        "v1/systemone",
+        {},
+        fetch,
+      );
+      expect(response.status).toBe(200);
+      expect(calls[0]?.url).toBe("https://ai-gateway.vercel.sh/typesafe/v1/systemone");
+      const sent = new Headers(calls[0]?.init?.headers);
+      expect(sent.get("authorization")).toBe("Bearer vck_1");
+      expect(sent.get("cf-aig-authorization")).toBeNull();
+    });
+
+    it("builds the cloudflare custom-provider url and never forwards our own x- headers", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      await handleJevProxy(
+        post({ ...CF_HEADERS, "content-type": "application/json" }),
+        "v1/systemone",
+        {},
+        fetch,
+      );
+      expect(calls[0]?.url).toBe(
+        "https://gateway.ai.cloudflare.com/v1/0123456789abcdef0123456789abcdef/my-gateway/custom-typesafe/v1/systemone",
+      );
+      const sent = new Headers(calls[0]?.init?.headers);
+      expect(sent.get("authorization")).toBe("Bearer sk-cf");
+      expect(sent.get("cf-aig-authorization")).toBeNull();
+      for (const [name] of sent) expect(name.startsWith("x-"), name).toBe(false);
+    });
+
+    it("adds cf-aig-authorization only when a gateway token is supplied", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      await handleJevProxy(
+        post({ ...CF_HEADERS, [CF_TOKEN_HEADER]: "tok-1" }),
+        "v1/systemone",
+        {},
+        fetch,
+      );
+      expect(new Headers(calls[0]?.init?.headers).get("cf-aig-authorization")).toBe("Bearer tok-1");
+    });
+
+    it("keeps the gateway hosts fixed even when TYPESAFE_BASE_URL is set", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      const env = { TYPESAFE_BASE_URL: "https://example.test" };
+      await handleJevProxy(
+        post({ "x-typesafe-key": "k", [ROUTE_HEADER]: "vercel" }),
+        "v1/systemone",
+        env,
+        fetch,
+      );
+      await handleJevProxy(post(CF_HEADERS), "v1/systemone", env, fetch);
+      expect(calls[0]?.url).toBe("https://ai-gateway.vercel.sh/typesafe/v1/systemone");
+      expect(calls[1]?.url).toBe(
+        "https://gateway.ai.cloudflare.com/v1/0123456789abcdef0123456789abcdef/my-gateway/custom-typesafe/v1/systemone",
+      );
+    });
+
+    it("refuses an unknown route id with 400 and no upstream call", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      for (const route of ["openai", "Vercel", "https://evil.test", "__proto__"]) {
+        const response = await handleJevProxy(
+          post({ "x-typesafe-key": "k", [ROUTE_HEADER]: route }),
+          "v1/systemone",
+          {},
+          fetch,
+        );
+        expect(response.status, route).toBe(400);
+        expect(await response.json()).toEqual({ error: "invalid_route" });
+      }
+      expect(calls).toHaveLength(0);
+    });
+
+    it("refuses a broken cloudflare config with 400 and no upstream call", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      const broken: Record<string, string>[] = [
+        { [CF_ACCOUNT_HEADER]: "../../evil" },
+        { [CF_ACCOUNT_HEADER]: "0123456789abcdef0123456789abcde" },
+        { [CF_GATEWAY_HEADER]: "gw/../.." },
+        { [CF_GATEWAY_HEADER]: "" },
+        { [CF_PROVIDER_HEADER]: "a/b" },
+        { [CF_PROVIDER_HEADER]: "Upper" },
+        { [CF_PROVIDER_HEADER]: "custom-typesafe" },
+        { [CF_TOKEN_HEADER]: "~".repeat(513) },
+      ];
+      for (const patch of broken) {
+        const response = await handleJevProxy(
+          post({ ...CF_HEADERS, ...patch }),
+          "v1/systemone",
+          {},
+          fetch,
+        );
+        expect(response.status, JSON.stringify(patch)).toBe(400);
+        expect(await response.json()).toEqual({ error: "invalid_gateway_config" });
+      }
+      expect(calls).toHaveLength(0);
+    });
+
+    it("ignores stray cloudflare headers on the other routes", async () => {
+      const { fetch, calls } = fakeFetch(new Response("{}"));
+      await handleJevProxy(
+        post({ ...CF_HEADERS, [ROUTE_HEADER]: "typesafe", [CF_ACCOUNT_HEADER]: "../evil" }),
+        "v1/systemone",
+        {},
+        fetch,
+      );
+      expect(calls[0]?.url).toBe("https://api.typesafe.ai/v1/systemone");
+      expect(new Headers(calls[0]?.init?.headers).get("cf-aig-authorization")).toBeNull();
+    });
   });
 });
