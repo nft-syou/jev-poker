@@ -3,9 +3,11 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initI18n } from "../i18n";
+import { ROUTE_HEADER } from "../jev/connection";
 import {
-  API_KEY_STORAGE_KEY,
+  CONNECTION_STORAGE_KEY,
   DEFAULT_SETTINGS,
+  LEGACY_API_KEY_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
   type Settings,
 } from "./storage";
@@ -65,7 +67,8 @@ function stubJevFetch(): ReturnType<typeof vi.fn> {
 
 describe("App", () => {
   it("goes from setup to a spectated table with Jev decisions and back", async () => {
-    localStorage.setItem(API_KEY_STORAGE_KEY, "sk-test");
+    // A key saved before the gateway routes existed still gets you to the table.
+    localStorage.setItem(LEGACY_API_KEY_STORAGE_KEY, "sk-test");
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(CPU_ONLY));
     const fetchMock = stubJevFetch();
 
@@ -106,5 +109,29 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Leave table" }));
     expect(screen.getByRole("heading", { name: "New table" })).toBeInTheDocument();
+  });
+
+  it("asks the Vercel AI Gateway for typesafe-ai/jev through the same proxy path", async () => {
+    localStorage.setItem(
+      CONNECTION_STORAGE_KEY,
+      JSON.stringify({ route: "vercel", apiKey: "vck_1" }),
+    );
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(CPU_ONLY));
+    const fetchMock = stubJevFetch();
+
+    const { App } = await import("./App");
+    render(<App />);
+    expect(screen.getByRole("button", { name: "Vercel AI Gateway" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Watch the CPUs play" }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(0), { timeout: 5000 });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toContain("/api/jev/v1/systemone");
+    const headers = new Headers((init as RequestInit | undefined)?.headers);
+    expect(headers.get(ROUTE_HEADER)).toBe("vercel");
+    expect(headers.get("X-TypeSafe-Key")).toBe("vck_1");
+    expect(JSON.parse(String((init as RequestInit | undefined)?.body)).model).toBe(
+      "typesafe-ai/jev",
+    );
   });
 });

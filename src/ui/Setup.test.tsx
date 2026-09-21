@@ -15,21 +15,21 @@ initI18n("en");
 afterEach(cleanup);
 
 describe("Setup", () => {
-  it("disables start without an api key and shows a hint", () => {
+  it("disables start without a connection and shows a hint", () => {
     render(
       <Setup
         settings={DEFAULT_SETTINGS}
         personas={[...PRESET_PERSONAS]}
         language="en"
-        hasApiKey={false}
+        hasConnection={false}
         onChange={() => {}}
         onStart={() => {}}
         onEditPersonas={() => {}}
-        onOpenKey={() => {}}
+        onOpenConnection={() => {}}
       />,
     );
     expect(screen.getByRole("button", { name: "Start playing" })).toBeDisabled();
-    expect(screen.getByText("Add an API key first.")).toBeInTheDocument();
+    expect(screen.getByText("Set up a connection first.")).toBeInTheDocument();
   });
 
   it("changes the number of seats and starts when valid", () => {
@@ -40,11 +40,11 @@ describe("Setup", () => {
         settings={DEFAULT_SETTINGS}
         personas={[...PRESET_PERSONAS]}
         language="en"
-        hasApiKey={true}
+        hasConnection={true}
         onChange={onChange}
         onStart={onStart}
         onEditPersonas={() => {}}
-        onOpenKey={() => {}}
+        onOpenConnection={() => {}}
       />,
     );
     fireEvent.change(screen.getByLabelText("Seats"), { target: { value: "3" } });
@@ -62,11 +62,11 @@ describe("Setup", () => {
         settings={DEFAULT_SETTINGS}
         personas={[...PRESET_PERSONAS]}
         language="en"
-        hasApiKey={true}
+        hasConnection={true}
         onChange={onChange}
         onStart={() => {}}
         onEditPersonas={() => {}}
-        onOpenKey={() => {}}
+        onOpenConnection={() => {}}
       />,
     );
     expect(screen.getByLabelText("Speculative prefetch (faster, more API calls)")).toBeChecked();
@@ -80,11 +80,11 @@ describe("Setup", () => {
         settings={{ ...DEFAULT_SETTINGS, prefetch: false }}
         personas={[...PRESET_PERSONAS]}
         language="en"
-        hasApiKey={true}
+        hasConnection={true}
         onChange={onChange}
         onStart={() => {}}
         onEditPersonas={() => {}}
-        onOpenKey={() => {}}
+        onOpenConnection={() => {}}
       />,
     );
     expect(screen.queryByLabelText("Max parallel Jev requests")).not.toBeInTheDocument();
@@ -99,11 +99,11 @@ describe("Setup", () => {
         }}
         personas={[...PRESET_PERSONAS]}
         language="en"
-        hasApiKey={true}
+        hasConnection={true}
         onChange={() => {}}
         onStart={() => {}}
         onEditPersonas={() => {}}
-        onOpenKey={() => {}}
+        onOpenConnection={() => {}}
       />,
     );
     expect(screen.getByRole("button", { name: "Watch the CPUs play" })).toBeEnabled();

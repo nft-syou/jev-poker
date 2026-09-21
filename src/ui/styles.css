@@ -96,10 +96,24 @@ button.link {
   max-width: 480px;
   width: 100%;
 }
-.modal input {
+.modal input,
+.modal select {
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0;
+}
+/* The Cloudflare route asks for five fields, so the dialog scrolls instead of overflowing. */
+.modal {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.modal .field {
+  margin: 12px 0;
+}
+.modal .field .muted,
+.modal .field .error {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
 }
 table.seats {
   width: 100%;
