@@ -1,8 +1,8 @@
-import type { DecisionRecord } from '../src/jev/agent.js';
-import type { Action, SeatId, Street } from '../src/engine/types.js';
+import type { AgentDecision } from "../src/agents";
+import type { Action, SeatId, Street } from "../src/engine";
 
-export type Opponent = 'random' | 'caller' | 'rules';
-export type Format = 'hu' | '6max';
+export type Opponent = "random" | "caller" | "rules";
+export type Format = "hu" | "6max";
 
 export interface HandRecord {
   seedIndex: number;
@@ -19,7 +19,7 @@ export interface HandRecord {
   jevPfr: boolean;
   oppVpip: number;
   oppPfr: number;
-  decisions: DecisionRecord[];
+  decisions: AgentDecision[];
   /** Every seat's actions in order (amounts in bb). Absent in older result files. */
   actions?: HandAction[];
 }
@@ -27,7 +27,7 @@ export interface HandRecord {
 export interface HandAction {
   street: Street;
   seat: SeatId;
-  type: Action['type'];
+  type: Action["type"];
   /** Raise-to / bet total in bb, for bets and raises. */
   amountBB?: number;
 }
@@ -64,22 +64,22 @@ export interface BenchConfig {
   format: Format;
   seeds: number;
   persona: string;
-  backend: 'typesafe' | 'mock';
+  backend: "typesafe" | "mock";
   model: string | null;
   baseSeed: number;
   concurrency: number;
   sdkVersion: string;
   gitCommit: string | null;
   /** Absent in results written before the split-format experiment (= `unified`). */
-  promptStyle?: 'unified' | 'split';
+  promptStyle?: "unified" | "split";
   /** Opponent session statistics were fed to the Jev agent. */
   profile?: boolean;
   /** The opt-in range-aware equity feature was on. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent takes its preflop decisions from the chart in code. */
-  preflop?: 'jev' | 'chart';
+  preflop?: "jev" | "chart";
   /** Who sits in the measured seat: the Jev agent (default) or the fixed heuristic over the same features. */
-  hero?: 'jev' | 'heuristic';
+  hero?: "jev" | "heuristic";
   /** Persona variance override (`--variance`); absent = the persona's own value. */
   variance?: number;
 }

@@ -1,71 +1,159 @@
-/** A CPU player's character: what Jev is told to be, and how much it is allowed to deviate. */
+import type { PersonaPrompt } from "./features";
+
+export type LocalizedText = { ja: string; en: string };
+
 export interface Persona {
-  id: string;
-  name: { ja: string; en: string };
-  /** Sent to Jev as part of the state; the English text is the one the model reads. */
-  description: { ja: string; en: string };
-  /** 0 = always take the most likely action, 1 = sample straight from the model's probabilities. */
-  variance: number;
-  isPreset: boolean;
+  readonly id: string;
+  readonly name: LocalizedText;
+  readonly description: LocalizedText;
+  /** 0 = always the most likely action, 1 = sample exactly by Jev's probabilities. */
+  readonly variance: number;
+  readonly isPreset: boolean;
+}
+
+export const PERSONA_STORAGE_KEY = "jev-poker.personas";
+
+export interface KeyValueStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
 }
 
 export const PRESET_PERSONAS: readonly Persona[] = [
   {
-    id: 'rock',
-    name: { ja: '岩', en: 'Rock' },
+    id: "rock",
+    name: { en: "Rock", ja: "ロック" },
     description: {
-      ja: '極端にタイトでパッシブなプレイヤー。プレミアムハンドをひたすら待ち、それ以外はほとんど降りる。ブラフはまずせず、チップを入れるときは強い手のバリューであることが多い。',
-      en: 'An extremely tight and passive player. Waits for premium starting hands and folds almost everything else, preferring to call rather than raise. When this player finally commits chips it is almost always for value with a very strong holding, and bluffs are close to nonexistent.',
+      en: "Extremely tight and passive. Plays only premium hands, almost never bluffs, prefers calling to raising, and folds to aggression unless holding a very strong made hand.",
+      ja: "超タイトでパッシブ。プレミアムハンドしか参加せず、ほぼブラフしない。レイズよりコールを好み、強い完成役がなければ攻められると降りる。",
     },
-    variance: 0.1,
+    variance: 0.2,
     isPreset: true,
   },
   {
-    id: 'tag',
-    name: { ja: 'TAG', en: 'TAG' },
+    id: "tag",
+    name: { en: "TAG", ja: "TAG" },
     description: {
-      ja: 'タイト・アグレッシブな常連プレイヤー。強いスターティングハンドに絞って参加し、コールよりレイズを選ぶ。オッズが合わなければ素直に降り、良いスポットでは時折ブラフを打つ。',
-      en: 'A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.',
+      en: "Tight-aggressive. Plays a narrow range of strong hands but bets and raises them for value, continuation-bets often, semi-bluffs good draws, and folds marginal hands to pressure.",
+      ja: "タイト・アグレッシブ。参加レンジは狭いが、入ったらバリューでベット・レイズする。CB を多用し、良いドローではセミブラフ。微妙なハンドは圧力に降りる。",
     },
+    // Measured: at 0.3 a strong hand still folded about 9% of the time (bench/EXPERIMENTS.md).
     variance: 0.15,
     isPreset: true,
   },
   {
-    id: 'lag',
-    name: { ja: 'LAG', en: 'LAG' },
+    id: "lag",
+    name: { en: "LAG", ja: "LAG" },
     description: {
-      ja: 'ルース・アグレッシブなプレイヤー。広いレンジで多くのポットに参加し、ベットとレイズで絶えず圧力をかける。バリューとブラフを混ぜるためラインが読みにくい。',
-      en: 'A loose-aggressive player. Enters many pots with a wide range and applies constant pressure with bets and raises. Mixes strong value hands with frequent bluffs and semi-bluffs, which makes the betting line hard to read.',
+      en: "Loose-aggressive. Plays many hands, applies constant pressure with bets and raises, bluffs and semi-bluffs frequently, and uses position aggressively. Still folds when clearly beaten.",
+      ja: "ルース・アグレッシブ。多くのハンドで参加し、ベットとレイズで常に圧力をかける。ブラフとセミブラフが多く、ポジションを積極的に使う。明らかに負けている時は降りる。",
     },
-    variance: 0.5,
+    variance: 0.6,
     isPreset: true,
   },
   {
-    id: 'maniac',
-    name: { ja: 'マニアック', en: 'Maniac' },
+    id: "maniac",
+    name: { en: "Maniac", ja: "マニアック" },
     description: {
-      ja: '超アグレッシブなマニアック。ほとんどどんな2枚でもレイズとリレイズを繰り返し、小さく張るより大きく張ることを好む。プレイは荒く予測しづらく、フォールドは最後の手段。',
-      en: 'A hyper-aggressive maniac. Raises and re-raises with almost any two cards and rarely slows down, preferring large bets to small ones. The play is wild and hard to predict, and folding is treated as a last resort.',
+      en: "Hyper-aggressive gambler. Raises and re-raises with almost anything, rarely folds, loves big bets and all-ins, and treats every pot as worth fighting for.",
+      ja: "超アグレッシブなギャンブラー。ほぼ何でもレイズ・リレイズし、めったに降りない。大きなベットとオールインが大好きで、全てのポットを取りに行く。",
     },
     variance: 0.8,
     isPreset: true,
   },
   {
-    id: 'station',
-    name: { ja: 'コーリングステーション', en: 'Calling Station' },
+    id: "station",
+    name: { en: "Calling Station", ja: "コーリングステーション" },
     description: {
-      ja: 'ルース・パッシブなコーリングステーション。弱いペアやドローでも次のカードを見たくてコールしすぎ、レイズやブラフはほとんどしない。一度ポットに入ると降りるのが苦手。',
-      en: 'A loose-passive calling station. Calls far too often with weak pairs and drawing hands, hoping to see the next card, and almost never raises or bluffs. Once this player is in a pot, folding is very difficult.',
+      en: "Calling station. Calls almost any bet to see more cards, rarely raises even with strong hands, hardly ever folds a pair or a draw, and almost never bluffs.",
+      ja: "コーリングステーション。次のカードを見たくてほぼ何でもコールする。強い手でもあまりレイズせず、ペアやドローがあればほとんど降りない。ブラフはほぼしない。",
     },
-    variance: 0.2,
+    variance: 0.5,
     isPreset: true,
   },
 ];
 
-const BY_ID = new Map(PRESET_PERSONAS.map((p) => [p.id, p]));
+export function clampVariance(value: number): number {
+  if (Number.isNaN(value)) return 0.5;
+  return Math.min(1, Math.max(0, value));
+}
 
-export function getPersona(id: string): Persona {
-  const persona = BY_ID.get(id);
-  if (!persona) throw new Error(`unknown persona: ${id}`);
-  return persona;
+export function personaPrompt(persona: Persona): PersonaPrompt {
+  return { name: persona.name.en, description: persona.description.en };
+}
+
+export function duplicatePersona(source: Persona, id: string): Persona {
+  return {
+    id,
+    name: { en: `${source.name.en} (copy)`, ja: `${source.name.ja} (コピー)` },
+    description: { ...source.description },
+    variance: source.variance,
+    isPreset: false,
+  };
+}
+
+export function loadPersonas(
+  storage: KeyValueStorage | null | undefined = defaultStorage(),
+): Persona[] {
+  const presets = [...PRESET_PERSONAS];
+  if (storage === null || storage === undefined) return presets;
+  let raw: string | null;
+  try {
+    raw = storage.getItem(PERSONA_STORAGE_KEY);
+  } catch {
+    return presets;
+  }
+  if (raw === null) return presets;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return presets;
+    const seenIds = new Set(presets.map((p) => p.id));
+    const custom = parsed
+      .filter(isPersona)
+      .map((p) => ({ ...p, isPreset: false }))
+      .filter((p) => {
+        if (seenIds.has(p.id)) return false;
+        seenIds.add(p.id);
+        return true;
+      });
+    return [...presets, ...custom];
+  } catch {
+    return presets;
+  }
+}
+
+export function saveCustomPersonas(personas: readonly Persona[], storage: KeyValueStorage): void {
+  const custom = personas.filter((p) => !p.isPreset);
+  try {
+    storage.setItem(PERSONA_STORAGE_KEY, JSON.stringify(custom));
+  } catch {
+    // Storage may be unavailable (private mode); the game still works without persistence.
+  }
+}
+
+function defaultStorage(): KeyValueStorage | null {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function isLocalized(value: unknown): value is LocalizedText {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as LocalizedText).ja === "string" &&
+    typeof (value as LocalizedText).en === "string"
+  );
+}
+
+function isPersona(value: unknown): value is Persona {
+  if (typeof value !== "object" || value === null) return false;
+  const p = value as Partial<Persona>;
+  return (
+    typeof p.id === "string" &&
+    isLocalized(p.name) &&
+    isLocalized(p.description) &&
+    typeof p.variance === "number"
+  );
 }

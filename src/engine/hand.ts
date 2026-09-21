@@ -1,334 +1,444 @@
-import type { Card } from './cards.js';
-import { newDeck } from './cards.js';
-import type { HandValue } from './evaluate.js';
-import { evaluate7 } from './evaluate.js';
-import { awardPots, buildPots } from './pots.js';
-import type { Rng } from './rng.js';
-import type {
-  Action, Blinds, HistoryEntry, LegalActions, PlayerView, SeatId, SeatState, Street, TableEvent,
-} from './types.js';
+import type { Card } from "./cards";
+import { evaluateBest, type HandValue } from "./evaluator";
+import { awardPots, buildPots } from "./pots";
+import {
+  type Action,
+  type Blinds,
+  type GameEvent,
+  type HandSnapshot,
+  type LegalActions,
+  NO_ACTIONS,
+  type SeatId,
+  type SeatStack,
+  type Street,
+} from "./types";
 
-export interface HandInit {
-  seats: { seat: SeatId; stack: number }[];
-  button: SeatId;
-  blinds: Blinds;
-  rng: Rng;
-  handNumber: number;
+export interface HandSeat {
+  readonly seat: SeatId;
+  readonly stack: number;
 }
 
-const NO_ACTIONS: LegalActions = {
-  canFold: false, canCheck: false, callAmount: null, minRaiseTo: null, maxRaiseTo: null,
+export interface HandOptions {
+  readonly handNumber: number;
+  readonly button: SeatId;
+  /** Players in clockwise seat order, all with stack > 0. */
+  readonly seats: readonly HandSeat[];
+  readonly blinds: Blinds;
+  /** A shuffled 52-card deck; cards are dealt from the front. */
+  readonly deck: readonly Card[];
+}
+
+interface Player {
+  readonly seat: SeatId;
+  stack: number;
+  readonly holeCards: readonly [Card, Card];
+  contributed: number;
+  streetBet: number;
+  folded: boolean;
+  allIn: boolean;
+}
+
+/** Every field of a `Hand`, writable, so `clone` can rebuild one field by field. */
+interface HandFields {
+  handNumber: number;
+  button: SeatId;
+  bigBlind: number;
+  events: GameEvent[];
+  players: Player[];
+  deck: Card[];
+  board: Card[];
+  currentStreet: Street;
+  currentBet: number;
+  minRaise: number;
+  toAct: SeatId[];
+  acting: SeatId | null;
+  complete: boolean;
+  cannotRaise: Set<SeatId>;
+}
+
+const NEXT_STREET: Record<Street, Street> = {
+  preflop: "flop",
+  flop: "turn",
+  turn: "river",
+  river: "showdown",
+  showdown: "showdown",
 };
 
-/**
- * One hand of No-Limit Texas Hold'em. Drive it with `legalActions` / `act`;
- * every state change is reported through the `emit` callback.
- */
 export class Hand {
-  wentToShowdown = false;
+  readonly handNumber: number;
+  readonly button: SeatId;
+  readonly bigBlind: number;
+  readonly events: GameEvent[] = [];
 
-  private readonly emit: (e: TableEvent) => void;
-  private readonly blinds: Blinds;
-  private readonly allSeats: SeatId[];
-  /** Seats in the hand, in table order starting left of the button. */
-  private readonly order: SeatId[];
-  private readonly bbSeat: SeatId;
-  private readonly stacks = new Map<SeatId, number>();
-  private readonly committed = new Map<SeatId, number>();   // this street
-  private readonly contributed = new Map<SeatId, number>(); // whole hand
-  private readonly folded = new Set<SeatId>();
-  private readonly allIn = new Set<SeatId>();
-  private readonly actedSinceRaise = new Set<SeatId>();
-  private readonly hole = new Map<SeatId, Card[]>();
+  private readonly players: Player[];
   private readonly deck: Card[];
-  private readonly boardCards: Card[] = [];
-  private readonly entries: HistoryEntry[] = [];
-  private deckAt = 0;
+  private readonly board: Card[] = [];
+  private currentStreet: Street = "preflop";
   private currentBet = 0;
-  private lastRaiseSize = 0;
-  private streetName: Street = 'preflop';
-  private over = false;
-  private actor: SeatId | null = null;
+  private minRaise: number;
+  private toAct: SeatId[] = [];
+  private acting: SeatId | null = null;
+  private complete = false;
+  /** Seats that may only call or fold this street because a short (incomplete) all-in
+   *  raise came after their turn; a full raise clears this. */
+  private cannotRaise = new Set<SeatId>();
 
-  constructor(init: HandInit, emit: (e: TableEvent) => void) {
-    this.emit = emit;
-    this.blinds = init.blinds;
-    const seats = [...init.seats].sort((a, b) => a.seat - b.seat);
-    this.allSeats = seats.map((s) => s.seat);
-    for (const s of seats) this.stacks.set(s.seat, s.stack);
-    const live = seats.filter((s) => s.stack > 0).map((s) => s.seat);
-    if (live.length < 2) throw new Error('Hand needs at least two seats with chips');
-    const pivot = Math.max(0, live.findIndex((s) => s > init.button));
-    this.order = [...live.slice(pivot), ...live.slice(0, pivot)];
-    for (const s of this.order) { this.committed.set(s, 0); this.contributed.set(s, 0); }
-    this.deck = init.rng.shuffle(newDeck());
-
-    this.emit({ type: 'HandStarted', handNumber: init.handNumber, button: init.button });
-    this.bbSeat = this.postBlinds();
-    this.dealHoleCards();
-    const first = this.canOpenBetting() ? this.nextToAct(this.bbSeat) : null;
-    if (first === null) this.advance(); else this.actor = first;
-  }
-
-  get street(): Street { return this.streetName; }
-  get isOver(): boolean { return this.over; }
-  get board(): Card[] { return [...this.boardCards]; }
-  get toAct(): SeatId | null { return this.actor; }
-
-  holeCards(seat: SeatId): Card[] { return [...(this.hole.get(seat) ?? [])]; }
-
-  legalActions(seat: SeatId): LegalActions {
-    if (this.over || !this.contributed.has(seat) || this.folded.has(seat) || this.allIn.has(seat)) return { ...NO_ACTIONS };
-    const stack = this.stacks.get(seat) ?? 0;
-    const committed = this.committed.get(seat) ?? 0;
-    const toCall = Math.max(0, this.currentBet - committed);
-    const maxRaiseTo = committed + stack;
-    // Betting needs an opponent who can still act; with everyone else folded or
-    // all-in there is nothing to bet or raise into, only a call to settle.
-    const contested = this.liveActors().length >= 2;
-    // A player who already acted since the last full raise may only call or fold
-    // (they are facing an incomplete all-in raise, which does not reopen betting).
-    const canRaise = contested && stack > toCall && !this.actedSinceRaise.has(seat);
-    const fullRaiseTo = this.currentBet + Math.max(this.lastRaiseSize, this.blinds.big);
-    return {
-      canFold: toCall > 0,
-      canCheck: toCall === 0,
-      callAmount: toCall > 0 ? Math.min(toCall, stack) : null,
-      minRaiseTo: canRaise ? Math.min(fullRaiseTo, maxRaiseTo) : null,
-      maxRaiseTo: contested ? maxRaiseTo : null,
-    };
-  }
-
-  act(seat: SeatId, action: Action): void {
-    if (this.over) throw new Error('hand is already over');
-    if (seat !== this.actor) throw new Error(`seat ${seat} cannot act: it is seat ${String(this.actor)}'s turn`);
-    const la = this.legalActions(seat);
-    const committed = this.committed.get(seat) ?? 0;
-    const toCall = Math.max(0, this.currentBet - committed);
-    let recorded: Action = action;
-    switch (action.type) {
-      case 'fold':
-        if (!la.canFold) throw new Error('cannot fold: checking is free');
-        this.folded.add(seat);
-        break;
-      case 'check':
-        if (!la.canCheck) throw new Error('cannot check while facing a bet');
-        break;
-      case 'call':
-        if (la.callAmount === null) throw new Error('cannot call: there is nothing to call');
-        this.wager(seat, la.callAmount);
-        break;
-      case 'bet':
-      case 'raise': {
-        // `bet` and `raise` are interchangeable; the amount is always a raise-to
-        // total for the street and the recorded verb is normalised below.
-        if (la.minRaiseTo === null || la.maxRaiseTo === null) throw new Error(`seat ${seat} cannot ${action.type} here`);
-        if (!Number.isInteger(action.amount)) throw new Error('amount must be a whole number of chips');
-        if (action.amount < la.minRaiseTo || action.amount > la.maxRaiseTo) {
-          throw new Error(`${action.type} to ${action.amount} outside [${la.minRaiseTo}, ${la.maxRaiseTo}]`);
-        }
-        recorded = { type: this.currentBet === 0 ? 'bet' : 'raise', amount: action.amount };
-        this.wager(seat, action.amount - committed);
-        break;
-      }
-      case 'allin': {
-        const stack = this.stacks.get(seat) ?? 0;
-        if (stack <= 0) throw new Error('cannot go all-in without chips');
-        // Legal either as a raise, or as an all-in for less than (or exactly) a call.
-        if (la.minRaiseTo === null && stack > toCall) throw new Error(`seat ${seat} cannot go all-in here`);
-        this.wager(seat, stack);
-        break;
-      }
-      default:
-        throw new Error(`unknown action: ${JSON.stringify(action)}`);
+  constructor(options: HandOptions) {
+    if (options.seats.length < 2) throw new Error("a hand needs at least 2 players");
+    if (options.deck.length !== 52) throw new Error("deck must have exactly 52 cards");
+    if (!options.seats.some((s) => s.seat === options.button)) {
+      throw new Error(`button seat ${options.button} is not in the hand`);
     }
-    this.actedSinceRaise.add(seat);
-    this.entries.push({ street: this.streetName, seat, action: { ...recorded } });
-    this.emit({ type: 'ActionTaken', seat, action: { ...recorded }, street: this.streetName });
-
-    const contenders = this.order.filter((s) => !this.folded.has(s));
-    if (contenders.length === 1) { this.endByFold(contenders[0]!); return; }
-    const next = this.nextToAct(seat);
-    if (next === null) this.advance(); else this.actor = next;
-  }
-
-  view(seat: SeatId): Omit<PlayerView, 'position'> {
-    const stack = this.stacks.get(seat) ?? 0;
-    let pot = 0;
-    for (const v of this.contributed.values()) pot += v;
-    const stacks: SeatState[] = this.allSeats.map((s) => ({
-      seat: s, stack: this.stacks.get(s) ?? 0, isAllIn: this.allIn.has(s), folded: this.folded.has(s),
+    if (new Set(options.seats.map((s) => s.seat)).size !== options.seats.length) {
+      throw new Error("seat ids must be unique");
+    }
+    for (const s of options.seats) {
+      if (!Number.isInteger(s.stack) || s.stack <= 0)
+        throw new Error(`seat ${s.seat} has no chips`);
+    }
+    this.handNumber = options.handNumber;
+    this.button = options.button;
+    this.bigBlind = options.blinds.big;
+    this.minRaise = options.blinds.big;
+    this.deck = [...options.deck];
+    this.players = options.seats.map((s) => ({
+      seat: s.seat,
+      stack: s.stack,
+      holeCards: [this.draw(), this.draw()],
+      contributed: 0,
+      streetBet: 0,
+      folded: false,
+      allIn: false,
     }));
-    return {
-      seat,
-      street: this.streetName,
-      holeCards: this.holeCards(seat),
-      board: this.board,
-      stacks,
-      pot,
-      toCall: Math.min(Math.max(0, this.currentBet - (this.committed.get(seat) ?? 0)), stack),
-      currentBet: this.currentBet,
-      committedThisStreet: this.committed.get(seat) ?? 0,
-      bigBlind: this.blinds.big,
-      history: this.entries.map((h) => ({ ...h })),
-    };
-  }
-
-  finalStacks(): { seat: SeatId; stack: number }[] {
-    return this.allSeats.map((s) => ({ seat: s, stack: this.stacks.get(s) ?? 0 }));
-  }
-
-  // ---- setup -------------------------------------------------------------
-
-  /** Posts antes then blinds (each capped by stack) and returns the big blind seat. */
-  private postBlinds(): SeatId {
-    const posts: { seat: SeatId; amount: number }[] = [];
-    const post = (seat: SeatId, amount: number): number => {
-      const paid = Math.min(amount, this.stacks.get(seat) ?? 0);
-      if (paid <= 0) return 0;
-      this.stacks.set(seat, (this.stacks.get(seat) ?? 0) - paid);
-      this.contributed.set(seat, (this.contributed.get(seat) ?? 0) + paid);
-      if ((this.stacks.get(seat) ?? 0) === 0) this.allIn.add(seat);
-      posts.push({ seat, amount: paid });
-      return paid;
-    };
-    if (this.blinds.ante > 0) for (const seat of this.order) post(seat, this.blinds.ante);
-    const headsUp = this.order.length === 2;
-    const sb = headsUp ? this.order[1]! : this.order[0]!;
-    const bb = headsUp ? this.order[0]! : this.order[1]!;
-    for (const [seat, amount] of [[sb, this.blinds.small], [bb, this.blinds.big]] as const) {
-      this.committed.set(seat, (this.committed.get(seat) ?? 0) + post(seat, amount));
+    const bigBlindSeat = this.postBlinds(options.blinds);
+    this.events.push({
+      type: "HoleCardsDealt",
+      hands: this.players.map((p) => ({ seat: p.seat, cards: p.holeCards })),
+    });
+    this.currentBet = options.blinds.big;
+    this.toAct = this.rotateAfter(bigBlindSeat).filter((seat) => this.isLive(seat));
+    const liveCount = this.players.filter((p) => this.isLive(p.seat)).length;
+    if (liveCount < 2) {
+      this.runOut();
+    } else {
+      this.advance();
     }
-    // Blinds are capped by stack, so a big blind that is all-in for less than the
-    // full blind sets a correspondingly smaller amount to call.
-    this.currentBet = Math.max(0, ...this.order.map((s) => this.committed.get(s) ?? 0));
-    this.lastRaiseSize = this.blinds.big;
-    if (posts.length > 0) this.emit({ type: 'BlindsPosted', posts });
-    return bb;
   }
 
-  private dealHoleCards(): void {
-    for (const seat of this.order) this.hole.set(seat, []);
-    for (let round = 0; round < 2; round++) for (const seat of this.order) this.hole.get(seat)!.push(this.draw());
-    for (const seat of this.order) this.emit({ type: 'HoleCardsDealt', seat, cards: this.holeCards(seat) });
+  get isComplete(): boolean {
+    return this.complete;
   }
 
-  private draw(): Card {
-    const card = this.deck[this.deckAt++];
-    if (!card) throw new Error('deck exhausted');
-    return card;
+  get actingSeat(): SeatId | null {
+    return this.acting;
   }
 
-  // ---- betting flow ------------------------------------------------------
-
-  /** Seats that are still able to put chips in. */
-  private liveActors(): SeatId[] {
-    return this.order.filter((s) => !this.folded.has(s) && !this.allIn.has(s));
-  }
-
-  private canOpenBetting(): boolean {
-    const live = this.liveActors();
-    if (live.length >= 2) return true;
-    if (live.length === 1) return this.currentBet - (this.committed.get(live[0]!) ?? 0) > 0;
-    return false;
+  get street(): Street {
+    return this.currentStreet;
   }
 
   /**
-   * The next seat after `from` that still owes an action this street: one that has
-   * not acted since the last full raise, or that has not matched the current bet.
-   * `null` means the street is complete.
+   * A deep copy of this hand, made without replaying it: acting on the copy never touches
+   * this one. Cards are immutable values, so they are shared; everything mutable is copied.
    */
-  private nextToAct(from: SeatId): SeatId | null {
-    const n = this.order.length;
-    const start = this.order.indexOf(from);
-    for (let i = 1; i <= n; i++) {
-      const seat = this.order[(start + i + n) % n]!;
-      if (this.folded.has(seat) || this.allIn.has(seat)) continue;
-      if (!this.actedSinceRaise.has(seat) || (this.committed.get(seat) ?? 0) < this.currentBet) return seat;
-    }
-    return null;
+  clone(): Hand {
+    const fields: HandFields = {
+      handNumber: this.handNumber,
+      button: this.button,
+      bigBlind: this.bigBlind,
+      events: [...this.events],
+      players: this.players.map((p) => ({ ...p })),
+      deck: [...this.deck],
+      board: [...this.board],
+      currentStreet: this.currentStreet,
+      currentBet: this.currentBet,
+      minRaise: this.minRaise,
+      toAct: [...this.toAct],
+      acting: this.acting,
+      complete: this.complete,
+      cannotRaise: new Set(this.cannotRaise),
+    };
+    // The constructor deals a new hand, so the copy is built straight onto the prototype.
+    return Object.assign(Object.create(Hand.prototype) as Hand, fields);
   }
 
-  private wager(seat: SeatId, delta: number): void {
-    const stack = this.stacks.get(seat) ?? 0;
-    const put = Math.min(Math.max(0, delta), stack);
-    this.stacks.set(seat, stack - put);
-    const committed = (this.committed.get(seat) ?? 0) + put;
-    this.committed.set(seat, committed);
-    this.contributed.set(seat, (this.contributed.get(seat) ?? 0) + put);
-    if (stack - put === 0) this.allIn.add(seat);
-    if (committed > this.currentBet) {
-      const raiseSize = committed - this.currentBet;
-      this.currentBet = committed;
-      // A short all-in raise raises the bet but neither resets the raise size nor
-      // reopens the action for players who have already acted this street.
-      if (raiseSize >= Math.max(this.lastRaiseSize, this.blinds.big)) {
-        this.lastRaiseSize = raiseSize;
-        this.actedSinceRaise.clear();
+  legalActions(seat: SeatId): LegalActions {
+    if (this.complete || seat !== this.acting) return NO_ACTIONS;
+    const player = this.player(seat);
+    const toCall = Math.max(0, this.currentBet - player.streetBet);
+    const canCheck = toCall === 0;
+    const maxRaiseTo = player.streetBet + player.stack;
+    let minRaiseTo: number | null =
+      this.currentBet === 0 ? this.bigBlind : this.currentBet + this.minRaise;
+    if (this.cannotRaise.has(seat)) {
+      minRaiseTo = null;
+    } else if (player.stack <= toCall) {
+      minRaiseTo = null;
+    } else if (maxRaiseTo < minRaiseTo) {
+      minRaiseTo = maxRaiseTo;
+    }
+    return {
+      canFold: !canCheck,
+      canCheck,
+      callAmount: canCheck ? null : Math.min(toCall, player.stack),
+      minRaiseTo,
+      maxRaiseTo: minRaiseTo === null ? null : maxRaiseTo,
+    };
+  }
+
+  act(seat: SeatId, action: Action): GameEvent[] {
+    if (this.complete) throw new Error("hand is complete");
+    if (seat !== this.acting) throw new Error(`seat ${seat} is not acting`);
+    const legal = this.legalActions(seat);
+    const player = this.player(seat);
+    const before = this.events.length;
+    let committed = 0;
+    let normalized: Action = action;
+
+    switch (action.type) {
+      case "fold":
+        if (!legal.canFold) throw new Error("cannot fold when checking is free");
+        player.folded = true;
+        break;
+      case "check":
+        if (!legal.canCheck) throw new Error("cannot check when facing a bet");
+        break;
+      case "call":
+        if (legal.callAmount === null) throw new Error("nothing to call");
+        committed = this.commit(player, legal.callAmount, true);
+        break;
+      case "bet":
+      case "raise":
+      case "allin": {
+        if (action.type === "bet" && this.currentBet > 0)
+          throw new Error("use raise when facing a bet");
+        if (action.type === "raise" && this.currentBet === 0) {
+          throw new Error("use bet when nobody has bet");
+        }
+        const target = action.type === "allin" ? player.streetBet + player.stack : action.amount;
+        if (target <= this.currentBet) {
+          if (action.type !== "allin") throw new Error(`illegal bet size ${target}`);
+          // All in for less than a call: it is a call.
+          committed = this.commit(player, player.stack, true);
+          normalized = { type: "call" };
+          break;
+        }
+        if (legal.minRaiseTo === null || legal.maxRaiseTo === null) {
+          throw new Error("raising is not allowed");
+        }
+        const isAllIn = target === legal.maxRaiseTo;
+        if (
+          !Number.isInteger(target) ||
+          target > legal.maxRaiseTo ||
+          (target < legal.minRaiseTo && !isAllIn)
+        ) {
+          throw new Error(`illegal bet size ${target}`);
+        }
+        const kind = this.currentBet === 0 ? "bet" : "raise";
+        committed = this.commit(player, target - player.streetBet, true);
+        const increment = target - this.currentBet;
+        if (increment >= this.minRaise) {
+          this.minRaise = increment;
+          this.cannotRaise.clear();
+        } else {
+          // Incomplete (short all-in) raise: it does not reopen the action. Seats
+          // that already acted this street may only call or fold; seats still
+          // waiting their turn keep their normal options.
+          for (const other of this.players) {
+            if (
+              other.seat !== seat &&
+              this.isLive(other.seat) &&
+              !this.toAct.includes(other.seat)
+            ) {
+              this.cannotRaise.add(other.seat);
+            }
+          }
+        }
+        this.currentBet = target;
+        this.toAct = this.rotateAfter(seat).filter((s) => s !== seat && this.isLive(s));
+        normalized = { type: kind, amount: target };
+        break;
       }
     }
+
+    this.toAct = this.toAct.filter((s) => s !== seat);
+    this.events.push({
+      type: "ActionTaken",
+      street: this.currentStreet,
+      seat,
+      action: normalized,
+      amount: committed,
+      allIn: player.allIn,
+    });
+    this.advance();
+    return this.events.slice(before);
   }
 
-  /** The current street is complete: deal on, or run the board out to showdown. */
-  private advance(): void {
-    if (this.streetName !== 'river' && this.liveActors().length >= 2) {
-      this.dealStreet();
-      for (const seat of this.order) this.committed.set(seat, 0);
-      this.currentBet = 0;
-      this.lastRaiseSize = 0;
-      this.actedSinceRaise.clear();
-      const next = this.nextToAct(this.order[this.order.length - 1]!);
-      if (next !== null) { this.actor = next; return; }
+  snapshot(): HandSnapshot {
+    return {
+      handNumber: this.handNumber,
+      button: this.button,
+      street: this.currentStreet,
+      board: [...this.board],
+      players: this.players.map((p) => ({
+        seat: p.seat,
+        stack: p.stack,
+        holeCards: p.holeCards,
+        contributed: p.contributed,
+        streetBet: p.streetBet,
+        folded: p.folded,
+        allIn: p.allIn,
+      })),
+      actingSeat: this.acting,
+      toAct: [...this.toAct],
+      currentBet: this.currentBet,
+      minRaise: this.minRaise,
+      bigBlind: this.bigBlind,
+      pot: this.players.reduce((sum, p) => sum + p.contributed, 0),
+      complete: this.complete,
+    };
+  }
+
+  stacks(): SeatStack[] {
+    return this.players.map((p) => ({ id: p.seat, stack: p.stack }));
+  }
+
+  private draw(): Card {
+    const card = this.deck.shift();
+    if (card === undefined) throw new Error("deck is empty");
+    return card;
+  }
+
+  private player(seat: SeatId): Player {
+    const player = this.players.find((p) => p.seat === seat);
+    if (player === undefined) throw new Error(`seat ${seat} is not in this hand`);
+    return player;
+  }
+
+  private isLive(seat: SeatId): boolean {
+    const player = this.player(seat);
+    return !player.folded && !player.allIn;
+  }
+
+  /** Seats clockwise starting after `seat`, ending with `seat` itself. */
+  private rotateAfter(seat: SeatId): SeatId[] {
+    const seats = this.players.map((p) => p.seat);
+    const index = seats.indexOf(seat);
+    if (index < 0) throw new Error(`seat ${seat} is not in this hand`);
+    return [...seats.slice(index + 1), ...seats.slice(0, index + 1)];
+  }
+
+  /** Moves up to `chips` from the player's stack into the pot; returns the amount moved. */
+  private commit(player: Player, chips: number, countsForStreet: boolean): number {
+    const amount = Math.min(chips, player.stack);
+    player.stack -= amount;
+    player.contributed += amount;
+    if (countsForStreet) player.streetBet += amount;
+    if (player.stack === 0) player.allIn = true;
+    return amount;
+  }
+
+  /** Posts antes and blinds; returns the big blind seat. */
+  private postBlinds(blinds: Blinds): SeatId {
+    const posts: { seat: SeatId; kind: "ante" | "small" | "big"; amount: number }[] = [];
+    if (blinds.ante > 0) {
+      for (const player of this.players) {
+        posts.push({
+          seat: player.seat,
+          kind: "ante",
+          amount: this.commit(player, blinds.ante, false),
+        });
+      }
     }
-    while (this.streetName !== 'river') this.dealStreet();
+    const after = this.rotateAfter(this.button);
+    const small = this.players.length === 2 ? this.button : (after[0] as SeatId);
+    const big = this.players.length === 2 ? (after[0] as SeatId) : (after[1] as SeatId);
+    posts.push({
+      seat: small,
+      kind: "small",
+      amount: this.commit(this.player(small), blinds.small, true),
+    });
+    posts.push({ seat: big, kind: "big", amount: this.commit(this.player(big), blinds.big, true) });
+    this.events.push({ type: "BlindsPosted", posts });
+    return big;
+  }
+
+  private advance(): void {
+    const unfolded = this.players.filter((p) => !p.folded);
+    if (unfolded.length === 1) {
+      this.payout(new Map());
+      return;
+    }
+    if (this.toAct.length > 0) {
+      this.acting = this.toAct[0] ?? null;
+      return;
+    }
+    if (this.currentStreet === "river") {
+      this.showdown();
+      return;
+    }
+    this.dealNextStreet();
+    const liveCount = this.players.filter((p) => this.isLive(p.seat)).length;
+    if (liveCount < 2) {
+      this.runOut();
+      return;
+    }
+    this.acting = this.toAct[0] ?? null;
+  }
+
+  /** Deals every remaining street with no further betting, then goes to showdown. */
+  private runOut(): void {
+    while (this.currentStreet !== "river") this.dealNextStreet();
     this.showdown();
   }
 
-  private dealStreet(): void {
-    if (this.streetName === 'river' || this.streetName === 'showdown') throw new Error(`no street after the ${this.streetName}`);
-    const count = this.streetName === 'preflop' ? 3 : 1;
-    const next: Street = this.streetName === 'preflop' ? 'flop' : this.streetName === 'flop' ? 'turn' : 'river';
-    for (let i = 0; i < count; i++) this.boardCards.push(this.draw());
-    this.streetName = next;
-    this.emit({ type: 'StreetDealt', street: next, board: this.board });
+  private dealNextStreet(): void {
+    this.currentStreet = NEXT_STREET[this.currentStreet];
+    for (const player of this.players) player.streetBet = 0;
+    this.currentBet = 0;
+    this.minRaise = this.bigBlind;
+    this.cannotRaise.clear();
+    const count = this.currentStreet === "flop" ? 3 : 1;
+    for (let i = 0; i < count; i++) this.board.push(this.draw());
+    this.toAct = this.rotateAfter(this.button).filter((seat) => this.isLive(seat));
+    this.events.push({ type: "StreetDealt", street: this.currentStreet, board: [...this.board] });
   }
-
-  // ---- ending ------------------------------------------------------------
 
   private showdown(): void {
-    const contenders = this.order.filter((s) => !this.folded.has(s));
-    if (contenders.length <= 1) { this.endByFold(contenders[0] ?? this.order[0]!); return; }
-    this.streetName = 'showdown';
-    this.wentToShowdown = true;
+    this.currentStreet = "showdown";
+    const unfolded = this.players.filter((p) => !p.folded);
     const values = new Map<SeatId, HandValue>();
-    const hands = contenders.map((seat) => {
-      const value = evaluate7([...(this.hole.get(seat) ?? []), ...this.boardCards]);
-      values.set(seat, value);
-      return { seat, cards: this.holeCards(seat), value };
-    });
-    this.emit({ type: 'Showdown', hands });
-    const pots = buildPots(this.contributed, this.folded);
-    const awards = awardPots(pots, (seat) => values.get(seat)?.score ?? -Infinity, this.order);
-    for (const a of awards) {
-      this.stacks.set(a.seat, (this.stacks.get(a.seat) ?? 0) + a.amount);
-      this.emit({ type: 'PotAwarded', seat: a.seat, amount: a.amount, potIndex: a.potIndex });
+    for (const player of unfolded) {
+      values.set(player.seat, evaluateBest([...player.holeCards, ...this.board]));
     }
-    this.finish();
+    this.events.push({
+      type: "Showdown",
+      hands: unfolded.map((p) => ({
+        seat: p.seat,
+        cards: p.holeCards,
+        value: values.get(p.seat) as HandValue,
+      })),
+    });
+    this.payout(values);
   }
 
-  private endByFold(winner: SeatId): void {
-    this.streetName = 'showdown';
-    this.wentToShowdown = false;
-    let total = 0;
-    for (const v of this.contributed.values()) total += v;
-    this.stacks.set(winner, (this.stacks.get(winner) ?? 0) + total);
-    this.emit({ type: 'PotAwarded', seat: winner, amount: total, potIndex: 0 });
-    this.finish();
-  }
-
-  private finish(): void {
-    this.over = true;
-    this.actor = null;
-    this.emit({ type: 'HandEnded', stacks: this.finalStacks() });
+  private payout(values: ReadonlyMap<SeatId, HandValue>): void {
+    const contributions = new Map(this.players.map((p) => [p.seat, p.contributed]));
+    const eligible = new Set(this.players.filter((p) => !p.folded).map((p) => p.seat));
+    const pots = buildPots(contributions, eligible);
+    const awards = awardPots(
+      pots,
+      (seat) => {
+        const value = values.get(seat);
+        if (value === undefined) throw new Error(`no showdown value for seat ${seat}`);
+        return value;
+      },
+      this.rotateAfter(this.button),
+    );
+    for (const award of awards) this.player(award.seat).stack += award.amount;
+    this.events.push({ type: "PotAwarded", pots, awards });
+    this.complete = true;
+    this.acting = null;
+    this.toAct = [];
   }
 }

@@ -1,16 +1,27 @@
-import { createAgent } from '../src/agents/index.js';
-import type { Agent } from '../src/agents/types.js';
-import { hashSeed } from '../src/engine/rng.js';
-import { Table } from '../src/engine/table.js';
-import { fixedBlinds, type GameConfig, type SeatId, type TableEvent } from '../src/engine/types.js';
-import { JevAgent, type DecisionRecord } from '../src/jev/agent.js';
-import { HeuristicAgent } from '../src/jev/heuristic-agent.js';
-import type { JevBackend } from '../src/jev/backend.js';
-import type { Persona } from '../src/jev/personas.js';
-import type { PromptStyle } from '../src/jev/questions.js';
-import { rotations, seatCount } from './matchups.js';
-import { ProfileTracker } from './profile.js';
-import type { Format, HandAction, HandRecord, Opponent } from './types.js';
+import {
+  type Agent,
+  type AgentDecision,
+  createAgent,
+  HeuristicAgent,
+  JevAgent,
+} from "../src/agents";
+import {
+  type ActionTakenEvent,
+  fixedBlinds,
+  type GameConfig,
+  type GameEvent,
+  hashSeed,
+  historyEntry,
+  playerView,
+  type SeatId,
+  Table,
+} from "../src/engine";
+import type { JevBackend } from "../src/jev/backend";
+import type { Persona } from "../src/jev/personas";
+import type { PromptStyle } from "../src/jev/questions";
+import { rotations, seatCount } from "./matchups";
+import { ProfileTracker } from "./profile";
+import type { Format, HandAction, HandRecord, Opponent } from "./types";
 
 const SMALL_BLIND = 50;
 const BIG_BLIND = 100;
@@ -34,6 +45,8 @@ export interface RunOptions {
   concurrency: number;
   persona: Persona;
   backend: JevBackend;
+  /** Model id sent with every request; the backend's default when omitted. */
+  model?: string;
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
   /** Feed the Jev agent per-opponent session statistics accumulated over the matchup. */
@@ -41,13 +54,13 @@ export interface RunOptions {
   /** Opt-in range-aware equity feature for the Jev agent. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent uses the preflop chart in code and asks Jev only after the flop. */
-  preflop?: 'jev' | 'chart';
+  preflop?: "jev" | "chart";
   /** `heuristic` seats the fixed rule set over Jev's own features instead of the Jev agent. */
-  hero?: 'jev' | 'heuristic';
+  hero?: "jev" | "heuristic";
   signal?: AbortSignal;
   onHand?: (done: number, total: number) => void;
   /** Called once per Jev decision, as the hand that produced it finishes. */
-  onDecision?: (record: DecisionRecord) => void;
+  onDecision?: (record: AgentDecision) => void;
   /** Test seam: replaces `playHand` for a single hand. Production callers leave this unset. */
   playHandImpl?: (args: PlayHandArgs) => Promise<HandRecord>;
 }
@@ -60,14 +73,15 @@ export interface PlayHandArgs {
   baseSeed: number;
   persona: Persona;
   backend: JevBackend;
+  model?: string;
   promptStyle?: PromptStyle;
-  hero?: 'jev' | 'heuristic';
-  preflop?: 'jev' | 'chart';
+  hero?: "jev" | "heuristic";
+  preflop?: "jev" | "chart";
   rangeEquity?: boolean;
   /** Shared session memory; when present the Jev agent sees opponent statistics and the hand is recorded into it. */
   tracker?: ProfileTracker;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
-  onEvent?: (event: TableEvent) => void;
+  onEvent?: (event: GameEvent) => void;
 }
 
 /**
@@ -80,36 +94,41 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const n = seatCount(format);
   const jevSeat: SeatId = rotation;
 
-  const decisions: DecisionRecord[] = [];
+  const decisions: AgentDecision[] = [];
   const agents: Agent[] = [];
   for (let seat = 0; seat < n; seat++) {
     agents.push(
       seat === jevSeat
-        ? args.hero === 'heuristic'
+        ? args.hero === "heuristic"
           ? new HeuristicAgent()
           : new JevAgent({
-            persona,
-            backend,
-            seed: hashSeed(baseSeed, seedIndex, rotation, JEV_SEED_TAG),
-            onDecision: (record) => decisions.push(record),
-            ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
-            ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
-            ...(args.rangeEquity !== undefined ? { rangeEquity: args.rangeEquity } : {}),
-            ...(args.tracker !== undefined ? { opponentStatsFor: (s: number) => (s === jevSeat ? null : (args.tracker?.statsFor(opponent) ?? null)) } : {}),
-          })
+              persona,
+              backend,
+              seed: hashSeed(baseSeed, seedIndex, rotation, JEV_SEED_TAG),
+              onDecision: (record) => decisions.push(record),
+              ...(args.model !== undefined ? { model: args.model } : {}),
+              ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
+              ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
+              ...(args.rangeEquity !== undefined ? { rangeEquity: args.rangeEquity } : {}),
+              ...(args.tracker !== undefined
+                ? {
+                    opponentStatsFor: (s: number) =>
+                      s === jevSeat ? null : (args.tracker?.statsFor(opponent) ?? null),
+                  }
+                : {}),
+            })
         : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
     );
   }
 
   const config: GameConfig = {
-    format: 'cash',
-    blinds: fixedBlinds({ small: SMALL_BLIND, big: BIG_BLIND, ante: 0 }),
+    format: "cash",
+    blinds: fixedBlinds(SMALL_BLIND, BIG_BLIND),
     startingStack: STARTING_STACK,
     seats: Array.from({ length: n }, (_, id) => ({
       id,
       name: `seat${id}`,
-      kind: 'cpu' as const,
-      agentId: agents[id]?.id ?? opponent,
+      kind: "cpu" as const,
     })),
     seed: hashSeed(baseSeed, seedIndex),
   };
@@ -119,43 +138,52 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const pfr = new Set<SeatId>();
   const folded = new Set<SeatId>();
   const actions: HandAction[] = [];
-  const unsubscribe = table.on((e: TableEvent) => {
+  const taken: ActionTakenEvent[] = [];
+  let wentToShowdown = false;
+  const unsubscribe = table.on((e: GameEvent) => {
     args.onEvent?.(e);
-    if (e.type === 'ActionTaken' && e.street === 'preflop') {
+    if (e.type === "Showdown") wentToShowdown = true;
+    if (e.type === "ActionTaken" && e.street === "preflop") {
       const t = e.action.type;
-      // Blind posts are not `ActionTaken`, so any call/bet/raise/allin here is voluntary.
-      if (t === 'call' || t === 'bet' || t === 'raise' || t === 'allin') vpip.add(e.seat);
-      if (t === 'bet' || t === 'raise' || t === 'allin') pfr.add(e.seat);
+      // Blind posts are not `ActionTaken`, so any call/bet/raise here is voluntary.
+      if (t === "call" || t === "bet" || t === "raise") vpip.add(e.seat);
+      if (t === "bet" || t === "raise") pfr.add(e.seat);
     }
-    if (e.type === 'ActionTaken' && e.action.type === 'fold') folded.add(e.seat);
-    if (e.type === 'ActionTaken') {
-      const a = e.action;
+    if (e.type === "ActionTaken" && e.action.type === "fold") folded.add(e.seat);
+    if (e.type === "ActionTaken") {
+      taken.push(e);
+      // Logged the way the agents see it: a bet or raise that is all in reads `allin`.
+      const a = historyEntry(e).action;
       actions.push({
         street: e.street,
         seat: e.seat,
         type: a.type,
-        ...(a.type === 'bet' || a.type === 'raise' ? { amountBB: a.amount / BIG_BLIND } : {}),
+        ...(a.type === "bet" || a.type === "raise" ? { amountBB: a.amount / BIG_BLIND } : {}),
       });
     }
   });
 
   try {
-    const hand = table.startHand();
-    while (!hand.isOver) {
-      const s = hand.toAct;
-      if (s === null) throw new Error('hand is not over but no seat is to act');
+    let snapshot = table.startHand();
+    while (!snapshot.complete) {
+      const s = snapshot.actingSeat;
+      if (s === null) throw new Error("hand is not over but no seat is to act");
       const agent = agents[s];
       if (agent === undefined) throw new Error(`no agent for seat ${s}`);
-      const action = await agent.decide(table.view(s), hand.legalActions(s));
-      hand.act(s, action);
+      const action = await agent.decide(playerView(snapshot, s, taken), table.legalActions(s));
+      table.act(s, action);
+      const next = table.snapshot();
+      if (next === null) throw new Error("the table lost its hand");
+      snapshot = next;
     }
 
+    // Read from the hand, not the table: a cash table rebuys busted seats as the hand ends.
     const net = new Array<number>(n).fill(0);
-    for (const { seat, stack } of hand.finalStacks()) {
-      net[seat] = (stack - STARTING_STACK) / BIG_BLIND;
+    for (const { id, stack } of table.currentHand?.stacks() ?? []) {
+      net[id] = (stack - STARTING_STACK) / BIG_BLIND;
     }
 
-    const jevAtShowdown = hand.wentToShowdown && !folded.has(jevSeat);
+    const jevAtShowdown = wentToShowdown && !folded.has(jevSeat);
     const oppSeats = net.map((_, seat) => seat).filter((seat) => seat !== jevSeat);
     const fraction = (set: Set<SeatId>): number =>
       oppSeats.length === 0 ? 0 : oppSeats.filter((seat) => set.has(seat)).length / oppSeats.length;
@@ -165,7 +193,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       rotation,
       jevSeat,
       net,
-      wentToShowdown: hand.wentToShowdown,
+      wentToShowdown,
       // The table can show down after Jev folded; only Jev's own showdowns count for its win rate.
       jevAtShowdown,
       // "Won" means Jev finished the hand ahead: a chop or a lost side pot is not a win.
@@ -193,7 +221,9 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
  * `FAIL_FAST_DECISIONS` Jev decisions all failed open: the backend is
  * systematically broken, so the match rejects instead of burning the budget.
  */
-export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[]; partial: boolean }> {
+export async function runMatch(
+  opts: RunOptions,
+): Promise<{ hands: HandRecord[]; partial: boolean }> {
   const { opponent, format, seeds, baseSeed, persona, backend, signal, onHand, onDecision } = opts;
   const rotationCount = rotations(format);
 
@@ -212,7 +242,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
   // instead of burning API calls for a match that has already rejected.
   let failed = false;
   // The first `FAIL_FAST_DECISIONS` decisions, in hand-completion order.
-  const firstDecisions: DecisionRecord[] = [];
+  const firstDecisions: AgentDecision[] = [];
   let failFastChecked = false;
 
   const worker = async (): Promise<void> => {
@@ -231,6 +261,7 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
           baseSeed,
           persona,
           backend,
+          ...(opts.model !== undefined ? { model: opts.model } : {}),
           ...(opts.promptStyle !== undefined ? { promptStyle: opts.promptStyle } : {}),
           ...(opts.hero !== undefined ? { hero: opts.hero } : {}),
           ...(opts.preflop !== undefined ? { preflop: opts.preflop } : {}),
@@ -244,19 +275,21 @@ export async function runMatch(opts: RunOptions): Promise<{ hands: HandRecord[];
       hands.push(record);
       if (tracker !== undefined && record.actions !== undefined) {
         const seats = new Map<number, string>();
-        for (let s = 0; s < seatCount(format); s++) if (s !== record.jevSeat) seats.set(s, opponent);
+        for (let s = 0; s < seatCount(format); s++)
+          if (s !== record.jevSeat) seats.set(s, opponent);
         tracker.record(record.actions, seats);
       }
       for (const decision of record.decisions) {
         onDecision?.(decision);
-        if (!failFastChecked && firstDecisions.length < FAIL_FAST_DECISIONS) firstDecisions.push(decision);
+        if (!failFastChecked && firstDecisions.length < FAIL_FAST_DECISIONS)
+          firstDecisions.push(decision);
       }
       if (!failFastChecked && firstDecisions.length >= FAIL_FAST_DECISIONS) {
         failFastChecked = true;
         if (firstDecisions.every((d) => d.error !== undefined)) {
           failed = true;
           throw new Error(
-            `Jev backend failing on every decision (first ${FAIL_FAST_DECISIONS}): ${firstDecisions[0]?.error ?? ''}`,
+            `Jev backend failing on every decision (first ${FAIL_FAST_DECISIONS}): ${firstDecisions[0]?.error ?? ""}`,
           );
         }
       }

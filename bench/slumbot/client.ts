@@ -14,7 +14,10 @@ export interface SlumbotResponse {
   [key: string]: unknown;
 }
 
-export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+export type FetchLike = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string },
+) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
 export interface SlumbotClientOptions {
   baseUrl?: string;
@@ -32,18 +35,18 @@ export class SlumbotClient {
   private readonly retryDelayMs: number;
 
   constructor(opts: SlumbotClientOptions = {}) {
-    this.baseUrl = opts.baseUrl ?? 'https://slumbot.com/slumbot/api';
+    this.baseUrl = opts.baseUrl ?? "https://slumbot.com/slumbot/api";
     this.fetchImpl = opts.fetchImpl ?? ((url, init) => fetch(url, init));
     this.retries = opts.retries ?? 3;
     this.retryDelayMs = opts.retryDelayMs ?? 1000;
   }
 
   newHand(token: string | null): Promise<SlumbotResponse> {
-    return this.post('new_hand', token === null ? {} : { token });
+    return this.post("new_hand", token === null ? {} : { token });
   }
 
   act(token: string, incr: string): Promise<SlumbotResponse> {
-    return this.post('act', { token, incr });
+    return this.post("act", { token, incr });
   }
 
   private async post(path: string, body: Record<string, string>): Promise<SlumbotResponse> {
@@ -52,8 +55,8 @@ export class SlumbotClient {
       if (attempt > 0) await new Promise((r) => setTimeout(r, this.retryDelayMs * attempt));
       try {
         const res = await this.fetchImpl(`${this.baseUrl}/${path}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
         if (!res.ok) {
@@ -62,12 +65,13 @@ export class SlumbotClient {
           throw lastError;
         }
         const json = (await res.json()) as SlumbotResponse;
-        if (typeof json.error_msg === 'string' && json.error_msg !== '') throw new Error(`slumbot ${path}: ${json.error_msg}`);
+        if (typeof json.error_msg === "string" && json.error_msg !== "")
+          throw new Error(`slumbot ${path}: ${json.error_msg}`);
         return json;
       } catch (err) {
         lastError = err;
         // A protocol error from the server is final; only transport failures are retried.
-        if (err instanceof Error && err.message.startsWith('slumbot ')) throw err;
+        if (err instanceof Error && err.message.startsWith("slumbot ")) throw err;
       }
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError));

@@ -1,254 +1,131 @@
 # jev-poker
 
-**EN:** A No-Limit Texas Hold'em game where CPU players decide their actions with TypeSafe
-Jev (`systemOne`), plus a benchmark that measures how the Jev CPU performs against classic
-baseline bots.
+No-Limit Texas Hold'em in the browser where every CPU player thinks with
+[TypeSafe Jev](https://typesafe.ai). Play against them, or let a full table of
+CPUs play each other while you watch. Bring your own TypeSafe API key.
 
-**JA:** TypeSafe Jev (`systemOne`) が CPU プレイヤーの意思決定を行う、ノーリミット・
-テキサスホールデムです。あわせて、Jev CPU が古典的なベースラインボットに対してどれだけ
-強いかを測るベンチマークを備えています。
+ブラウザで遊べるノーリミット・テキサスホールデム。CPU プレイヤーは全員
+[TypeSafe Jev](https://typesafe.ai) で考えます。人間 1 人 + CPU、または全席 CPU の
+観戦モード。プレイにはあなた自身の TypeSafe API キーが必要です。
 
-## Status / ステータス
+## How it works / 仕組み
 
-**EN:** Implemented: the game engine (`src/engine`), the baseline agents (`src/agents`:
-`random` / `caller` / `rules`), the Jev agent (`src/jev`, with TypeSafe and mock backends),
-and the benchmark CLI (`bench/`). Not yet implemented: the browser UI (`src/ui`), i18n, and
-the Cloudflare Pages Functions proxy.
+1. The game engine (`src/engine`, zero dependencies) deals, enforces betting rules, builds side pots and evaluates hands.
+2. For every CPU decision, `src/jev` compresses the situation (position, made hand, draws, exact hand strength and equity, pot odds, stacks in BB, this hand's actions) and asks Jev three typed questions in one call: `action` (choice among the legal options), `sizing` (score 0–5) and `bluff_intent` (yes/no probability).
+3. Jev returns probabilities. The persona's *variance* decides whether the CPU always takes the most likely action or samples. The result is clamped to a legal bet size.
+4. If Jev is unreachable the CPU checks or folds and the history shows why.
 
-See the design specs for details:
-[main design spec](docs/superpowers/specs/2026-09-19-jev-poker-design.md),
-[benchmark design spec](docs/superpowers/specs/2026-09-19-benchmark-design.md).
+Your API key never leaves your browser except inside requests to this site's
+`/api/jev/*` proxy (a Cloudflare Pages Function), which forwards them to
+`api.typesafe.ai` with `Authorization: Bearer <your key>` and stores nothing.
 
-**JA:** 実装済み: ゲームエンジン (`src/engine`)、ベースラインエージェント (`src/agents`:
-`random` / `caller` / `rules`)、Jev エージェント (`src/jev`、TypeSafe / mock バックエンド)、
-ベンチマーク CLI (`bench/`)。未実装: ブラウザ UI (`src/ui`)、i18n、Cloudflare Pages
-Functions プロキシ。
+1. ゲームエンジン (`src/engine`、依存ゼロ) が配札・ベッティング・サイドポット・役判定を行う。
+2. CPU の手番ごとに `src/jev` が状況を圧縮し (ポジション、完成役、ドロー、正確なハンド強度とエクイティ、ポットオッズ、BB 換算スタック、今ハンドのアクション)、Jev に 3 つの型付き質問を 1 回で投げる: `action` (合法な選択肢からの choice)、`sizing` (0〜5 の score)、`bluff_intent` (yes/no の確率)。
+3. Jev は確率を返す。人格の「ぶれ」で argmax かサンプリングかが決まり、最後に合法なベット額にクランプされる。
+4. Jev に届かない場合は check か fold にし、履歴にその理由が出る。
 
-設計書: [メイン設計書](docs/superpowers/specs/2026-09-19-jev-poker-design.md)、
-[ベンチマーク設計書](docs/superpowers/specs/2026-09-19-benchmark-design.md)。
+API キーはブラウザの localStorage にだけ保存され、このサイトの `/api/jev/*`
+プロキシ (Cloudflare Pages Function) 経由の送信にのみ使われます。プロキシは
+`Authorization: Bearer <key>` に載せ替えて `api.typesafe.ai` に転送し、何も保存しません。
 
-## Getting Started / はじめに
+## Play / 遊ぶ
 
-**EN:**
+1. Open the deployed site (or run it locally, below).
+2. Paste your TypeSafe API key when asked. It is stored in your browser only.
+3. Choose seats (2–6), who is human, a persona for each CPU, blinds and stack. With no human seat you get spectator mode.
+4. Open "Jev" in the hand history to see the probabilities behind each CPU action.
 
-- Node 20+ (developed on 24)
-- `pnpm install`
-- `pnpm test`
-- `pnpm typecheck`
+## Run locally / ローカルで動かす
 
-**JA:**
+Requires Node.js 24 and pnpm.
 
-- Node 20+ (開発は 24 で実施)
-- `pnpm install`
-- `pnpm test`
-- `pnpm typecheck`
+    pnpm install
+    pnpm dev          # Vite dev server; /api/jev is proxied to api.typesafe.ai with the same header rewrite
+    pnpm dev:pages    # build + `wrangler pages dev dist` with the real Pages Function
+    pnpm check        # lint + typecheck + tests + build
+
+`pnpm dev:pages` requires `wrangler` to be able to run (it is installed as a
+dev dependency, no separate install needed); `.node-version` pins this project
+to Node 24 for tools that read it.
+
+## Deploy to Cloudflare Pages / デプロイ
+
+1. Fork or push this repo to GitHub.
+2. Cloudflare dashboard → Workers & Pages → Create → Pages → connect the repo.
+3. Build command `pnpm build`, output directory `dist`. Set the environment variable `NODE_VERSION=24`.
+4. Functions in `functions/` are deployed automatically. No secrets are needed: players bring their own key.
+
+Optional variable `TYPESAFE_BASE_URL` overrides the upstream API root.
+
+## Personas / 人格
+
+Five presets (Rock, TAG, LAG, Maniac, Calling Station). Duplicate one to edit
+the description Jev receives and the variance. Custom personas live in your
+browser's localStorage.
 
 ## Benchmark / ベンチマーク
 
-**EN:** The benchmark measures bb/100 with a 95% confidence interval. Hands are mirrored
-across seat rotations (the same deals are replayed with the Jev seat rotated) to reduce
-variance from card luck. It runs both heads-up and 6-max matches with the Jev agent against
-each baseline (`random` / `caller` / `rules`).
+`pnpm bench` seats the game's own Jev CPU against three baseline bots (`random`, `caller`, a
+rule-based `rules`) and reports bb/100 with a 95% confidence interval. Every deal is replayed with
+the Jev seat rotated (mirrored hands), heads-up and six-handed. `pnpm bench:slumbot` plays
+[Slumbot](https://www.slumbot.com/), a real heads-up poker AI, through its public API.
 
-Run it with a real TypeSafe API key:
+    TYPESAFE_API_KEY=... pnpm bench --opponent rules --format all --seeds 1000
+    pnpm bench --backend mock --seeds 100     # dry run, no key, no cost
+    pnpm bench:report                         # re-render saved results
 
-```sh
-TYPESAFE_API_KEY=... pnpm bench --opponent all --format all --seeds 100
-```
+What the measurements say (`tag` persona, 1,000 seeds on seeds never used for tuning):
 
-Use `--backend mock` for a dry run that exercises the full pipeline without any API key or
-cost:
+| opponent | heads-up bb/100 | 6-max bb/100 |
+| --- | --- | --- |
+| `rules` bot | **+62.7** [+48.7, +76.8] | **+12.9** [+1.3, +24.5] |
+| Slumbot (200 bb, 12,000 hands) | -49.4 [-65.8, -33.0] | — |
 
-```sh
-pnpm bench --opponent all --format all --seeds 100 --backend mock
-```
+<!-- PORT_SUMMARY -->
 
-After one or more runs, re-aggregate the saved results into a table with:
+- Out of the box the Jev CPU lost to the rule-based bot; it wins now because of what it is told
+  (exact hand strength, equity against pot odds, whether its bet was raised, pot commitment,
+  blind-stealing spots) and conventional preflop raise sizes. The strength comes from the code
+  around the model.
+- A fixed heuristic over the same features is 30 to 50 bb/100 behind Jev heads-up and level with it
+  six-handed; against Slumbot Jev, the heuristic and the rules bot all lose about 50 bb/100.
+- What Jev adds is authoring: a persona is a paragraph of text, every decision comes with
+  probabilities to show, and a new character costs no new code.
 
-```sh
-pnpm bench:report
-```
+`pnpm bench` はゲーム本体の Jev CPU を 3 種のベースライン (`random`、`caller`、ルールベースの `rules`) と
+対戦させ、bb/100 と 95% 信頼区間を出します。同じ配牌を Jev の席だけ入れ替えて再生する (ミラーハンド) ので
+カード運の分散が小さく、ヘッズアップと 6-max の両方を測ります。`pnpm bench:slumbot` は本格的な
+ヘッズアップ AI の [Slumbot](https://www.slumbot.com/) と公開 API 経由で対戦します。
 
-Results are saved as `bench/results/<startedAt>-<opponent>-<format>.json`, with `--label`
-inserted before the matchup when given. On Windows PowerShell, note that the shell does not
-expand globs such as `bench/results/*.json`: use the no-argument form above, or pass explicit
-paths (`pnpm bench:report (Get-ChildItem bench/results/*.json).FullName`).
+- 素の Jev CPU はルールベースに負けていました。勝てるようになったのは「Jev に何を伝えるか」
+  (正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、ポットコミット、
+  スティールの機会) と標準的なプリフロップのレイズ額のおかげで、強さはモデルの周りのコードから来ています。
+- 同じ特徴量だけを読む固定ルールは、ヘッズアップで Jev より 30〜50 bb/100 弱く、6-max では互角です。
+  Slumbot には Jev もヒューリスティックもルールベースも約 50 bb/100 負けます。
+- Jev の価値はキャラクターの作りやすさにあります。人格は一段落の文章で、すべての判断に見せられる確率が付き、
+  新しいキャラクターを増やすのにコードは要りません。
 
-As a rough estimate (see benchmark spec §9), `--opponent all --format all` with the default
-100 seeds makes on the order of 3,000–8,000 Jev calls; at roughly 1–2 seconds per call and
-concurrency 4, a full run takes on the order of 20–70 minutes. Actual cost and time depend on
-the TypeSafe plan and network conditions.
+Details: [`bench/README.md`](bench/README.md) (CLI, result format),
+[`bench/RESULTS.md`](bench/RESULTS.md) (all tables),
+[`bench/EXPERIMENTS.md`](bench/EXPERIMENTS.md) (every change that was tried, with its measurement).
 
-See [`bench/README.md`](bench/README.md) for the full CLI reference and result format.
+## Project layout / 構成
 
-**JA:** ベンチマークは bb/100 と 95% 信頼区間を測定します。同一配牌で席を入れ替える
-「ミラーハンド」でカード運による分散を減らし、ヘッズアップと 6-max の両方で Jev エージェント
-を各ベースライン (`random` / `caller` / `rules`) と対戦させます。
+    src/engine/    pure TypeScript poker engine (tested with seeded random play)
+    src/jev/       features, questions, personas, decision policy, TypeSafe backend
+    src/agents/    the `Agent` interface: baseline bots, a heuristic, and the Jev CPU as an agent
+    src/ui/        React UI, game loop, history with Jev probabilities
+    src/i18n/      en / ja dictionaries
+    src/proxy/     the proxy handler (unit-tested)
+    functions/     Cloudflare Pages Function entry
+    bench/         benchmark runner, statistics, Slumbot client, saved results
+    docs/superpowers/specs/  design spec
 
-実際の TypeSafe API キーで実行する場合:
+## Roadmap / 今後
 
-```sh
-TYPESAFE_API_KEY=... pnpm bench --opponent all --format all --seeds 100
-```
+- Tournament format: `BlindSchedule` already abstracts blinds; busted seats are not rebought when `format` is `tournament`.
+- Versioned question sets recorded on each decision.
 
-API キーやコストなしで一通り動作確認したい場合は `--backend mock` を使います:
+## License
 
-```sh
-pnpm bench --opponent all --format all --seeds 100 --backend mock
-```
-
-実行後、保存済みの結果をまとめて表にするには:
-
-```sh
-pnpm bench:report
-```
-
-結果は `bench/results/<startedAt>-<opponent>-<format>.json` に保存される (`--label` を
-付けるとマッチ名の前に挟まる)。Windows PowerShell では `bench/results/*.json` のような
-グロブがシェルで展開されないので、引数なしの形を使うか、明示的なパスを渡すこと
-(`pnpm bench:report (Get-ChildItem bench/results/*.json).FullName`)。
-
-目安として (ベンチマーク spec §9 参照)、既定の 100 シードで `--opponent all --format all`
-を実行すると Jev の呼び出しはおよそ 3,000〜8,000 回になり、1 呼び出し 1〜2 秒・同時実行数 4
-であれば全体でおよそ 20〜70 分かかる見積もりです。実際のコストと所要時間は TypeSafe の
-プランやネットワーク状況によって変わります。
-
-CLI の詳細な使い方と結果フォーマットは [`bench/README.md`](bench/README.md) を参照してください。
-
-### 結果 / Results
-
-最新の結果表はベンチマーク実行後にここへ手動で貼る (`pnpm bench:report` の出力)。
-
-**Run: 2026-09-19** — model `jev-1.13.0`, SDK 0.6.0, all 5 presets, `--seeds 100 --concurrency 8`
-(≈ 3,500 API calls and ≈ 90 s per persona, 0 fail-open). Raw data: [`bench/results/`](bench/results/).
-Two code versions are shown: the first Jev agent (`2af5f01`) and the version after eight rounds of
-improvement (`7afd6d1`, see [`bench/EXPERIMENTS.md`](bench/EXPERIMENTS.md)).
-
-#### After improvements (`7afd6d1`) — persona × matchup, bb/100 / 改善後
-
-| 人格 | random HU | random 6-max | caller HU | caller 6-max | rules HU | rules 6-max | VPIP | 失敗 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rock | +47.7 | +315.3 ✅ | +189.1 ✅ | +210.0 | +28.5 ✅ | -8.4 | 18% | 0 |
-| tag | +161.9 | +445.9 ✅ | +340.0 ✅ | +1196.4 ✅ | +59.8 ✅ | +14.3 ✅ | 33% | 0 |
-| lag | +152.8 | +352.9 ✅ | +245.7 ✅ | +1745.6 ✅ | +59.3 ✅ | +26.7 | 45% | 0 |
-| maniac | +130.4 | -146.5 | +110.0 | +1206.3 ✅ | +57.3 ✅ | -25.1 | 68% | 0 |
-| station | +434.5 | +588.6 ✅ | +170.8 ✅ | +801.8 ✅ | +57.4 ✅ | -9.9 | 49% | 0 |
-
-#### Before improvements (`2af5f01`) / 改善前
-
-| 人格 | random HU | random 6-max | caller HU | caller 6-max | rules HU | rules 6-max | VPIP | 失敗 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rock | +115.3 | +360.8 ✅ | +144.1 ✅ | +47.6 | -17.6 | -18.9 | 7% | 0 |
-| tag | -41.6 | +404.2 ✅ | +405.1 ✅ | +984.8 ✅ | -9.0 | -40.0 | 13% | 0 |
-| lag | +226.8 | +497.5 | +210.2 | +895.3 ✅ | -66.8 | -133.4 | 57% | 0 |
-| maniac | +288.4 | -55.0 | +57.0 | -32.7 | -341.5 | -1230.5 ❌ | 85% | 0 |
-| station | +59.9 | +284.1 | +0.0 | +0.0 | -122.1 ❌ | -731.8 ❌ | 73% | 0 |
-
-✅ = 95% CI above zero / 95% CI が 0 より上, ❌ = 95% CI below zero / 95% CI が 0 より下. VPIP is averaged over the six matchups.
-
-#### Full table for the current code (`pnpm bench:report`) / 現行コードの全結果
-
-| 相手 | 形式 | 人格 | N (群) | ハンド | bb/100 | 95% CI | VPIP | PFR | 失敗 | 平均応答 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| random | HU | lag | 100 | 200 | +152.8 | [-200.2, +505.8] | 53% | 51% | 0 | 0.3s |
-| random | HU | maniac | 100 | 200 | +130.4 | [-266.5, +527.3] | 61% | 57% | 0 | 0.3s |
-| random | HU | rock | 100 | 200 | +47.7 | [-183.3, +278.7] | 28% | 27% | 0 | 0.3s |
-| random | HU | station | 100 | 200 | +434.5 | [-17.9, +886.9] | 54% | 49% | 0 | 0.4s |
-| random | HU | tag | 100 | 200 | +161.9 | [-133.5, +457.4] | 49% | 48% | 0 | 0.3s |
-| random | 6-max | lag | 100 | 600 | +352.9 | [+0.6, +705.2] | 26% | 18% | 0 | 0.3s |
-| random | 6-max | maniac | 100 | 600 | -146.5 | [-639.4, +346.4] | 59% | 48% | 0 | 0.3s |
-| random | 6-max | rock | 100 | 600 | +315.3 | [+55.6, +575.1] | 6% | 3% | 0 | 0.3s |
-| random | 6-max | station | 100 | 600 | +588.6 | [+67.5, +1109.8] | 35% | 6% | 0 | 0.4s |
-| random | 6-max | tag | 100 | 600 | +445.9 | [+150.2, +741.5] | 11% | 9% | 0 | 0.3s |
-| caller | HU | lag | 100 | 200 | +245.7 | [+14.5, +477.0] | 53% | 53% | 0 | 0.4s |
-| caller | HU | maniac | 100 | 200 | +110.0 | [-266.5, +486.6] | 70% | 70% | 0 | 0.4s |
-| caller | HU | rock | 100 | 200 | +189.1 | [+59.2, +319.0] | 25% | 25% | 0 | 0.4s |
-| caller | HU | station | 100 | 200 | +170.8 | [+40.2, +301.5] | 49% | 49% | 0 | 0.4s |
-| caller | HU | tag | 100 | 200 | +340.0 | [+143.9, +536.0] | 49% | 49% | 0 | 0.4s |
-| caller | 6-max | lag | 100 | 600 | +1745.6 | [+999.2, +2492.0] | 44% | 29% | 0 | 0.4s |
-| caller | 6-max | maniac | 100 | 600 | +1206.3 | [+605.8, +1806.9] | 86% | 79% | 0 | 0.4s |
-| caller | 6-max | rock | 100 | 600 | +210.0 | [-28.3, +448.3] | 8% | 4% | 0 | 0.4s |
-| caller | 6-max | station | 100 | 600 | +801.8 | [+400.9, +1202.8] | 62% | 4% | 0 | 0.4s |
-| caller | 6-max | tag | 100 | 600 | +1196.4 | [+600.7, +1792.1] | 16% | 12% | 0 | 0.4s |
-| rules | HU | lag | 100 | 200 | +59.3 | [+51.1, +67.4] | 49% | 49% | 0 | 0.3s |
-| rules | HU | maniac | 100 | 200 | +57.3 | [+44.8, +69.7] | 54% | 53% | 0 | 0.3s |
-| rules | HU | rock | 100 | 200 | +28.5 | [+20.3, +36.7] | 27% | 27% | 0 | 0.3s |
-| rules | HU | station | 100 | 200 | +57.4 | [+48.8, +66.1] | 50% | 50% | 0 | 0.4s |
-| rules | HU | tag | 100 | 200 | +59.8 | [+52.2, +67.3] | 50% | 50% | 0 | 0.3s |
-| rules | 6-max | lag | 100 | 600 | +26.7 | [-12.5, +65.8] | 47% | 41% | 0 | 0.3s |
-| rules | 6-max | maniac | 100 | 600 | -25.1 | [-82.8, +32.5] | 77% | 72% | 0 | 0.3s |
-| rules | 6-max | rock | 100 | 600 | -8.4 | [-22.8, +6.0] | 13% | 9% | 0 | 0.3s |
-| rules | 6-max | station | 100 | 600 | -9.9 | [-108.1, +88.3] | 43% | 21% | 0 | 0.3s |
-| rules | 6-max | tag | 100 | 600 | +14.3 | [+7.1, +21.5] | 25% | 22% | 0 | 0.4s |
-
-**EN:** After the improvements every persona beats the rule-based bot heads-up with the CI above
-zero, and `tag` beats it in 6-max too: a dedicated 1,000-seed run (6,000 hands) gives **+19.0 bb/100,
-95% CI [+3.1, +35.0]** (`bench/results/*final6max*`). Smaller runs swing by ±20 because single -100 bb
-coolers dominate them. Because those runs shared seeds with the tuning experiments, the unchanged
-agent was re-evaluated on seeds never used before (`--base-seed 100001`): **heads-up +60.6
-[+52.9, +68.3], 6-max +16.3 [+3.1, +29.4]** over 1,000 seeds — the result holds on fresh data. After a round of correctness fixes (bet sizing,
-identity flags, guidance, the rules bot's re-raise size; see `bench/EXPERIMENTS.md`) the final code was
-confirmed on a second unused seed set (`--base-seed 300001`, 1,000 seeds each): **heads-up +62.7
-[+48.7, +76.8], 6-max +12.9 [+1.3, +24.5]**. Heads-up needs 1,000 seeds too: one preflop all-in can
-swing a 100-seed result by 60 bb/100. Five further ideas (always taking the most likely action,
-range-aware equity, a preflop chart, opponent session statistics, another model) were each measured on
-1,000 seeds and none beat this default, so they are options only. A fixed rule set over the same
-features shows what the classifier adds: about +30 to +50 bb/100 heads-up, nothing six-handed.
-Against a real poker AI — [Slumbot](https://www.slumbot.com/), heads-up at 200 bb, 12,000 hands each via
-`pnpm bench:slumbot` — the Jev agent loses **-49.4 bb/100 [-65.8, -33.0]**, exactly like the heuristic
-(-49.4) and the rule-based bot (-50.4): the edge over simple bots does not carry over to a strong opponent. The
-improvements were all in what Jev is told — exact hand strength, equity vs. pot odds, whether its bet
-was raised, pot commitment, blind-stealing spots — plus conventional preflop raise sizes; the engine
-and the baselines are unchanged. Heads-up vs `random` remains inconclusive (random all-ins). `station`
-vs `caller` was exactly 0.0 before the changes because neither side ever raised; now the station
-persona raises occasionally.
-
-**JA:** 改善後は、全人格がルールベースの `rules` にヘッズアップで有意に勝ち、`tag` は 6-max でも勝っています
-(1,000 シード = 6,000 ハンドの専用 run で **+19.0 bb/100、95% CI [+3.1, +35.0]**。小さい run は -100bb のクーラー 1 回で ±20 揺れる)。
-これらの run はチューニングと同じシードを含むため、方策を変えずに未使用シード (`--base-seed 100001`) で
-再評価しました: **HU +60.6 [+52.9, +68.3]、6-max +16.3 [+3.1, +29.4]** (1,000 シード)。未使用データでも結論は変わりません。
-その後、正しさの修正 (ベット額、自席フラグ、指針文、`rules` のリレイズ額。詳細は `bench/EXPERIMENTS.md`) を入れ、
-最終コードを 2 つ目の未使用シード (`--base-seed 300001`、各 1,000 シード) で確認しました:
-**HU +62.7 [+48.7, +76.8]、6-max +12.9 [+1.3, +24.5]**。HU も 1,000 シードが必要です
-(プリフロップのオールイン 1 回で、100 シードの結果は 60 bb/100 動きます)。
-さらに 5 つの案 (常に最尤の行動、レンジ対応エクイティ、プリフロップのチャート化、相手プロファイル、別モデル) を
-各 1,000 シードで計測しましたが、どれも既定を上回らなかったためオプション扱いです。Jev と同じ特徴量だけを読む
-固定ルールとの比較では、分類器の上乗せは HU で +30〜+50 bb/100、6-max ではゼロでした。
-本格的なポーカー AI である [Slumbot](https://www.slumbot.com/) とのヘッズアップ (200bb、各 12,000 ハンド、`pnpm bench:slumbot`) では、
-Jev エージェントは **-49.4 bb/100 [-65.8, -33.0]** で負けました。ヒューリスティック (-49.4) とルールベース (-50.4) と同じ負け幅で、
-単純なボットに対する優位は強い相手には持ち越されません。
-改善はすべて「Jev に何を伝えるか」(正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、
-ポットコミット、スティールの機会) とプリフロップの標準的なレイズ額で、エンジンと対照群は変えていません。
-`random` とのヘッズアップは依然として結論が出ません (ランダムなオールイン)。
-
-## Architecture / アーキテクチャ
-
-**EN:**
-
-| Path | Description |
-| --- | --- |
-| `src/engine` | Dependency-free No-Limit Hold'em engine: cards, hand evaluation, betting state machine, side pots. |
-| `src/agents` | The `Agent` interface and the `random` / `caller` / `rules` baseline bots. |
-| `src/jev` | `JevAgent`, which implements `Agent` using TypeSafe Jev (`systemOne`), plus a deterministic mock backend for tests. |
-| `bench/` | The benchmark runner, statistics, and CLI that compare the Jev agent against the baselines. |
-
-**API key handling:** the TypeSafe API key is read from the `TYPESAFE_API_KEY` environment
-variable when running the benchmark. It stays local to your environment (an env var, never a
-committed file) and is never sent anywhere other than the TypeSafe API.
-
-**JA:**
-
-| パス | 説明 |
-| --- | --- |
-| `src/engine` | 依存ゼロのノーリミット・ホールデムエンジン。カード、役判定、ベッティングの状態機械、サイドポット。 |
-| `src/agents` | `Agent` インターフェースと `random` / `caller` / `rules` ベースラインボット。 |
-| `src/jev` | TypeSafe Jev (`systemOne`) を使って `Agent` を実装する `JevAgent`、およびテスト用の決定論的な mock バックエンド。 |
-| `bench/` | Jev エージェントを各ベースラインと比較するベンチマークのランナー・統計処理・CLI。 |
-
-**API キーの扱い:** ベンチマーク実行時、TypeSafe API キーは環境変数 `TYPESAFE_API_KEY` から
-読み込まれます。キーはローカル環境 (環境変数) にとどまり、リポジトリにコミットされることは
-なく、TypeSafe API 以外へ送信されることもありません。
-
-## License / ライセンス
-
-MIT — see [`LICENSE`](LICENSE).
+MIT — see `LICENSE`.

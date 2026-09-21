@@ -1,7 +1,7 @@
 # jev-poker 設計書 / Design Spec
 
 日付: 2026-09-19
-状態: 設計承認済み。spec 本文はユーザーレビュー待ち
+状態: 実装済み (実装計画: docs/superpowers/plans/2026-09-19-jev-poker.md)
 
 ## 1. 目的
 
@@ -36,12 +36,13 @@ TypeSafe API キーが必要。MIT ライセンスの OSS。
 を返さず 400 だった (2026-09-19 検証)。よってブラウザ直叩きは採らず、Cloudflare Pages
 Functions を薄いプロキシとする。
 
-- ブラウザは入力されたキーを `localStorage` に保存し、`POST /api/jev/systemone` に
+- ブラウザは入力されたキーを `localStorage` に保存し、`POST /api/jev/v1/systemone` に
   ヘッダ `X-TypeSafe-Key: <key>` を付けて送る。
 - Function はヘッダを `Authorization: Bearer <key>` に載せ替え、ボディをそのまま
   `https://api.typesafe.ai/v1/systemone` に転送し、ステータス・ボディをそのまま返す。
-- Function はキーとボディをログしない。許可するのは `POST /api/jev/systemone` と
-  `GET /api/jev/models` のみ。それ以外は 404。
+- Function はキーとボディをログしない。許可するのは `POST /api/jev/v1/systemone` と
+  `GET /api/jev/v1/models` のみ。それ以外は 404。
+  (パスが `/v1/...` なのは SDK が `baseURL + "/v1/systemone"` を叩くため。)
 - キーが無いリクエストは 401 を返す (上流に到達させない)。
 - 検討して却下した案: (B) ブラウザ直叩き。CORS で動かない可能性が高い。
   (C) ホスト側で 1 本のキーを Secret 保持。「プレイにはキー必要」と逆で運営者が全額負担。
@@ -55,6 +56,7 @@ jev-poker/
   src/ui/            React コンポーネント、状態管理、観戦モード
   src/i18n/          i18next 初期化、locales/ja.json、locales/en.json
   src/main.tsx       エントリ
+  src/proxy/handler.ts   プロキシの純ロジック (functions/ から import、単体テスト対象)
   functions/api/jev/[[path]].ts   Pages Functions プロキシ
   docs/superpowers/specs/          設計書
   LICENSE            MIT
@@ -112,6 +114,8 @@ interface LegalActions {
 - `table.startHand()` → `hand.legalActions(seat)` → `hand.act(seat, action)` の API。
   `act` は不正なアクションを投げる (UI/エージェント側が `legalActions` で先に整形する)。
 - 街の終了判定: 全アクティブプレイヤーの投入額が揃い、かつ最後のアグレッサーまで一周。
+- フルレイズ未満のショートオールインは、既にアクション済みのプレイヤーのレイズ権を
+  再オープンしない (コール/フォールドのみ)。
 - オールイン・サイドポット: 投入額ごとに層を分けて分配。端数チップはボタン左から配る。
 - ショーダウン: 7 枚から最良 5 枚役を評価 (21 通りの 5 枚組合せを全探索)。
 - キャッシュゲーム: スタック 0 の席はハンド終了時に `startingStack` で自動リバイ。
@@ -140,20 +144,30 @@ interface LegalActions {
   persona: { name, description },                 // 人格の説明文 (常に英語で送る)
   importantContext: [ "Only legal actions are offered.", "Amounts are in big blinds.", ... ],
   hand: {
-    street, holeCards, board,
-    madeHand: "high_card" | "pair" | "two_pair" | ... ,   // コードで判定
-    draws: ["flush_draw", "open_ended", "gutshot"],       // コードで判定
+    street, holeCards, board,                             // カードは "As Kd" 形式の文字列
+    madeHand?: "high_card" | "pair" | "two_pair" | ... ,  // フロップ以降。コードで判定
+    pairKind?: "overpair" | "top_pair" | ... ,            // madeHand が pair のときだけ
+    draws?: ["flush_draw", "open_ended", "gutshot"],      // フロップとターンだけ
     preflopStrength: "premium" | "strong" | "medium" | "weak" | "trash",  // 169 ハンド表
+    equityVsRandomPct,                                    // モンテカルロ (カードから決定論的にシード)
+    beatsPctOfHands?, board_texture?,                     // フロップ以降。全相手ハンドに対する現在の強さ
   },
   table: {
-    position: "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO",
-    playersInHand, playersToAct,
-    potBB, toCallBB, potOddsPct, effectiveStackBB,
-    stacksBB: [{ seat, stackBB, isAllIn, folded }],
+    position: "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO",  // ヘッズアップのボタンは "BTN"
+    playersInHand, opponentsNotAllIn,
+    potBB, toCallBB, potOddsPct, requiredEquityPct, effectiveStackBB, stackToPotRatio,
+    unopenedPot?,                                         // プリフロップのみ
+    raisesThisStreet, myBetWasRaisedThisStreet,
+    stacksBB: [{ seat, isMe?, stackBB, isAllIn, folded }],  // isMe は 3 席以上のときだけ
   },
-  history: [ { street, seat, action, amountBB } ]   // 今ハンドのみ
+  history: [ { street, seat, isMe?, action, amountBB? } ]   // 今ハンドのみ。オールインのベット/レイズは "allin"
 }
 ```
+
+この形と `importantContext` の文面はベンチマークで計測して決めたもの (`bench/EXPERIMENTS.md`)。
+席の識別フラグや指針文の 1 行で bb/100 が 10 以上動くので、変更するときは `pnpm bench` で測り直す。
+状態はエンジンの `PlayerView` (`src/engine/view.ts`) から作る。`buildFeatures` はスナップショットを
+`playerView` に通すだけなので、ゲーム外のハンド (Slumbot との対戦など) でも同じ判断コードが動く。
 
 ### 5.3 質問 (1 回の `systemOne`)
 
@@ -174,8 +188,10 @@ interface LegalActions {
 
 1. `action.probabilities` を人格の `variance` (0..1) で平滑化し (`variance=0` で argmax、
    `1` で確率通りサンプリング)、`seed` 付き PRNG で 1 つ選ぶ。
-2. `bet_or_raise` なら `sizing.score` (連続値) を額に写像し、`LegalActions` の
-   `minRaiseTo..maxRaiseTo` にクランプ。`check_or_call` は `canCheck ? check : call`。
+2. `bet_or_raise` なら `sizing.score` を四捨五入してルーブリックの段に写像する。プリフロップは
+   オープンが 2 / 2.5 / 3 / 3.5 / 4 BB、リレイズが直面しているレイズ額の同じ倍率。ポストフロップは
+   `currentBet + 割合 × (pot + toCall)` (割合は 最小 / 1/3 / 2/3 / 1 / 1.5、最上段はオールイン)。
+   最後に `minRaiseTo..maxRaiseTo` にクランプ。`check_or_call` は `canCheck ? check : call`。
 3. 結果と Jev の生の確率 (`probabilities`, `bluff_intent`) を `DecisionRecord` として履歴に残す。
 
 ### 5.5 失敗時
@@ -196,7 +212,8 @@ interface JevBackend { kind: 'typesafe' | 'mock'; systemOne(req, opts?): Promise
 - `mock`: 決定論的 (ハンド強度から確率を作る)。テストと開発用。
   本番 UI にはキー無しで遊ぶ導線を置かない。
 
-`JevAgent` は `src/agents/types.ts` の `Agent` インターフェースを実装する (ベンチマーク spec §3)。
+`src/agents/jev.ts` の `JevAgent` は、この `featuresFromView` + `decideAction` を `Agent` インターフェース
+(`src/agents/types.ts`、ベンチマーク spec §3) の後ろに置いたもの。ベンチマークはこれを測る。
 
 ## 6. 人格 (`src/jev/personas.ts`)
 
@@ -220,17 +237,20 @@ interface Persona {
 - `Table`: 席・カード・ポット・ボード。人間の手番ならアクションバー (Fold / Check-Call /
   Bet-Raise + 額スライダー)。CPU の手番は「思考中」表示。
 - 観戦モード (全席 CPU): 再生速度 (0.5x / 1x / 2x / 最速) と一時停止。
+  再生速度はプレイ中でもテーブルヘッダのセレクタから変更でき、テーブルを作り直すことなく
+  次の待ち時間から反映される。
 - ハンド履歴パネル: 各アクション。CPU は Jev の確率分布とブラフ意図を展開表示。
 - キー入力モーダル: 初回 / 401 時。「キーはこのブラウザの localStorage のみに保存され、
   当サイトのサーバーには保存されない」旨を表示。削除ボタン付き。
 - 状態管理は React の `useReducer` + エンジンのイベント購読。外部ライブラリ不要。
 - i18n: 全文字列を `locales/*.json` に置く。初期言語はブラウザ言語、切替は設定に保存。
 
-席の CPU 種別に `jev` のほか `random` / `caller` / `rules` を選べる (キー無しで動く CPU)。
+(未実装) `src/agents` の `random` / `caller` / `rules` は同じ `Agent` インターフェースなので、
+キー無しで動く CPU として席に座らせる余地がある。現在の UI から選べるのは Jev の人格だけ。
 
 ## 8. プロキシ (`functions/api/jev/[[path]].ts`)
 
-- `POST systemone`, `GET models` のみ許可。他は 404。
+- `POST /v1/systemone`, `GET /v1/models` のみ許可。他は 404。
 - `X-TypeSafe-Key` が無ければ 401 (JSON `{ error: "missing_api_key" }`)。
 - 上流へ: メソッド、`Content-Type`、ボディをそのまま。`Authorization: Bearer <key>`。
 - 上流から: ステータス、`Content-Type`、ボディをそのまま。
@@ -251,8 +271,9 @@ interface Persona {
 ## 10. デプロイ・運用
 
 - Cloudflare Pages: ビルド `pnpm build`、出力 `dist/`、Functions は `functions/` を自動検出。
-- ローカル: `pnpm dev` は Vite のみ (Jev 呼び出しは失敗する)。Functions 込みは
-  `pnpm dev:pages` (= `wrangler pages dev`) で起動する。
+- ローカル: `pnpm dev` は Vite の dev proxy が `/api/jev` を `api.typesafe.ai` に転送し、
+  Function と同じヘッダ載せ替えを行うので Jev 呼び出しも動く。Functions 込みの確認は
+  `pnpm dev:pages` (= `wrangler pages dev`)。
 - GitHub Actions: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`。
 - README: 概要、デモ手順、キーの取得と扱い、アーキテクチャ図、貢献方法 (英日併記)。
 

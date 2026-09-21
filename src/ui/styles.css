@@ -1,0 +1,1224 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #0f1a14;
+  color: #e8efe9;
+  /* Keep the scrollbar's width reserved: the centred layout must not jump sideways when a
+     vertical scrollbar comes and goes (the action bar mounting, the history growing). */
+  scrollbar-gutter: stable;
+}
+body {
+  margin: 0;
+}
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.muted {
+  color: #9fb3a6;
+  margin: 4px 0;
+}
+.error {
+  color: #ff8a80;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+button,
+select,
+input {
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2f4a3b;
+  background: #16261d;
+  color: inherit;
+}
+button {
+  background: #2e8b57;
+  border-color: #2e8b57;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.secondary {
+  background: transparent;
+}
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #7fd1a0;
+  text-decoration: underline;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.modal {
+  background: #16261d;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 480px;
+  width: 100%;
+}
+.modal input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0;
+}
+table.seats {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+table.seats th,
+table.seats td {
+  padding: 6px;
+  text-align: left;
+}
+table.seats input,
+table.seats select {
+  width: 100%;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+a {
+  color: #7fd1a0;
+}
+.table-screen {
+  /* One set of knobs for the felt: the media query below shrinks them for phones. */
+  --seat-width: 120px;
+  --seat-font: 0.85rem;
+  --card-width: 32px;
+  --card-height: 44px;
+  --board-card-width: 32px;
+  /* How far towards the middle a callout is thrown from its seat's centre. */
+  --callout-reach: 34px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+/* A grid item's default `min-width: auto` is its content's min-content width, and a `1fr`
+   track will not shrink below it. The action feed is a row of unbreakable entries, so its
+   total width became the column's minimum: measured at 820px, the whole table column sat
+   50px wider than the page and changed width on every action as entries came and went.
+   With a zero minimum the track keeps the width the layout gives it, in every grid variant
+   (normal, single column, recording mode). */
+.table-screen > * {
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .table-screen {
+    grid-template-columns: 1fr;
+  }
+}
+.side-tabs {
+  margin-bottom: 8px;
+}
+.side-tabs button {
+  flex: 1;
+}
+.table-header {
+  justify-content: space-between;
+}
+.badge {
+  background: #2f4a3b;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+.felt {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(ellipse at center, #26805260, transparent 68%),
+    radial-gradient(ellipse at center, #1f6b45, #123d28 70%);
+  border-radius: 50% / 45%;
+  border: 8px solid #3a2a1a;
+  margin: 24px 0;
+  /* A rail highlight outside, a cloth shadow inside: the felt reads as a real table. */
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.07),
+    inset 0 14px 40px rgba(0, 0, 0, 0.45),
+    inset 0 -14px 40px rgba(0, 0, 0, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: var(--seat-width);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  padding: 6px;
+  border: 2px solid transparent;
+  font-size: var(--seat-font);
+}
+.seat.acting {
+  border-color: #ffd54f;
+}
+/* A ring that breathes around whoever is on the clock. Transform and opacity only. */
+.seat.acting::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 13px;
+  border: 2px solid #ffd54f;
+  pointer-events: none;
+  animation: seat-pulse 1.3s ease-out infinite;
+}
+@keyframes seat-pulse {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+}
+.seat.folded {
+  opacity: 0.45;
+  filter: grayscale(0.85);
+}
+
+/* --- Callouts and seat effects -------------------------------------------- */
+/* The label is thrown towards the middle of the table, along the seat's own line to the
+   centre (`--in-x`/`--in-y`, set per seat). Below the seat there is nothing but the rail,
+   the action feed and — for a human — their own buttons; inwards there is always felt.
+   `--callout-reach` is short enough to keep the label nearer the seat than its chip stack
+   and clear of the recording bubble, which grows the opposite way. */
+.callout-spot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  pointer-events: none;
+  transform: translate(-50%, -50%)
+    translate(
+      calc(var(--in-x, 0) * var(--callout-reach, 34px)),
+      calc(var(--in-y, -1) * var(--callout-reach, 34px))
+    );
+}
+.callout {
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: callout-flash var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes callout-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+.callout-fold {
+  background: #7d8a84;
+  color: #0e1a14;
+}
+.callout-check {
+  background: #26a69a;
+  color: #03201c;
+}
+.callout-call {
+  background: #4285f4;
+  color: #fff;
+}
+.callout-bet,
+.callout-raise {
+  background: #f59426;
+  color: #291500;
+}
+.callout-allin {
+  background: #d63a30;
+  color: #fff;
+  font-size: 1.25rem;
+  animation: callout-allin var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes callout-allin {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  16% {
+    opacity: 1;
+    transform: scale(1.22);
+  }
+  26% {
+    transform: translateX(-4px) scale(1.08) rotate(-2deg);
+  }
+  36% {
+    transform: translateX(4px) scale(1.08) rotate(2deg);
+  }
+  46% {
+    transform: translateX(-3px) scale(1.04) rotate(-1deg);
+  }
+  56% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+.seat-flash {
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  border: 2px solid currentColor;
+  pointer-events: none;
+  animation: seat-flash var(--callout-ms, 900ms) ease-out forwards;
+}
+@keyframes seat-flash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.flash-fold {
+  color: #7d8a84;
+}
+.flash-check {
+  color: #26a69a;
+}
+.flash-call {
+  color: #4285f4;
+}
+.flash-bet,
+.flash-raise {
+  color: #f59426;
+}
+.flash-allin {
+  color: #d63a30;
+}
+.winner-glow {
+  position: absolute;
+  inset: -7px;
+  border-radius: 15px;
+  border: 2px solid #ffd54f;
+  box-shadow:
+    0 0 24px 6px rgba(255, 213, 79, 0.5),
+    inset 0 0 16px rgba(255, 213, 79, 0.35);
+  pointer-events: none;
+  z-index: 4;
+  animation: winner-glow var(--glow-ms, 1200ms) ease-out forwards;
+}
+@keyframes winner-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  30% {
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+/* --- Chips in flight ------------------------------------------------------ */
+/* One felt-sized layer that clips every flight. Each `.chip-fly` box is as big as the felt and
+   is translated by tens of percent, so unclipped it reached past the page, grew the scrollable
+   area for the length of the flight and made the whole layout twitch sideways. `clip` (unlike
+   `hidden`) makes no scroll container. The clip is exact on purpose: an `overflow-clip-margin`
+   was measured to count as scrollable overflow (a 390px page grew to 400px for a few frames
+   per bet), and a stack arriving at the rail is already fading out, so nothing visible is lost. */
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+  z-index: 5;
+}
+.chip-fly {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: chip-fly var(--chip-ms, 450ms) ease-out forwards;
+}
+/* The layer is felt-sized, so a percentage here is a percentage of the felt. */
+@keyframes chip-fly {
+  0% {
+    opacity: 1;
+    transform: translate(var(--dx, 0), var(--dy, 0));
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+.chip-fly-stack {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.seat-cards {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  min-height: calc(var(--card-height) + 2px);
+}
+.seat-name {
+  font-weight: 600;
+}
+/* --- Chips ---------------------------------------------------------------- */
+.chip-stack {
+  --chip-width: 26px;
+  --chip-height: 9px;
+  --chip-lift: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+.chip-stack-discs {
+  position: relative;
+  display: block;
+  width: var(--chip-width);
+  /* Room for the tallest stack the breakdown can hand us (six discs). */
+  height: calc(var(--chip-height) + 5 * var(--chip-lift));
+}
+.chip {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--chip-width);
+  height: var(--chip-height);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  transform: translateY(calc(var(--lift, 0) * var(--chip-lift) * -1));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+.chip-white {
+  background: linear-gradient(#fdfdfd, #d7dcd8);
+}
+.chip-red {
+  background: linear-gradient(#e2574c, #a5312a);
+}
+.chip-green {
+  background: linear-gradient(#3fa46a, #1d6b43);
+}
+.chip-black {
+  background: linear-gradient(#3b4450, #161b22);
+}
+.chip-purple {
+  background: linear-gradient(#9b6ede, #5c3899);
+}
+.chip-stack-amount {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff6d5;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+.bet-stack {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  pointer-events: none;
+}
+.seat-status {
+  min-height: 1.2em;
+  color: #ffd54f;
+}
+.dealer-button {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #c9cfca);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+  color: #111;
+  font-weight: 800;
+  font-size: 0.7rem;
+  line-height: 16px;
+  margin-right: 4px;
+}
+.board {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.board-cards {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.pot {
+  margin-top: 8px;
+  font-weight: 600;
+}
+.chip-stack.pot {
+  --chip-width: 34px;
+  --chip-height: 11px;
+  --chip-lift: 6px;
+}
+.chip-stack.pot .chip-stack-amount {
+  font-size: 0.95rem;
+}
+.card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--card-width);
+  height: var(--card-height);
+  border-radius: 4px;
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.card.red {
+  color: #c62828;
+}
+.card.back {
+  background: repeating-linear-gradient(45deg, #345, #345 4px, #123 4px, #123 8px);
+}
+.card.empty {
+  background: rgba(255, 255, 255, 0.08);
+}
+.board-cards .card {
+  width: var(--board-card-width);
+}
+/* A board card is only ever mounted when it is dealt, so it pops in on arrival. */
+.board-cards .card:not(.empty) {
+  animation: board-pop var(--flip-ms, 400ms) ease-out;
+}
+@keyframes board-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotateY(60deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+/* Showdown remounts the revealed hole cards, which is what makes them turn over. */
+.seat-cards.flipping .card {
+  animation: card-flip var(--flip-ms, 400ms) ease-out;
+}
+@keyframes card-flip {
+  from {
+    transform: rotateY(90deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+.your-turn {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #ffd54f;
+  border-radius: 10px;
+}
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}
+.action-bar input[type="number"] {
+  width: 90px;
+}
+.action-bar input[type="range"] {
+  flex: 1;
+  min-width: 120px;
+}
+.history {
+  background: #10201a;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 80vh;
+  overflow: auto;
+  font-size: 0.85rem;
+}
+.history ol {
+  padding-left: 18px;
+  margin: 0;
+}
+.history li.hand-start {
+  margin-top: 10px;
+  font-weight: 600;
+}
+.decision summary {
+  cursor: pointer;
+  color: #7fd1a0;
+}
+.decision summary .prefetched {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #23402f;
+  color: #ffd54f;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.prob-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 40px;
+  gap: 6px;
+  align-items: center;
+}
+.prob-row .bar {
+  display: block;
+  height: 8px;
+  background: #2e8b57;
+  border-radius: 4px;
+}
+.prob-row .chosen {
+  font-weight: 700;
+  color: #ffd54f;
+}
+.stats {
+  background: #10201a;
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.85rem;
+  max-height: 80vh;
+  overflow: auto;
+}
+.stats h3 {
+  margin: 0 0 8px;
+}
+.stats h4 {
+  margin: 12px 0 6px;
+  font-size: 0.85rem;
+  color: #9fb3a6;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.stats table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+.stats table th,
+.stats table td {
+  padding: 4px 6px;
+  text-align: right;
+  font-weight: 400;
+}
+.stats table th {
+  color: #9fb3a6;
+  font-size: 0.75rem;
+}
+.stats .name {
+  text-align: left;
+  font-weight: 600;
+}
+.stats tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+.stats .pos {
+  color: #7fd1a0;
+}
+.stats .neg {
+  color: #ff8a80;
+}
+.stack-bar {
+  display: block;
+  height: 3px;
+  margin-top: 2px;
+  margin-left: auto;
+  background: #2e8b57;
+  border-radius: 2px;
+}
+.stats-views {
+  margin-top: 12px;
+}
+.persona-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.persona {
+  border: 1px solid #2f4a3b;
+  border-radius: 12px;
+  padding: 12px;
+}
+.field.wide {
+  grid-column: 1 / -1;
+}
+textarea {
+  font: inherit;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #2f4a3b;
+  background: #16261d;
+  color: inherit;
+}
+button.danger {
+  border-color: #ff8a80;
+  color: #ff8a80;
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  background: #0f1a14;
+  border-top: 1px solid #2f4a3b;
+}
+.tab-bar button {
+  flex: 1;
+  min-height: 44px;
+}
+@media (max-width: 720px) {
+  .table-screen {
+    --seat-width: 88px;
+    --seat-font: 0.75rem;
+    --card-width: 24px;
+    --card-height: 34px;
+    --board-card-width: 28px;
+    --callout-reach: 26px;
+    gap: 8px;
+    /* Room for the fixed tab bar, plus the phone's own gesture area. */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .felt {
+    aspect-ratio: 3 / 4;
+    margin: 12px 0;
+    border-width: 5px;
+  }
+  .table-header button,
+  .table-header select {
+    min-height: 40px;
+  }
+  .stats,
+  .history {
+    max-height: none;
+  }
+  /* The action bar outranks the tabs: it stays put whichever panel is showing. */
+  .your-turn {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    z-index: 19;
+    margin: 0;
+    max-height: 45vh;
+    overflow: auto;
+    border-radius: 0;
+    background: #10201a;
+  }
+}
+
+/* --- Recording mode ------------------------------------------------------ */
+.showcase-bars {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+.showcase-bar {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.8em;
+  color: #9fb3a6;
+}
+.showcase-bar.chosen {
+  color: #ffd54f;
+  font-weight: 700;
+}
+.showcase-bar-track {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.showcase-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #2e8b57;
+  /* The width comes from Jev's probability; animate it as the next decision lands. */
+  transition: width 400ms ease-out;
+}
+.showcase-bar.chosen .showcase-bar-fill {
+  background: #ffd54f;
+}
+.showcase-bar-value {
+  font-variant-numeric: tabular-nums;
+}
+.showcase-persona {
+  font-weight: 700;
+}
+.showcase-action {
+  font-size: 1.1em;
+  letter-spacing: 0.04em;
+  color: #ffd54f;
+}
+.showcase-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8em;
+  color: #9fb3a6;
+}
+.showcase-unavailable {
+  color: #ff8a80;
+  font-size: 0.85em;
+}
+
+.showcase-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #2f4a3b;
+  background: rgba(8, 18, 13, 0.94);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  animation: showcase-in 180ms ease-out;
+}
+.showcase-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 6px solid transparent;
+  border-top-color: #2f4a3b;
+  transform: translateX(-50%);
+}
+.showcase-bubble .showcase-bars {
+  min-width: 180px;
+}
+.showcase-thinking {
+  color: #7fd1a0;
+  animation: showcase-pulse 1s ease-in-out infinite;
+}
+.showcase-bolt {
+  font-size: 1.4rem;
+  animation: showcase-pulse 300ms ease-out;
+}
+@keyframes showcase-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes showcase-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.showcase-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid #2f4a3b;
+  border-radius: 14px;
+  background: #10201a;
+}
+.showcase-panel .showcase-action {
+  font-size: 2rem;
+}
+.showcase-decision {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.showcase-who {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.showcase-who .showcase-persona {
+  font-size: 1.2rem;
+}
+.showcase-where {
+  color: #9fb3a6;
+  font-size: 0.85rem;
+}
+.showcase-summary {
+  margin: 0;
+  color: #e8efe9;
+}
+.showcase-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+.showcase-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.showcase-facts dt {
+  color: #9fb3a6;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.showcase-facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.showcase-waiting {
+  color: #9fb3a6;
+  margin: auto 0;
+  text-align: center;
+}
+.showcase-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #2f4a3b;
+  color: #7fd1a0;
+  font-size: 0.8rem;
+}
+
+.ticker {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border: 1px solid #2f4a3b;
+  border-radius: 14px;
+  background: #10201a;
+}
+.ticker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+.ticker-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: ticker-pop 320ms ease-out;
+}
+.ticker-label {
+  color: #9fb3a6;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+@keyframes ticker-pop {
+  from {
+    color: #ffd54f;
+    transform: translateY(-2px);
+  }
+  to {
+    color: inherit;
+    transform: none;
+  }
+}
+
+/* Recording mode: the table alone, sized for a 16:9 capture. The body class lets the
+   chrome around this component (the app's top bar) step out of the shot. */
+body.showcase {
+  background: #0b140f;
+}
+body.showcase .topbar {
+  display: none;
+}
+body.showcase .app {
+  max-width: none;
+  padding: 12px 16px;
+}
+.table-screen.showcase-mode {
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  align-items: stretch;
+}
+.table-screen.showcase-mode .felt {
+  margin: 12px 0;
+  max-height: 70vh;
+  aspect-ratio: 16 / 10;
+  margin-inline: auto;
+  width: min(100%, calc(70vh * 1.6));
+}
+.table-screen.showcase-mode .table-header {
+  justify-content: flex-end;
+  gap: 8px;
+  opacity: 0.55;
+  transition: opacity 200ms ease-out;
+}
+.table-screen.showcase-mode .table-header:hover,
+.table-screen.showcase-mode .table-header:focus-within {
+  opacity: 1;
+}
+.table-screen.showcase-mode .table-header > span:first-child {
+  margin-right: auto;
+  opacity: 0.8;
+}
+.showcase-exit {
+  min-width: 40px;
+}
+.showcase-bottom {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.showcase-bottom .ticker {
+  flex: 1;
+}
+.showcase-corner {
+  margin: 0;
+  color: #7fd1a0;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 900px) {
+  .table-screen.showcase-mode {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Action feed ---------------------------------------------------------- */
+.action-feed {
+  display: flex;
+  align-items: center;
+  /* Packed to the right: when the entries are wider than the strip, it is the oldest ones
+     that slide out of view on the left, never the action that just happened. */
+  justify-content: flex-end;
+  gap: 6px;
+  overflow: hidden;
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 6px 4px;
+  min-height: 34px;
+}
+.action-feed-entry {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  /* Each entry is mounted once, keyed by its effect id, so this runs on arrival only. */
+  animation: feed-in 260ms ease-out;
+}
+/* The strip reads right to left: the newest is loudest, the oldest is nearly gone. */
+.action-feed-entry:nth-last-child(n + 4) {
+  opacity: 0.7;
+}
+.action-feed-entry:nth-last-child(n + 6) {
+  opacity: 0.45;
+}
+.action-feed-entry:nth-last-child(n + 8) {
+  opacity: 0.25;
+}
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.feed-name {
+  font-weight: 800;
+}
+.feed-street {
+  background: transparent;
+  border: 1px dashed #4b6c5a;
+  color: #9fb3a6;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+.feed-fold {
+  background: #4a544f;
+  color: #cdd6d1;
+}
+.feed-check {
+  background: #1d6b64;
+  color: #d6fbf6;
+}
+.feed-call {
+  background: #2b57a8;
+  color: #e6efff;
+}
+.feed-bet,
+.feed-raise {
+  background: #b96c14;
+  color: #fff3e0;
+}
+.feed-allin {
+  background: #b32c23;
+  color: #fff;
+}
+@media (max-width: 720px) {
+  .action-feed {
+    margin-bottom: 6px;
+  }
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+/* Nothing slides, flips, shakes or pulses. The overlays still have to clear themselves,
+   so they keep a plain opacity fade over the same window instead of a movement. */
+@keyframes fade-out-hold {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chip-fly {
+    display: none;
+  }
+  .seat.acting::before,
+  .seat-cards.flipping .card,
+  .board-cards .card:not(.empty),
+  .showcase-bubble,
+  .showcase-thinking,
+  .showcase-bolt,
+  .ticker-value,
+  .action-feed-entry {
+    animation: none;
+  }
+  .showcase-bar-fill {
+    transition: none;
+  }
+  .callout,
+  .callout-allin {
+    transform: none;
+    animation: fade-out-hold var(--callout-ms, 900ms) linear forwards;
+  }
+  .seat-flash {
+    animation: fade-out-hold var(--callout-ms, 900ms) linear forwards;
+  }
+  .winner-glow {
+    animation: fade-out-hold var(--glow-ms, 1200ms) linear forwards;
+  }
+}

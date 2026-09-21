@@ -1,12 +1,18 @@
-import { parseCard } from '../../src/engine/cards.js';
-import type { Action, HistoryEntry, LegalActions, PlayerView, Street } from '../../src/engine/types.js';
+import {
+  type Action,
+  type HistoryEntry,
+  type LegalActions,
+  type PlayerView,
+  parseCard,
+  type Street,
+} from "../../src/engine";
 
 /** Slumbot's fixed game: heads-up no-limit hold'em, blinds 50/100, 200 bb stacks that reset every hand. */
 export const SMALL_BLIND = 50;
 export const BIG_BLIND = 100;
 export const STACK_SIZE = 20_000;
 
-const STREETS: readonly Street[] = ['preflop', 'flop', 'turn', 'river'];
+const STREETS: readonly Street[] = ["preflop", "flop", "turn", "river"];
 
 /** Our seat numbers in the `PlayerView` handed to agents: the client is always seat 0. */
 export const HERO_SEAT = 0;
@@ -33,11 +39,16 @@ export interface ReplayState {
   lastBetSize: number;
   folded: Pos | null;
   /** Every action in order, with the amount of a bet as the street bet-to total. */
-  actions: { street: number; pos: Pos; type: 'fold' | 'check' | 'call' | 'bet'; amount?: number }[];
+  actions: { street: number; pos: Pos; type: "fold" | "check" | "call" | "bet"; amount?: number }[];
 }
 
 function other(p: Pos): Pos {
   return p === 0 ? 1 : 0;
+}
+
+/** `undefined` (past the end of the string) is not a digit. */
+function isDigit(ch: string | undefined): boolean {
+  return ch !== undefined && ch >= "0" && ch <= "9";
 }
 
 /**
@@ -70,31 +81,31 @@ export function replay(action: string): ReplayState {
     s.lastBetSize = 0;
     s.toAct = 0;
     closes = false;
-    if (action[i] === '/') i += 1;
+    if (action[i] === "/") i += 1;
   };
 
   while (i < action.length) {
-    const c = action[i]!;
+    const c = action[i] as string;
     i += 1;
-    if (c === '/') continue; // trailing separators of an all-in run-out
+    if (c === "/") continue; // trailing separators of an all-in run-out
     const pos = s.toAct;
     if (pos === null) throw new Error(`action continues after the hand ended: ${action}`);
 
-    if (c === 'k') {
+    if (c === "k") {
       if (s.currentBet > s.onStreet[pos]) throw new Error(`illegal check in ${action}`);
-      s.actions.push({ street: s.street, pos, type: 'check' });
+      s.actions.push({ street: s.street, pos, type: "check" });
       if (closes) nextStreet();
       else {
         s.toAct = other(pos);
         closes = true;
       }
-    } else if (c === 'c') {
+    } else if (c === "c") {
       const owed = s.currentBet - s.onStreet[pos];
       if (owed <= 0) throw new Error(`illegal call in ${action}`);
       s.total[pos] += owed;
       s.onStreet[pos] = s.currentBet;
       s.lastBetSize = 0;
-      s.actions.push({ street: s.street, pos, type: 'call' });
+      s.actions.push({ street: s.street, pos, type: "call" });
       if (s.total[0] >= STACK_SIZE && s.total[1] >= STACK_SIZE) {
         s.toAct = null; // an all-in was called: the board runs out
         s.street = STREETS.length - 1;
@@ -103,20 +114,20 @@ export function replay(action: string): ReplayState {
         s.toAct = other(pos); // the small blind limped; the big blind has the option
         closes = true;
       }
-    } else if (c === 'f') {
-      s.actions.push({ street: s.street, pos, type: 'fold' });
+    } else if (c === "f") {
+      s.actions.push({ street: s.street, pos, type: "fold" });
       s.folded = pos;
       s.toAct = null;
-    } else if (c === 'b') {
+    } else if (c === "b") {
       const start = i;
-      while (i < action.length && action[i]! >= '0' && action[i]! <= '9') i += 1;
+      while (isDigit(action[i])) i += 1;
       if (i === start) throw new Error(`missing bet size in ${action}`);
       const betTo = Number(action.slice(start, i));
       s.lastBetSize = betTo - s.currentBet;
       s.total[pos] += betTo - s.onStreet[pos];
       s.onStreet[pos] = betTo;
       s.currentBet = betTo;
-      s.actions.push({ street: s.street, pos, type: 'bet', amount: betTo });
+      s.actions.push({ street: s.street, pos, type: "bet", amount: betTo });
       s.toAct = other(pos);
       closes = true;
     } else {
@@ -127,9 +138,15 @@ export function replay(action: string): ReplayState {
 }
 
 /** What the client sees and may do, in the engine's own types, so any `Agent` can play. */
-export function heroView(action: string, clientPos: Pos, holeCards: readonly string[], board: readonly string[]): { view: PlayerView; legal: LegalActions } {
+export function heroView(
+  action: string,
+  clientPos: Pos,
+  holeCards: readonly string[],
+  board: readonly string[],
+): { view: PlayerView; legal: LegalActions } {
   const s = replay(action);
-  if (s.toAct !== clientPos) throw new Error(`it is not the client's turn (action ${action}, client_pos ${clientPos})`);
+  if (s.toAct !== clientPos)
+    throw new Error(`it is not the client's turn (action ${action}, client_pos ${clientPos})`);
   const me = clientPos;
   const opp = other(me);
   const myStack = STACK_SIZE - s.total[me];
@@ -138,12 +155,18 @@ export function heroView(action: string, clientPos: Pos, holeCards: readonly str
   const seatOf = (p: Pos): number => (p === me ? HERO_SEAT : SLUMBOT_SEAT);
 
   const history: HistoryEntry[] = s.actions.map((a) => {
-    const street = STREETS[a.street]!;
+    const street = STREETS[a.street] as Street;
     const seat = seatOf(a.pos);
-    if (a.type === 'bet') {
+    if (a.type === "bet") {
       // A bet into an unbet street is a bet; anything over a standing bet (the blinds included) is a raise.
-      const raised = s.actions.some((b) => b !== a && b.street === a.street && b.type === 'bet' && s.actions.indexOf(b) < s.actions.indexOf(a));
-      const type = a.street === 0 || raised ? 'raise' : 'bet';
+      const raised = s.actions.some(
+        (b) =>
+          b !== a &&
+          b.street === a.street &&
+          b.type === "bet" &&
+          s.actions.indexOf(b) < s.actions.indexOf(a),
+      );
+      const type = a.street === 0 || raised ? "raise" : "bet";
       return { street, seat, action: { type, amount: a.amount ?? 0 } };
     }
     return { street, seat, action: { type: a.type } };
@@ -151,7 +174,7 @@ export function heroView(action: string, clientPos: Pos, holeCards: readonly str
 
   const view: PlayerView = {
     seat: HERO_SEAT,
-    street: STREETS[s.street]!,
+    street: STREETS[s.street] as Street,
     holeCards: holeCards.map(parseCard),
     board: board.map(parseCard),
     stacks: [
@@ -163,7 +186,7 @@ export function heroView(action: string, clientPos: Pos, holeCards: readonly str
     currentBet: s.currentBet,
     committedThisStreet: s.onStreet[me],
     bigBlind: BIG_BLIND,
-    position: me === 1 ? 'BTN' : 'BB',
+    position: me === 1 ? "BTN" : "BB",
     history,
   };
 
@@ -182,19 +205,21 @@ export function heroView(action: string, clientPos: Pos, holeCards: readonly str
 
 /** The `incr` string for an engine action. Anything the position does not allow degrades to a check or a call. */
 export function encodeAction(action: Action, legal: LegalActions): string {
-  const passive = legal.canCheck ? 'k' : 'c';
+  const passive = legal.canCheck ? "k" : "c";
   switch (action.type) {
-    case 'fold':
-      return legal.canFold ? 'f' : 'k';
-    case 'check':
-    case 'call':
+    case "fold":
+      return legal.canFold ? "f" : "k";
+    case "check":
+    case "call":
       return passive;
-    case 'allin':
+    case "allin":
       return legal.maxRaiseTo === null ? passive : `b${legal.maxRaiseTo}`;
-    case 'bet':
-    case 'raise': {
+    case "bet":
+    case "raise": {
       if (legal.minRaiseTo === null || legal.maxRaiseTo === null) return passive;
-      const amount = Math.round(Math.min(Math.max(action.amount, legal.minRaiseTo), legal.maxRaiseTo));
+      const amount = Math.round(
+        Math.min(Math.max(action.amount, legal.minRaiseTo), legal.maxRaiseTo),
+      );
       return `b${amount}`;
     }
   }

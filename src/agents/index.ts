@@ -1,20 +1,23 @@
-import { CallerAgent } from './caller.js';
-import { RandomAgent } from './random.js';
-import { RulesAgent } from './rules.js';
-import type { Agent, BaselineId } from './types.js';
+import { CallerAgent } from "./caller";
+import { RandomAgent } from "./random";
+import { RulesAgent } from "./rules";
+import type { Agent, BaselineId } from "./types";
 
-export type { Agent, BaselineId } from './types.js';
-export { RandomAgent } from './random.js';
-export { CallerAgent } from './caller.js';
-export { RulesAgent } from './rules.js';
+export { CallerAgent } from "./caller";
+export { RandomAgent } from "./random";
+export { RulesAgent } from "./rules";
+export type { Agent, BaselineId } from "./types";
 
 export function createAgent(id: BaselineId, seed: number): Agent {
   switch (id) {
-    case 'random':
+    case "random":
       return new RandomAgent(seed);
-    case 'caller':
+    case "caller":
       return new CallerAgent();
-    case 'rules':
-      return new RulesAgent(seed);
+    case "rules":
+      // Deterministic: the rules agent draws no random numbers, so it takes no seed.
+      return new RulesAgent();
   }
 }
+export { chartPreflop, HeuristicAgent } from "./heuristic";
+export { type AgentDecision, JevAgent, type JevAgentOptions } from "./jev";

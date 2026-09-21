@@ -1,46 +1,141 @@
-import { describe, expect, it } from 'vitest';
-import { awardPots, buildPots } from './pots.js';
+import { describe, expect, it } from "vitest";
+import { parseCards } from "./cards";
+import { evaluateBest } from "./evaluator";
+import { awardPots, buildPots } from "./pots";
 
-describe('buildPots', () => {
-  it('single pot when equal contributions', () => {
-    expect(buildPots(new Map([[0, 100], [1, 100]]), new Set())).toEqual([{ amount: 200, eligible: [0, 1] }]);
+const hand = (text: string) => evaluateBest(parseCards(text));
+
+describe("buildPots", () => {
+  it("makes a single pot when everyone contributed equally", () => {
+    const pots = buildPots(
+      new Map([
+        [0, 30],
+        [1, 30],
+        [2, 30],
+      ]),
+      new Set([0, 1, 2]),
+    );
+    expect(pots).toEqual([{ amount: 90, eligible: [0, 1, 2] }]);
   });
-  it('layers side pots by all-in level', () => {
-    // seat 0 all-in 50, seats 1 and 2 put 200 each
-    expect(buildPots(new Map([[0, 50], [1, 200], [2, 200]]), new Set())).toEqual([
-      { amount: 150, eligible: [0, 1, 2] }, { amount: 300, eligible: [1, 2] },
+
+  it("splits a side pot around a short all-in", () => {
+    // seat 1 is all in for 50; seats 0 and 2 put in 100 each
+    const pots = buildPots(
+      new Map([
+        [0, 100],
+        [1, 50],
+        [2, 100],
+      ]),
+      new Set([0, 1, 2]),
+    );
+    expect(pots).toEqual([
+      { amount: 150, eligible: [0, 1, 2] },
+      { amount: 100, eligible: [0, 2] },
     ]);
   });
-  it('folded seats contribute but are not eligible', () => {
-    // seat 2 folded after contributing 30; eligible layers for seats 0/1 merge into one pot
-    expect(buildPots(new Map([[0, 100], [1, 100], [2, 30]]), new Set([2]))).toEqual([
-      { amount: 230, eligible: [0, 1] },
-    ]);
+
+  it("gives folded players' chips to the pots they matched", () => {
+    // seat 2 folded after putting in 20
+    const pots = buildPots(
+      new Map([
+        [0, 100],
+        [1, 100],
+        [2, 20],
+      ]),
+      new Set([0, 1]),
+    );
+    expect(pots).toEqual([{ amount: 220, eligible: [0, 1] }]);
   });
-  it('folds an empty-eligible layer into the previous pot instead of losing chips', () => {
-    // seat 0 folded after contributing 100; seat 1 only put in 50, so the top 50 of
-    // seat 0's contribution has no eligible seat and must merge into the seat-1 pot.
-    expect(buildPots(new Map([[0, 100], [1, 50]]), new Set([0]))).toEqual([
-      { amount: 150, eligible: [1] },
+
+  it("returns an uncalled bet to the only eligible player via the last pot", () => {
+    // seat 0 bet 100, seat 1 folded after 20
+    const pots = buildPots(
+      new Map([
+        [0, 100],
+        [1, 20],
+      ]),
+      new Set([0]),
+    );
+    expect(pots).toEqual([{ amount: 120, eligible: [0] }]);
+  });
+
+  it("conserves chips with several all-in levels", () => {
+    const contributions = new Map([
+      [0, 10],
+      [1, 40],
+      [2, 90],
+      [3, 90],
     ]);
+    const pots = buildPots(contributions, new Set([0, 1, 2, 3]));
+    expect(pots.map((p) => p.amount)).toEqual([40, 90, 100]);
+    expect(pots.map((p) => p.eligible)).toEqual([
+      [0, 1, 2, 3],
+      [1, 2, 3],
+      [2, 3],
+    ]);
+    expect(pots.reduce((sum, p) => sum + p.amount, 0)).toBe(230);
+  });
+
+  it("keeps folded players' chips when no eligible player contributed", () => {
+    const pots = buildPots(
+      new Map([
+        [0, 0],
+        [1, 30],
+      ]),
+      new Set([0]),
+    );
+    expect(pots).toEqual([{ amount: 30, eligible: [0] }]);
   });
 });
-describe('awardPots', () => {
-  it('splits ties and gives odd chip by order', () => {
-    const pots = [{ amount: 201, eligible: [0, 1] }];
-    expect(awardPots(pots, () => 5, [1, 0])).toEqual([
-      { seat: 1, amount: 101, potIndex: 0 }, { seat: 0, amount: 100, potIndex: 0 },
+
+describe("awardPots", () => {
+  const values = new Map([
+    [0, hand("Ah Ad 2c 3d 9s Js Qs")], // pair of aces
+    [1, hand("Kh Kd 2c 3d 9s Js Qs")], // pair of kings
+    [2, hand("Ac Ks 2c 3d 9s Js Qs")], // high card
+  ]);
+  const scoreOf = (seat: number) => values.get(seat) as ReturnType<typeof hand>;
+
+  it("gives the whole pot to the best hand", () => {
+    const awards = awardPots([{ amount: 90, eligible: [0, 1, 2] }], scoreOf, [1, 2, 0]);
+    expect(awards).toEqual([{ seat: 0, amount: 90, potIndex: 0 }]);
+  });
+
+  it("awards side pots to the best eligible hand", () => {
+    const awards = awardPots(
+      [
+        { amount: 150, eligible: [0, 1, 2] },
+        { amount: 100, eligible: [1, 2] },
+      ],
+      scoreOf,
+      [1, 2, 0],
+    );
+    expect(awards).toEqual([
+      { seat: 0, amount: 150, potIndex: 0 },
+      { seat: 1, amount: 100, potIndex: 1 },
     ]);
   });
-  it('best eligible hand takes each pot', () => {
-    const pots = [{ amount: 150, eligible: [0, 1, 2] }, { amount: 300, eligible: [1, 2] }];
-    const rank = (s: number) => ({ 0: 9, 1: 3, 2: 7 } as Record<number, number>)[s]!;
-    expect(awardPots(pots, rank, [0, 1, 2])).toEqual([
-      { seat: 0, amount: 150, potIndex: 0 }, { seat: 2, amount: 300, potIndex: 1 },
+
+  it("splits ties and gives the odd chip to the first seat in order", () => {
+    const tie = new Map([
+      [0, hand("Ah Kd 2c 3d 9s Js Qs")],
+      [1, hand("Ad Kc 2c 3d 9s Js Qs")],
+    ]);
+    const awards = awardPots(
+      [{ amount: 101, eligible: [0, 1] }],
+      (seat) => tie.get(seat) as ReturnType<typeof hand>,
+      [1, 0],
+    );
+    expect(awards).toEqual([
+      { seat: 1, amount: 51, potIndex: 0 },
+      { seat: 0, amount: 50, potIndex: 0 },
     ]);
   });
-  it('throws when a pot has no eligible seats', () => {
-    const pots = [{ amount: 50, eligible: [] }];
-    expect(() => awardPots(pots, () => 1, [0, 1])).toThrow();
+
+  it("does not evaluate hands for an uncontested pot", () => {
+    const awards = awardPots([{ amount: 120, eligible: [0] }], () => {
+      throw new Error("should not evaluate");
+    }, [0]);
+    expect(awards).toEqual([{ seat: 0, amount: 120, potIndex: 0 }]);
   });
 });

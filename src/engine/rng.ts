@@ -1,3 +1,44 @@
+export interface Rng {
+  /** Uniform random number in [0, 1). */
+  next(): number;
+}
+
+/** mulberry32: small, fast, good enough for shuffling. */
+export function createRng(seed: number): Rng {
+  let state = seed >>> 0;
+  return {
+    next() {
+      state = (state + 0x6d2b79f5) >>> 0;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+  };
+}
+
+export function randomSeed(): number {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi !== undefined && typeof cryptoApi.getRandomValues === "function") {
+    const buffer = new Uint32Array(1);
+    cryptoApi.getRandomValues(buffer);
+    return buffer[0] ?? 0;
+  }
+  return Math.floor(Math.random() * 4294967296);
+}
+
+export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1));
+    const a = result[i] as T;
+    result[i] = result[j] as T;
+    result[j] = a;
+  }
+  return result;
+}
+
+/** Mixes integers into one 32-bit seed, so independent streams can be derived from parts. */
 export function hashSeed(...parts: number[]): number {
   let h = 0x9e3779b9;
   for (const p of parts) {
@@ -9,26 +50,7 @@ export function hashSeed(...parts: number[]): number {
   return h >>> 0;
 }
 
-export class Rng {
-  private s0: number; private s1: number;
-  constructor(seed: number) {
-    this.s0 = hashSeed(seed, 1) || 0x1234567; this.s1 = hashSeed(seed, 2) || 0x89abcdef;
-  }
-  /** xorshift128 (32-bit lanes) → [0,1) */
-  next(): number {
-    let s1 = this.s0; const s0 = this.s1;
-    this.s0 = s0;
-    s1 ^= s1 << 23; s1 ^= s1 >>> 17; s1 ^= s0; s1 ^= s0 >>> 26;
-    this.s1 = s1;
-    return ((this.s0 + this.s1) >>> 0) / 4294967296;
-  }
-  int(n: number): number { return Math.floor(this.next() * n); }
-  pick<T>(xs: readonly T[]): T { const v = xs[this.int(xs.length)]; if (v === undefined) throw new Error('pick from empty'); return v; }
-  shuffle<T>(xs: T[]): T[] {
-    for (let i = xs.length - 1; i > 0; i--) { const j = this.int(i + 1); [xs[i], xs[j]] = [xs[j]!, xs[i]!]; }
-    return xs;
-  }
-}
-export function randomSeed(): number {
-  const a = new Uint32Array(1); globalThis.crypto.getRandomValues(a); return a[0]!;
+/** Uniform integer in [0, n). */
+export function randomInt(rng: Rng, n: number): number {
+  return Math.floor(rng.next() * n);
 }

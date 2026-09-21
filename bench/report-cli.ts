@@ -1,10 +1,10 @@
-import { readFile, readdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { pickLatest, resultsToMarkdown } from './report.js';
-import { summarize } from './stats.js';
-import type { BenchResult } from './types.js';
+import { readdir, readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { pickLatest, resultsToMarkdown } from "./report";
+import { summarize } from "./stats";
+import type { BenchResult } from "./types";
 
-const RESULTS_DIR = fileURLToPath(new URL('results/', import.meta.url));
+const RESULTS_DIR = fileURLToPath(new URL("results/", import.meta.url));
 
 function fail(message: string): never {
   process.stderr.write(`${message}\n`);
@@ -14,7 +14,7 @@ function fail(message: string): never {
 async function defaultFiles(): Promise<string[]> {
   try {
     const entries = await readdir(RESULTS_DIR);
-    return entries.filter((name) => name.endsWith('.json')).map((name) => `${RESULTS_DIR}${name}`);
+    return entries.filter((name) => name.endsWith(".json")).map((name) => `${RESULTS_DIR}${name}`);
   } catch {
     return [];
   }
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
 
   const results: BenchResult[] = [];
   for (const file of files) {
-    const result = JSON.parse(await readFile(file, 'utf8')) as BenchResult;
+    const result = JSON.parse(await readFile(file, "utf8")) as BenchResult;
     // Recompute from the raw hands: the stored summary reflects the statistics code of its day.
     results.push({ ...result, summary: summarize(result.hands, result.config.format) });
   }

@@ -1,71 +1,96 @@
-type SeatId = number;
+import type { HandValue } from "./evaluator";
+import type { SeatId } from "./types";
 
-export interface Pot { amount: number; eligible: SeatId[] }
-
-function arraysEqual(a: readonly SeatId[], b: readonly SeatId[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
+export interface Pot {
+  readonly amount: number;
+  readonly eligible: readonly SeatId[];
 }
 
-export function buildPots(contributed: Map<SeatId, number>, folded: Set<SeatId>): Pot[] {
-  const seats = [...contributed.keys()].sort((a, b) => a - b);
-  const levels = [...new Set([...contributed.values()].filter((v) => v > 0))].sort((a, b) => a - b);
+export interface Award {
+  readonly seat: SeatId;
+  readonly amount: number;
+  readonly potIndex: number;
+}
 
-  const rawPots: Pot[] = [];
-  let prev = 0;
+/**
+ * Splits total contributions into main/side pots. Each distinct contribution level of an
+ * eligible (not folded) player closes a pot; chips above the highest eligible level
+ * (uncalled bets, folded players' excess) are added to the last pot so no chip is lost.
+ */
+export function buildPots(
+  contributions: ReadonlyMap<SeatId, number>,
+  eligible: ReadonlySet<SeatId>,
+): Pot[] {
+  const levels = [
+    ...new Set(
+      [...contributions]
+        .filter(([seat, amount]) => eligible.has(seat) && amount > 0)
+        .map(([, amount]) => amount),
+    ),
+  ].sort((a, b) => a - b);
+
+  const pots: Pot[] = [];
+  let previous = 0;
   for (const level of levels) {
     let amount = 0;
-    for (const seat of seats) {
-      const c = contributed.get(seat) ?? 0;
-      amount += Math.min(c, level) - Math.min(c, prev);
+    for (const [, contributed] of contributions) {
+      amount += Math.max(0, Math.min(contributed, level) - previous);
     }
-    if (amount > 0) {
-      const eligible = seats.filter((seat) => (contributed.get(seat) ?? 0) >= level && !folded.has(seat));
-      rawPots.push({ amount, eligible });
-    }
-    prev = level;
+    const eligibleSeats = [...eligible]
+      .filter((seat) => (contributions.get(seat) ?? 0) >= level)
+      .sort((a, b) => a - b);
+    pots.push({ amount, eligible: eligibleSeats });
+    previous = level;
   }
 
-  const merged: Pot[] = [];
-  for (const pot of rawPots) {
-    const last = merged[merged.length - 1];
-    if (pot.eligible.length === 0) {
-      // No one is eligible for this layer (e.g. every contributor at this level folded).
-      // The chips can't be awarded on their own; fold them into the previous pot.
-      if (!last) throw new Error('buildPots: no eligible seats for contributed chips and no prior pot to absorb them');
-      last.amount += pot.amount;
-    } else if (last && arraysEqual(last.eligible, pot.eligible)) {
-      last.amount += pot.amount;
+  let leftover = 0;
+  for (const [, contributed] of contributions) leftover += Math.max(0, contributed - previous);
+  if (leftover > 0) {
+    const last = pots[pots.length - 1];
+    if (last !== undefined) {
+      pots[pots.length - 1] = { amount: last.amount + leftover, eligible: last.eligible };
     } else {
-      merged.push({ amount: pot.amount, eligible: [...pot.eligible] });
+      const eligibleSeats = [...eligible].sort((a, b) => a - b);
+      pots.push({ amount: leftover, eligible: eligibleSeats });
     }
   }
-  return merged;
+  return pots;
 }
 
+/** Awards each pot to its best eligible hand(s). Odd chips go to the earliest seat in `oddChipOrder`. */
 export function awardPots(
   pots: readonly Pot[],
-  ranking: (seat: SeatId) => number,
+  scoreOf: (seat: SeatId) => HandValue,
   oddChipOrder: readonly SeatId[],
-): { seat: SeatId; amount: number; potIndex: number }[] {
-  const results: { seat: SeatId; amount: number; potIndex: number }[] = [];
-  pots.forEach((pot, potIndex) => {
-    if (pot.eligible.length === 0) throw new Error(`awardPots: pot ${potIndex} has no eligible seats`);
-    let maxRank = -Infinity;
-    for (const seat of pot.eligible) {
-      const r = ranking(seat);
-      if (r > maxRank) maxRank = r;
+): Award[] {
+  const awards: Award[] = [];
+  for (const [potIndex, pot] of pots.entries()) {
+    if (pot.amount <= 0 || pot.eligible.length === 0) continue;
+    let winners: SeatId[];
+    if (pot.eligible.length === 1) {
+      winners = [...pot.eligible];
+    } else {
+      let best = Number.NEGATIVE_INFINITY;
+      winners = [];
+      for (const seat of pot.eligible) {
+        const score = scoreOf(seat).score;
+        if (score > best) {
+          best = score;
+          winners = [seat];
+        } else if (score === best) {
+          winners.push(seat);
+        }
+      }
     }
-    const winners = pot.eligible.filter((seat) => ranking(seat) === maxRank);
-    const orderedWinners = oddChipOrder.filter((seat) => winners.includes(seat));
-    const leftover = winners.filter((seat) => !oddChipOrder.includes(seat));
-    const finalOrder = [...orderedWinners, ...leftover];
-
-    const share = Math.floor(pot.amount / finalOrder.length);
-    const remainder = pot.amount - share * finalOrder.length;
-    finalOrder.forEach((seat, i) => {
-      const amount = share + (i < remainder ? 1 : 0);
-      results.push({ seat, amount, potIndex });
-    });
-  });
-  return results;
+    const share = Math.floor(pot.amount / winners.length);
+    let remainder = pot.amount - share * winners.length;
+    const ordered = oddChipOrder.filter((seat) => winners.includes(seat));
+    for (const seat of winners) if (!ordered.includes(seat)) ordered.push(seat);
+    for (const seat of ordered) {
+      const extra = remainder > 0 ? 1 : 0;
+      remainder -= extra;
+      awards.push({ seat, amount: share + extra, potIndex });
+    }
+  }
+  return awards;
 }

@@ -1,131 +1,154 @@
-import { Hand } from './hand.js';
-import { Rng, hashSeed, randomSeed } from './rng.js';
-import type { GameConfig, PlayerView, Position, SeatId, TableEvent } from './types.js';
+import { createDeck } from "./cards";
+import { Hand } from "./hand";
+import { createRng, type Rng, randomSeed, shuffle } from "./rng";
+import {
+  type Action,
+  type GameConfig,
+  type GameEvent,
+  type HandSnapshot,
+  type LegalActions,
+  NO_ACTIONS,
+  type SeatId,
+  type SeatKind,
+} from "./types";
 
-/**
- * Position labels for a seat given the current button and the seats dealt
- * into the hand. Heads-up is special-cased (button = BTN, other = BB); for
- * 3+ players the button, small blind and big blind are labelled first, and
- * any remaining seats (in table order after the big blind) are labelled
- * from `UTG`, `MP`, `CO` — the seat immediately before the button is `CO`
- * once there are enough seats (5+) to need it.
- */
-export function positionOf(seat: SeatId, button: SeatId, activeSeats: SeatId[]): Position {
-  const seats = [...activeSeats].sort((a, b) => a - b);
-  const n = seats.length;
-  if (n === 2) return seat === button ? 'BTN' : 'BB';
-
-  const pivot = Math.max(0, seats.findIndex((s) => s > button));
-  const order = [...seats.slice(pivot), ...seats.slice(0, pivot)]; // starts left of button, button last
-  const idx = order.indexOf(seat);
-  if (idx === n - 1) return 'BTN';
-  if (idx === 0) return 'SB';
-  if (idx === 1) return 'BB';
-
-  const remaining = n - 3;
-  const labels: Position[] =
-    remaining === 1 ? ['UTG'] : remaining === 2 ? ['UTG', 'CO'] : ['UTG', 'MP', 'CO'];
-  const label = labels[idx - 2];
-  if (label === undefined) throw new Error(`positionOf: cannot label seat ${seat} at index ${idx} of ${n}`);
-  return label;
+export interface TableSeat {
+  readonly id: SeatId;
+  readonly name: string;
+  readonly kind: SeatKind;
+  readonly personaId?: string;
+  stack: number;
 }
 
-/**
- * Owns the seats/stacks/button across many hands of `Hand`, applying
- * per-hand RNG seeding, button rotation and (for cash games) rebuys of
- * busted seats. Emits every `Hand` event plus its own `SeatRebought`.
- */
+export type EventListener = (event: GameEvent) => void;
+
+export interface TableOptions {
+  /** Clock used for blind schedules; defaults to Date.now. */
+  now?: () => number;
+}
+
 export class Table {
-  private readonly config: GameConfig;
-  private readonly seed: number;
-  private readonly startedAt = Date.now();
-  private readonly listeners = new Set<(e: TableEvent) => void>();
-  private readonly seatStacks = new Map<SeatId, number>();
+  readonly config: GameConfig;
+  readonly seats: TableSeat[];
+  /** Number of completed hands; also the next hand's number. */
+  handNumber = 0;
+  button: SeatId;
 
-  private _handNumber = 0;
-  private _button: SeatId;
   private hand: Hand | null = null;
-  private dealtSeats: SeatId[] = [];
+  private readonly rng: Rng;
+  private readonly listeners = new Set<EventListener>();
+  private readonly now: () => number;
+  private readonly startedAt: number;
 
-  constructor(config: GameConfig) {
-    this.config = config;
-    this.seed = config.seed ?? randomSeed();
-    for (const s of config.seats) this.seatStacks.set(s.id, config.startingStack);
-
-    const ids = [...config.seats.map((s) => s.id)].sort((a, b) => a - b);
-    const firstButton = ids.find((id) => (this.seatStacks.get(id) ?? 0) > 0);
-    if (firstButton === undefined) throw new Error('Table needs at least one seat with chips');
-    this._button = firstButton;
-  }
-
-  get handNumber(): number { return this._handNumber; }
-  get button(): SeatId { return this._button; }
-
-  on(listener: (e: TableEvent) => void): () => void {
-    this.listeners.add(listener);
-    return () => { this.listeners.delete(listener); };
-  }
-
-  private readonly emit = (e: TableEvent): void => {
-    for (const listener of this.listeners) listener(e);
-  };
-
-  stacks(): { seat: SeatId; stack: number }[] {
-    return [...this.config.seats.map((s) => s.id)]
-      .sort((a, b) => a - b)
-      .map((seat) => ({ seat, stack: this.seatStacks.get(seat) ?? 0 }));
-  }
-
-  currentHand(): Hand | null { return this.hand; }
-
-  startHand(): Hand {
-    if (this.hand && !this.hand.isOver) throw new Error('cannot start a new hand: the current hand is not over');
-
-    if (this.hand) {
-      for (const { seat, stack } of this.hand.finalStacks()) this.seatStacks.set(seat, stack);
-      if (this.config.format === 'cash') {
-        for (const [seat, stack] of this.seatStacks) {
-          if (stack === 0) {
-            this.seatStacks.set(seat, this.config.startingStack);
-            this.emit({ type: 'SeatRebought', seat, amount: this.config.startingStack });
-          }
-        }
-      }
-      this.rotateButton();
+  constructor(config: GameConfig, options: TableOptions = {}) {
+    if (config.seats.length < 2 || config.seats.length > 6) {
+      throw new Error("a table needs 2 to 6 seats");
     }
+    if (new Set(config.seats.map((s) => s.id)).size !== config.seats.length) {
+      throw new Error("seat ids must be unique");
+    }
+    if (!Number.isInteger(config.startingStack) || config.startingStack <= 0) {
+      throw new Error("starting stack must be a positive integer");
+    }
+    this.config = config;
+    this.seats = [...config.seats]
+      .sort((a, b) => a.id - b.id)
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        kind: s.kind,
+        personaId: s.personaId,
+        stack: config.startingStack,
+      }));
+    this.rng = createRng(config.seed ?? randomSeed());
+    this.now = options.now ?? (() => Date.now());
+    this.startedAt = this.now();
+    const first = this.seats[Math.floor(this.rng.next() * this.seats.length)] as TableSeat;
+    this.button = first.id;
+  }
 
-    this._handNumber += 1;
-    const seatsForHand = [...this.config.seats.map((s) => s.id)]
-      .sort((a, b) => a - b)
-      .filter((id) => (this.seatStacks.get(id) ?? 0) > 0)
-      .map((id) => ({ seat: id, stack: this.seatStacks.get(id) ?? 0 }));
-    this.dealtSeats = seatsForHand.map((s) => s.seat);
+  on(listener: EventListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
 
-    const rng = new Rng(hashSeed(this.seed, this._handNumber));
-    const blinds = this.config.blinds.blindsFor(this._handNumber, Date.now() - this.startedAt);
-    this.hand = new Hand(
-      { seats: seatsForHand, button: this._button, blinds, rng, handNumber: this._handNumber },
-      this.emit,
-    );
+  get currentHand(): Hand | null {
     return this.hand;
   }
 
-  view(seat: SeatId): PlayerView {
-    if (!this.hand || this.hand.isOver) throw new Error('no hand in progress');
-    return { ...this.hand.view(seat), position: positionOf(seat, this._button, this.dealtSeats) };
+  snapshot(): HandSnapshot | null {
+    return this.hand?.snapshot() ?? null;
   }
 
-  private rotateButton(): void {
-    const ids = [...this.config.seats.map((s) => s.id)].sort((a, b) => a - b);
-    const n = ids.length;
-    const startIdx = ids.indexOf(this._button);
-    for (let i = 1; i <= n; i++) {
-      const candidate = ids[(startIdx + i) % n];
-      if (candidate !== undefined && (this.seatStacks.get(candidate) ?? 0) > 0) {
-        this._button = candidate;
-        return;
+  legalActions(seat: SeatId): LegalActions {
+    return this.hand?.legalActions(seat) ?? NO_ACTIONS;
+  }
+
+  startHand(): HandSnapshot {
+    if (this.hand !== null && !this.hand.isComplete)
+      throw new Error("a hand is already in progress");
+    const playing = this.seats.filter((s) => s.stack > 0);
+    if (playing.length < 2) throw new Error("game over: fewer than 2 seats have chips");
+    if (this.handNumber > 0) this.button = this.nextButton(playing);
+    const blinds = this.config.blinds.blindsFor(this.handNumber, this.now() - this.startedAt);
+    const hand = new Hand({
+      handNumber: this.handNumber,
+      button: this.button,
+      seats: playing.map((s) => ({ seat: s.id, stack: s.stack })),
+      blinds,
+      deck: shuffle(createDeck(), this.rng),
+    });
+    this.hand = hand;
+    this.emit({
+      type: "HandStarted",
+      handNumber: this.handNumber,
+      button: this.button,
+      blinds,
+      seats: playing.map((s) => ({ id: s.id, stack: s.stack })),
+    });
+    for (const event of hand.events) this.emit(event);
+    if (hand.isComplete) this.finishHand(hand);
+    return hand.snapshot();
+  }
+
+  act(seat: SeatId, action: Action): GameEvent[] {
+    const hand = this.hand;
+    if (hand === null || hand.isComplete) throw new Error("no hand in progress");
+    const events = hand.act(seat, action);
+    for (const event of events) this.emit(event);
+    if (hand.isComplete) this.finishHand(hand);
+    return events;
+  }
+
+  private nextButton(playing: readonly TableSeat[]): SeatId {
+    const ids = playing.map((s) => s.id);
+    return ids.find((id) => id > this.button) ?? (ids[0] as SeatId);
+  }
+
+  private finishHand(hand: Hand): void {
+    for (const { id, stack } of hand.stacks()) {
+      const seat = this.seats.find((s) => s.id === id);
+      if (seat !== undefined) seat.stack = stack;
+    }
+    if (this.config.format === "cash") {
+      for (const seat of this.seats) {
+        if (seat.stack === 0) {
+          seat.stack = this.config.startingStack;
+          this.emit({ type: "SeatRebought", seat: seat.id, amount: seat.stack });
+        }
       }
     }
-    throw new Error('no seats with chips remain');
+    this.emit({
+      type: "HandEnded",
+      handNumber: this.handNumber,
+      stacks: this.seats.map((s) => ({ id: s.id, stack: s.stack })),
+    });
+    this.handNumber++;
+  }
+
+  private emit(event: GameEvent): void {
+    for (const listener of this.listeners) listener(event);
   }
 }

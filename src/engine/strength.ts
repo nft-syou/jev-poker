@@ -1,76 +1,134 @@
-import { rankToChar, type Card } from './cards.js';
-import { CATEGORY_ORDER, evaluate7, straightHigh, type HandCategory } from './evaluate.js';
+import { type Card, RANKS, type Rank, rankChar, SUITS } from "./cards";
+import { evaluateBest, HAND_CATEGORIES, type HandCategory } from "./evaluator";
 
-export type PreflopStrength = 'premium' | 'strong' | 'medium' | 'weak' | 'trash';
+export type PreflopStrength = "premium" | "strong" | "medium" | "weak" | "trash";
 
-const PREMIUM = ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'AKo'];
-const STRONG = ['TT', '99', 'AQs', 'AQo', 'AJs', 'KQs', 'ATs', 'KJs'];
+const PREMIUM = ["AA", "KK", "QQ", "JJ", "AKs", "AKo"];
+const STRONG = ["TT", "99", "AQs", "AQo", "AJs", "KQs", "ATs", "KJs"];
 const MEDIUM = [
-  '88', '77', '66', 'AJo', 'KQo', 'QJs', 'JTs', 'T9s', 'KTs', 'QTs',
-  'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'ATo', 'KJo',
+  "88",
+  "77",
+  "66",
+  "AJo",
+  "KQo",
+  "QJs",
+  "JTs",
+  "T9s",
+  "KTs",
+  "QTs",
+  "A9s",
+  "A8s",
+  "A7s",
+  "A6s",
+  "A5s",
+  "A4s",
+  "A3s",
+  "A2s",
+  "ATo",
+  "KJo",
 ];
 const WEAK = [
-  '55', '44', '33', '22',
-  '98s', '87s', '76s', '65s', '54s', 'J9s', 'T8s', '97s', '86s',
-  'A9o', 'A8o', 'A7o', 'A6o', 'A5o', 'A4o', 'A3o', 'A2o',
-  'KTo', 'QJo', 'QTo', 'JTo', 'K9s', 'Q9s', 'J8s',
+  "55",
+  "44",
+  "33",
+  "22",
+  "98s",
+  "87s",
+  "76s",
+  "65s",
+  "54s",
+  "J9s",
+  "T8s",
+  "97s",
+  "86s",
+  "A9o",
+  "A8o",
+  "A7o",
+  "A6o",
+  "A5o",
+  "A4o",
+  "A3o",
+  "A2o",
+  "KTo",
+  "QJo",
+  "QTo",
+  "JTo",
+  "K9s",
+  "Q9s",
+  "J8s",
 ];
 
 const TIERS: Record<string, PreflopStrength> = {};
-for (const k of PREMIUM) TIERS[k] = 'premium';
-for (const k of STRONG) TIERS[k] = 'strong';
-for (const k of MEDIUM) TIERS[k] = 'medium';
-for (const k of WEAK) TIERS[k] = 'weak';
+for (const k of PREMIUM) TIERS[k] = "premium";
+for (const k of STRONG) TIERS[k] = "strong";
+for (const k of MEDIUM) TIERS[k] = "medium";
+for (const k of WEAK) TIERS[k] = "weak";
 
 function preflopKey(hole: readonly Card[]): string {
   const [a, b] = hole;
-  if (!a || !b) throw new Error('preflopKey needs 2 hole cards');
+  if (!a || !b) throw new Error("preflopKey needs 2 hole cards");
   const hi = a.rank >= b.rank ? a : b;
   const lo = a.rank >= b.rank ? b : a;
-  if (hi.rank === lo.rank) return rankToChar(hi.rank) + rankToChar(lo.rank);
+  if (hi.rank === lo.rank) return rankChar(hi.rank) + rankChar(lo.rank);
   const suited = hi.suit === lo.suit;
-  return rankToChar(hi.rank) + rankToChar(lo.rank) + (suited ? 's' : 'o');
+  return rankChar(hi.rank) + rankChar(lo.rank) + (suited ? "s" : "o");
 }
 
 export function preflopStrength(hole: readonly Card[]): PreflopStrength {
-  return TIERS[preflopKey(hole)] ?? 'trash';
+  return TIERS[preflopKey(hole)] ?? "trash";
 }
 
 export function madeHand(hole: readonly Card[], board: readonly Card[]): HandCategory {
-  return evaluate7([...hole, ...board]).category;
+  return evaluateBest([...hole, ...board]).category;
 }
 
-export type Draw = 'flush_draw' | 'open_ended' | 'gutshot';
+export type Draw = "flush_draw" | "open_ended" | "gutshot";
 
-export function draws(hole: readonly Card[], board: readonly Card[]): Draw[] {
-  if (board.length !== 3 && board.length !== 4) return [];
-  const combined = [...hole, ...board];
-  const category = evaluate7(combined).category;
-  const categoryIndex = CATEGORY_ORDER.indexOf(category);
-  const result: Draw[] = [];
+export function detectDraws(hole: readonly Card[], board: readonly Card[]): Draw[] {
+  if (board.length < 3 || board.length > 4) return [];
+  const all = [...hole, ...board];
+  const draws: Draw[] = [];
 
-  if (categoryIndex < CATEGORY_ORDER.indexOf('flush')) {
-    const suitCounts = new Map<string, number>();
-    for (const c of combined) suitCounts.set(c.suit, (suitCounts.get(c.suit) ?? 0) + 1);
-    if ([...suitCounts.values()].some((n) => n === 4)) result.push('flush_draw');
+  for (const suit of SUITS) {
+    const total = all.filter((c) => c.suit === suit).length;
+    const inHole = hole.filter((c) => c.suit === suit).length;
+    if (total === 4 && inHole >= 1) draws.push("flush_draw");
   }
 
-  if (categoryIndex < CATEGORY_ORDER.indexOf('straight')) {
-    const rankSet = new Set(combined.map((c) => c.rank));
-    const outs = new Set<number>();
-    for (let r = 2; r <= 14; r++) {
-      const withOut = [...rankSet, r];
-      const distinctDesc = [...new Set(withOut)].sort((a, b) => b - a);
-      if (straightHigh(distinctDesc) !== null) outs.add(r);
-    }
-    if (outs.size >= 2) result.push('open_ended');
-    else if (outs.size === 1) result.push('gutshot');
+  const made = evaluateBest(all);
+  const straightOrBetter =
+    HAND_CATEGORIES.indexOf(made.category) >= HAND_CATEGORIES.indexOf("straight");
+  if (!straightOrBetter) {
+    const present = new Set<number>(all.map((c) => c.rank));
+    const boardPresent = new Set<number>(board.map((c) => c.rank));
+    const boardOnlyOuts = new Set<number>(
+      RANKS.filter((rank) => !boardPresent.has(rank) && hasStraight([...boardPresent, rank])),
+    );
+    const outs = RANKS.filter(
+      (rank) => !present.has(rank) && hasStraight([...present, rank]) && !boardOnlyOuts.has(rank),
+    );
+    if (outs.length >= 2) draws.push("open_ended");
+    else if (outs.length === 1) draws.push("gutshot");
   }
-
-  return result.sort();
+  return draws;
 }
 
-export type PairKind = 'overpair' | 'top_pair' | 'middle_pair' | 'bottom_pair' | 'underpair' | 'board_pair';
+function hasStraight(ranks: readonly number[]): boolean {
+  const set = new Set(ranks);
+  if (set.has(14)) set.add(1);
+  for (let high = 14; high >= 5; high--) {
+    if ([0, 1, 2, 3, 4].every((d) => set.has(high - d))) return true;
+  }
+  return false;
+}
+
+export type PairKind =
+  | "overpair"
+  | "top_pair"
+  | "middle_pair"
+  | "bottom_pair"
+  | "underpair"
+  | "board_pair";
 
 /**
  * How good a one-pair hand is relative to the board. Only meaningful when
@@ -81,16 +139,17 @@ export type PairKind = 'overpair' | 'top_pair' | 'middle_pair' | 'bottom_pair' |
  * - board_pair: the pair is on the board, the hole cards add nothing
  */
 export function pairKind(hole: readonly Card[], board: readonly Card[]): PairKind | null {
-  if (board.length < 3 || madeHand(hole, board) !== 'pair') return null;
+  if (board.length < 3 || madeHand(hole, board) !== "pair") return null;
   const [a, b] = hole;
   if (!a || !b) return null;
   const boardRanks = [...new Set(board.map((c) => c.rank))].sort((x, y) => y - x);
-  const top = boardRanks[0]!;
-  const bottom = boardRanks[boardRanks.length - 1]!;
-  if (a.rank === b.rank) return a.rank > top ? 'overpair' : 'underpair';
+  // The board has at least three cards here, so both ends exist.
+  const top = boardRanks[0] as Rank;
+  const bottom = boardRanks[boardRanks.length - 1] as Rank;
+  if (a.rank === b.rank) return a.rank > top ? "overpair" : "underpair";
   const paired = [a, b].find((c) => board.some((bc) => bc.rank === c.rank));
-  if (!paired) return 'board_pair';
-  if (paired.rank === top) return 'top_pair';
-  if (paired.rank === bottom) return 'bottom_pair';
-  return 'middle_pair';
+  if (!paired) return "board_pair";
+  if (paired.rank === top) return "top_pair";
+  if (paired.rank === bottom) return "bottom_pair";
+  return "middle_pair";
 }

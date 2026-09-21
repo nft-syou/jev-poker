@@ -4,6 +4,13 @@
 状態: 設計承認済み (セクション 1 はユーザー承認、2 以降はセルフレビュー)
 前提: `2026-09-19-jev-poker-design.md` (以下「メイン spec」)
 
+> 移植後の注記 (2026-09-21): この設計は独自エンジンを持つ `benchmark` ブランチで実装され、その後
+> ゲーム本体 (`main`) のエンジンと Jev モジュールの上に移植された。以下の本文は当時のままで、
+> 名前の対応は次のとおり: `src/engine/evaluate.ts` → `evaluator.ts`、`Table.view(seat)` →
+> `playerView(snapshot, seat, actions)` (`src/engine/view.ts`)、`src/jev/compress.ts` → `features.ts`、
+> `src/jev/agent.ts` → `src/jev/decide.ts` + `src/agents/jev.ts`、Node 用バックエンドは `bench/backend.ts`。
+> 計測結果と経緯は `bench/RESULTS.md` と `bench/EXPERIMENTS.md`。
+
 ## 1. 目的
 
 Jev で作る CPU プレイヤーが、古典的な対照群 CPU (ランダム / 常にコール / ルールベース)

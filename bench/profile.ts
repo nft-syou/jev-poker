@@ -1,5 +1,5 @@
-import type { OpponentStats } from '../src/jev/compress.js';
-import type { HandAction } from './types.js';
+import type { OpponentStats } from "../src/jev/features";
+import type { HandAction } from "./types";
 
 interface Tally {
   hands: number;
@@ -24,12 +24,18 @@ export class ProfileTracker {
   record(actions: readonly HandAction[], opponentSeats: ReadonlyMap<number, string>): void {
     for (const [seat, agentId] of opponentSeats) {
       const mine = actions.filter((a) => a.seat === seat);
-      const pre = mine.filter((a) => a.street === 'preflop');
-      const post = mine.filter((a) => a.street !== 'preflop');
-      const aggressive = (t: HandAction['type']) => t === 'bet' || t === 'raise' || t === 'allin';
-      const t = this.tallies.get(agentId) ?? { hands: 0, vpip: 0, pfr: 0, postflopActions: 0, postflopAggressive: 0 };
+      const pre = mine.filter((a) => a.street === "preflop");
+      const post = mine.filter((a) => a.street !== "preflop");
+      const aggressive = (t: HandAction["type"]) => t === "bet" || t === "raise" || t === "allin";
+      const t = this.tallies.get(agentId) ?? {
+        hands: 0,
+        vpip: 0,
+        pfr: 0,
+        postflopActions: 0,
+        postflopAggressive: 0,
+      };
       t.hands += 1;
-      if (pre.some((a) => a.type === 'call' || aggressive(a.type))) t.vpip += 1;
+      if (pre.some((a) => a.type === "call" || aggressive(a.type))) t.vpip += 1;
       if (pre.some((a) => aggressive(a.type))) t.pfr += 1;
       t.postflopActions += post.length;
       t.postflopAggressive += post.filter((a) => aggressive(a.type)).length;
@@ -45,7 +51,8 @@ export class ProfileTracker {
       hands: t.hands,
       vpipPct: Math.round((100 * t.vpip) / t.hands),
       pfrPct: Math.round((100 * t.pfr) / t.hands),
-      postflopAggressionPct: t.postflopActions === 0 ? 0 : Math.round((100 * t.postflopAggressive) / t.postflopActions),
+      postflopAggressionPct:
+        t.postflopActions === 0 ? 0 : Math.round((100 * t.postflopAggressive) / t.postflopActions),
     };
   }
 }

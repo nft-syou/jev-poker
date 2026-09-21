@@ -1,8 +1,8 @@
-import type { Format, HandRecord, JevSummary, OpponentSummary } from './types.js';
+import type { Format, HandRecord, JevSummary, OpponentSummary } from "./types";
 
 /** Number of seats (= rotations per seed) for a table format. Kept private; bench/matchups.ts owns the canonical version. */
 function seatCount(format: Format): number {
-  return format === 'hu' ? 2 : 6;
+  return format === "hu" ? 2 : 6;
 }
 
 /**
@@ -13,12 +13,12 @@ function seatCount(format: Format): number {
 export function percentile(sorted: number[], p: number): number {
   const n = sorted.length;
   if (n === 0) return 0;
-  if (n === 1) return sorted[0]!;
+  if (n === 1) return sorted[0] as number;
   const idx = p * (n - 1);
   const lo = Math.floor(idx);
   const hi = Math.ceil(idx);
-  const loVal = sorted[lo]!;
-  const hiVal = sorted[hi]!;
+  const loVal = sorted[lo] as number;
+  const hiVal = sorted[hi] as number;
   if (lo === hi) return loVal;
   const frac = idx - lo;
   return loVal + frac * (hiVal - loVal);
@@ -46,14 +46,17 @@ export function meanCi(xs: number[]): { mean: number; ci: [number, number] | nul
  */
 export function jevReachedShowdown(h: HandRecord): boolean {
   if (h.jevAtShowdown !== undefined) return h.jevAtShowdown;
-  return h.wentToShowdown && !h.decisions.some((d) => d.action.type === 'fold');
+  return h.wentToShowdown && !h.decisions.some((d) => d.action.type === "fold");
 }
 
 function average(xs: number[]): number {
   return xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
-export function summarize(hands: HandRecord[], format: Format): { jev: JevSummary; opponent: OpponentSummary } {
+export function summarize(
+  hands: HandRecord[],
+  format: Format,
+): { jev: JevSummary; opponent: OpponentSummary } {
   const seats = seatCount(format);
   const groups = new Map<number, HandRecord[]>();
   for (const h of hands) {
@@ -84,7 +87,11 @@ export function summarize(hands: HandRecord[], format: Format): { jev: JevSummar
     decisions: allDecisions.length,
     apiCalls: allDecisions.filter((d) => d.apiCall === true).length,
     failOpen: allDecisions.filter((d) => d.error !== undefined).length,
-    latencyMs: { mean: average(latencies), p50: percentile(latencies, 0.5), p95: percentile(latencies, 0.95) },
+    latencyMs: {
+      mean: average(latencies),
+      p50: percentile(latencies, 0.5),
+      p95: percentile(latencies, 0.95),
+    },
     vpip: average(hands.map((h) => (h.jevVpip ? 1 : 0))),
     pfr: average(hands.map((h) => (h.jevPfr ? 1 : 0))),
     showdowns: jevShowdowns.length,
@@ -95,7 +102,11 @@ export function summarize(hands: HandRecord[], format: Format): { jev: JevSummar
   const opponent: OpponentSummary = {
     // Same hands as Jev's estimate, so the two figures mirror each other (zero-sum).
     bb100PerSeat: average(
-      completeHands.map((h) => (h.net.reduce((acc, v, seat) => (seat === h.jevSeat ? acc : acc + v), 0) / oppSeats) * 100),
+      completeHands.map(
+        (h) =>
+          (h.net.reduce((acc, v, seat) => (seat === h.jevSeat ? acc : acc + v), 0) / oppSeats) *
+          100,
+      ),
     ),
     vpip: average(hands.map((h) => h.oppVpip)),
     pfr: average(hands.map((h) => h.oppPfr)),

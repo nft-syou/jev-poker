@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`compressState > matches snapshot shape 1`] = `
+exports[`featuresFromView > matches snapshot shape 1`] = `
 {
   "hand": {
     "beatsPctOfHands": 60,
@@ -14,7 +14,7 @@ exports[`compressState > matches snapshot shape 1`] = `
       "flush_draw",
       "gutshot",
     ],
-    "equityVsRandomPct": 57,
+    "equityVsRandomPct": 60,
     "holeCards": "Ah Kh",
     "madeHand": "high_card",
     "preflopStrength": "premium",
@@ -49,7 +49,7 @@ exports[`compressState > matches snapshot shape 1`] = `
     "stackToPotRatio is your remaining stack divided by the pot. When it is low, continuing is cheap relative to the pot: judge the call by requiredEquityPct against the likely range of the opponent instead of folding automatically, and avoid a raise that commits most of your stack with a hand you would not call an all-in with.",
   ],
   "persona": {
-    "description": "A tight-aggressive regular. Plays a narrow range of strong starting hands, raises rather than calls, bets for value and folds when the odds are poor. Bluffs occasionally in good spots but never for the sake of it.",
+    "description": "Tight-aggressive. Plays a narrow range of strong hands but bets and raises them for value, continuation-bets often, semi-bluffs good draws, and folds marginal hands to pressure.",
     "name": "TAG",
   },
   "table": {

@@ -1,20 +1,20 @@
-import type { BenchResult, Format, Opponent } from './types.js';
+import type { BenchResult, Format, Opponent } from "./types";
 
 export interface CliOptions {
-  opponent: Opponent | 'all';
-  format: Format | 'all';
+  opponent: Opponent | "all";
+  format: Format | "all";
   seeds: number;
   persona: string;
-  backend: 'typesafe' | 'mock';
+  backend: "typesafe" | "mock";
   concurrency: number;
   baseSeed: number;
   label: string | null;
   model: string | null;
-  promptStyle: 'unified' | 'split';
+  promptStyle: "unified" | "split";
   /** Overrides the persona's variance when set. */
   variance: number | null;
-  hero: 'jev' | 'heuristic';
-  preflop: 'jev' | 'chart';
+  hero: "jev" | "heuristic";
+  preflop: "jev" | "chart";
   rangeEquity: boolean;
   profile: boolean;
 }
@@ -41,15 +41,29 @@ export const USAGE = `Usage: pnpm bench [options]
 Results are written to bench/results/. Render them again with: pnpm bench:report [files...]`;
 
 /** Sort key: opponents in table order, then formats, then persona alphabetically. */
-const OPPONENT_ORDER: readonly Opponent[] = ['random', 'caller', 'rules'];
-const FORMAT_ORDER: readonly Format[] = ['hu', '6max'];
+const OPPONENT_ORDER: readonly Opponent[] = ["random", "caller", "rules"];
+const FORMAT_ORDER: readonly Format[] = ["hu", "6max"];
 
-const FORMAT_LABEL: Record<Format, string> = { hu: 'HU', '6max': '6-max' };
+const FORMAT_LABEL: Record<Format, string> = { hu: "HU", "6max": "6-max" };
 
 /** Below this many independent groups the estimate is too noisy to read straight. */
 const SMALL_N = 30;
 
-const COLUMNS = ['相手', '形式', '人格', 'N (群)', 'ハンド', 'bb/100', '95% CI', 'VPIP', 'PFR', '失敗', '平均応答', 'コード', '条件'];
+const COLUMNS = [
+  "相手",
+  "形式",
+  "人格",
+  "N (群)",
+  "ハンド",
+  "bb/100",
+  "95% CI",
+  "VPIP",
+  "PFR",
+  "失敗",
+  "平均応答",
+  "コード",
+  "条件",
+];
 
 function orderIndex<T>(order: readonly T[], value: T): number {
   const i = order.indexOf(value);
@@ -68,7 +82,7 @@ function compare(a: BenchResult, b: BenchResult): number {
 /** `+45.2` / `-3.0`: always signed, always one decimal. */
 function signed(x: number): string {
   const s = x.toFixed(1);
-  return s.startsWith('-') ? s : `+${s}`;
+  return s.startsWith("-") ? s : `+${s}`;
 }
 
 function percent(x: number): string {
@@ -82,21 +96,36 @@ function seconds(ms: number): string {
 /** What distinguishes this run from another of the same matchup: seed set, prompt format, backend, model. */
 function conditions(r: BenchResult): string {
   const parts = [`base ${r.config.baseSeed}`];
-  if ((r.config.promptStyle ?? 'unified') === 'split') parts.push('split');
-  if (r.config.hero === 'heuristic') parts.push('heuristic');
-  if (r.config.preflop === 'chart') parts.push('chart');
-  if (r.config.rangeEquity === true) parts.push('range');
-  if (r.config.profile === true) parts.push('profile');
+  if ((r.config.promptStyle ?? "unified") === "split") parts.push("split");
+  if (r.config.hero === "heuristic") parts.push("heuristic");
+  if (r.config.preflop === "chart") parts.push("chart");
+  if (r.config.rangeEquity === true) parts.push("range");
+  if (r.config.profile === true) parts.push("profile");
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
-  if (r.config.backend === 'mock') parts.push('mock');
+  if (r.config.backend === "mock") parts.push("mock");
   if (r.config.model !== null) parts.push(r.config.model);
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 /** Identity of an experimental configuration: two results with the same key measure the same thing. */
 export function configKey(r: BenchResult): string {
   const c = r.config;
-  return JSON.stringify([c.opponent, c.format, c.persona, c.backend, c.model, c.promptStyle ?? 'unified', c.variance ?? null, c.hero ?? 'jev', c.preflop ?? 'jev', c.rangeEquity ?? false, c.profile ?? false, c.seeds, c.baseSeed, c.gitCommit]);
+  return JSON.stringify([
+    c.opponent,
+    c.format,
+    c.persona,
+    c.backend,
+    c.model,
+    c.promptStyle ?? "unified",
+    c.variance ?? null,
+    c.hero ?? "jev",
+    c.preflop ?? "jev",
+    c.rangeEquity ?? false,
+    c.profile ?? false,
+    c.seeds,
+    c.baseSeed,
+    c.gitCommit,
+  ]);
 }
 
 function row(r: BenchResult): string {
@@ -110,15 +139,15 @@ function row(r: BenchResult): string {
     n,
     String(jev.hands),
     signed(jev.bb100),
-    jev.ci95 === null ? 'n/a' : `[${signed(jev.ci95[0])}, ${signed(jev.ci95[1])}]`,
+    jev.ci95 === null ? "n/a" : `[${signed(jev.ci95[0])}, ${signed(jev.ci95[1])}]`,
     percent(jev.vpip),
     percent(jev.pfr),
     String(jev.failOpen),
     seconds(jev.latencyMs.mean),
-    r.config.gitCommit ?? '-',
+    r.config.gitCommit ?? "-",
     conditions(r),
   ];
-  return `| ${cells.join(' | ')} |`;
+  return `| ${cells.join(" | ")} |`;
 }
 
 /**
@@ -127,8 +156,12 @@ function row(r: BenchResult): string {
  */
 export function resultsToMarkdown(results: BenchResult[]): string {
   const sorted = [...results].sort(compare);
-  const lines = [`| ${COLUMNS.join(' | ')} |`, `| ${COLUMNS.map(() => '---').join(' | ')} |`, ...sorted.map(row)];
-  return lines.join('\n');
+  const lines = [
+    `| ${COLUMNS.join(" | ")} |`,
+    `| ${COLUMNS.map(() => "---").join(" | ")} |`,
+    ...sorted.map(row),
+  ];
+  return lines.join("\n");
 }
 
 /**
@@ -155,28 +188,30 @@ export function pickLatest(results: BenchResult[]): BenchResult[] {
 export function resultFileName(result: BenchResult, label: string | null): string {
   const { opponent, format } = result.config;
   const suffix = label === null ? `${opponent}-${format}` : `${label}-${opponent}-${format}`;
-  return `${result.startedAt.replace(/[:.]/g, '-')}-${suffix}.json`;
+  return `${result.startedAt.replace(/[:.]/g, "-")}-${suffix}.json`;
 }
 
-const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, 'all'];
-const FORMAT_VALUES: readonly string[] = [...FORMAT_ORDER, 'all'];
-const BACKEND_VALUES: readonly string[] = ['typesafe', 'mock'];
+const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, "all"];
+const FORMAT_VALUES: readonly string[] = [...FORMAT_ORDER, "all"];
+const BACKEND_VALUES: readonly string[] = ["typesafe", "mock"];
 
 /** Thrown by `parseArgs` when `--help` / `-h` is given; the CLI prints `USAGE` and exits 0. */
 export class HelpRequested extends Error {
   constructor() {
-    super('help requested');
-    this.name = 'HelpRequested';
+    super("help requested");
+    this.name = "HelpRequested";
   }
 }
 
 function enumValue<T extends string>(flag: string, value: string, allowed: readonly string[]): T {
-  if (!allowed.includes(value)) throw new Error(`invalid value for ${flag}: ${value} (expected ${allowed.join('|')})`);
+  if (!allowed.includes(value))
+    throw new Error(`invalid value for ${flag}: ${value} (expected ${allowed.join("|")})`);
   return value as T;
 }
 
 function positiveInt(flag: string, value: string): number {
-  if (!/^\d+$/.test(value)) throw new Error(`invalid value for ${flag}: ${value} (expected a positive integer)`);
+  if (!/^\d+$/.test(value))
+    throw new Error(`invalid value for ${flag}: ${value} (expected a positive integer)`);
   const n = Number(value);
   if (n <= 0) throw new Error(`invalid value for ${flag}: ${value} (expected a positive integer)`);
   return n;
@@ -189,37 +224,37 @@ function positiveInt(flag: string, value: string): number {
  */
 export function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
-    opponent: 'all',
-    format: 'all',
+    opponent: "all",
+    format: "all",
     seeds: 100,
-    persona: 'tag',
-    backend: 'typesafe',
+    persona: "tag",
+    backend: "typesafe",
     concurrency: 4,
     baseSeed: 1,
     label: null,
     model: null,
-    promptStyle: 'unified',
+    promptStyle: "unified",
     variance: null,
-    hero: 'jev',
-    preflop: 'jev',
+    hero: "jev",
+    preflop: "jev",
     rangeEquity: false,
     profile: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]!;
-    if (arg === '--help' || arg === '-h') throw new HelpRequested();
-    if (arg === '--profile') {
+    const arg = argv[i] as string;
+    if (arg === "--help" || arg === "-h") throw new HelpRequested();
+    if (arg === "--profile") {
       options.profile = true;
       continue;
     }
-    if (arg === '--range-equity') {
+    if (arg === "--range-equity") {
       options.rangeEquity = true;
       continue;
     }
-    if (!arg.startsWith('--')) throw new Error(`unexpected argument: ${arg}`);
+    if (!arg.startsWith("--")) throw new Error(`unexpected argument: ${arg}`);
 
-    const eq = arg.indexOf('=');
+    const eq = arg.indexOf("=");
     const flag = eq === -1 ? arg : arg.slice(0, eq);
     const inline = eq === -1 ? null : arg.slice(eq + 1);
     const take = (): string => {
@@ -230,54 +265,55 @@ export function parseArgs(argv: string[]): CliOptions {
     };
 
     switch (flag) {
-      case '--opponent':
-        options.opponent = enumValue<Opponent | 'all'>(flag, take(), OPPONENT_VALUES);
+      case "--opponent":
+        options.opponent = enumValue<Opponent | "all">(flag, take(), OPPONENT_VALUES);
         break;
-      case '--format':
-        options.format = enumValue<Format | 'all'>(flag, take(), FORMAT_VALUES);
+      case "--format":
+        options.format = enumValue<Format | "all">(flag, take(), FORMAT_VALUES);
         break;
-      case '--seeds':
+      case "--seeds":
         options.seeds = positiveInt(flag, take());
         break;
-      case '--persona':
+      case "--persona":
         options.persona = take();
         break;
-      case '--backend':
-        options.backend = enumValue<'typesafe' | 'mock'>(flag, take(), BACKEND_VALUES);
+      case "--backend":
+        options.backend = enumValue<"typesafe" | "mock">(flag, take(), BACKEND_VALUES);
         break;
-      case '--concurrency':
+      case "--concurrency":
         options.concurrency = positiveInt(flag, take());
         break;
-      case '--base-seed':
+      case "--base-seed":
         options.baseSeed = positiveInt(flag, take());
         break;
-      case '--label':
+      case "--label":
         options.label = take();
         break;
-      case '--model':
+      case "--model":
         options.model = take();
         break;
-      case '--variance': {
+      case "--variance": {
         const value = Number(take());
-        if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error('invalid --variance: expected a number from 0 to 1');
+        if (!Number.isFinite(value) || value < 0 || value > 1)
+          throw new Error("invalid --variance: expected a number from 0 to 1");
         options.variance = value;
         break;
       }
-      case '--preflop': {
+      case "--preflop": {
         const value = take();
-        if (value !== 'jev' && value !== 'chart') throw new Error(`invalid --preflop: ${value}`);
+        if (value !== "jev" && value !== "chart") throw new Error(`invalid --preflop: ${value}`);
         options.preflop = value;
         break;
       }
-      case '--hero': {
+      case "--hero": {
         const value = take();
-        if (value !== 'jev' && value !== 'heuristic') throw new Error(`invalid --hero: ${value}`);
+        if (value !== "jev" && value !== "heuristic") throw new Error(`invalid --hero: ${value}`);
         options.hero = value;
         break;
       }
-      case '--prompt': {
+      case "--prompt": {
         const value = take();
-        if (value !== 'unified' && value !== 'split') throw new Error(`invalid --prompt: ${value}`);
+        if (value !== "unified" && value !== "split") throw new Error(`invalid --prompt: ${value}`);
         options.promptStyle = value;
         break;
       }

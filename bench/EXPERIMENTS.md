@@ -1,8 +1,8 @@
 # Improvement log / 改善ログ
 
 Jev CPU (`tag` persona) vs the rule-based bot (`rules`), bb/100 with 95% CI. Every experiment
-changes only what Jev is told (`src/jev/compress.ts`) or how its answers are mapped
-(`src/jev/agent.ts`); the engine and the baselines never change, so runs are comparable.
+changes only what Jev is told (`src/jev/compress.ts`; after the port onto the game, `src/jev/features.ts`)
+or how its answers are mapped (`src/jev/agent.ts`; after the port, `src/jev/decide.ts`); the engine and the baselines never change, so runs are comparable.
 Raw data: `bench/results/*-exp<N>-*.json`. All runs use model `jev-1.13.0`.
 
 | exp | commit | change | rules HU (100 seeds) | rules 6-max |

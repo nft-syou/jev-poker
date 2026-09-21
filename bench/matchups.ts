@@ -1,11 +1,11 @@
-import type { Format, Opponent } from './types.js';
+import type { Format, Opponent } from "./types";
 
-const OPPONENTS: readonly Opponent[] = ['random', 'caller', 'rules'];
-const FORMATS: readonly Format[] = ['hu', '6max'];
+const OPPONENTS: readonly Opponent[] = ["random", "caller", "rules"];
+const FORMATS: readonly Format[] = ["hu", "6max"];
 
 /** Number of seats at the table for a given format. */
 export function seatCount(format: Format): number {
-  return format === 'hu' ? 2 : 6;
+  return format === "hu" ? 2 : 6;
 }
 
 /**
@@ -21,11 +21,11 @@ export function rotations(format: Format): number {
  * opponent-major order (`random × hu, random × 6max, caller × hu, ...`).
  */
 export function expandMatchups(
-  opponent: Opponent | 'all',
-  format: Format | 'all',
+  opponent: Opponent | "all",
+  format: Format | "all",
 ): { opponent: Opponent; format: Format }[] {
-  const opponents = opponent === 'all' ? OPPONENTS : [opponent];
-  const formats = format === 'all' ? FORMATS : [format];
+  const opponents = opponent === "all" ? OPPONENTS : [opponent];
+  const formats = format === "all" ? FORMATS : [format];
   const out: { opponent: Opponent; format: Format }[] = [];
   for (const o of opponents) for (const f of formats) out.push({ opponent: o, format: f });
   return out;

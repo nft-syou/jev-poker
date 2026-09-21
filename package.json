@@ -2,27 +2,50 @@
   "name": "jev-poker",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "description": "No-Limit Texas Hold'em where the CPU players think with TypeSafe Jev. Bring your own API key.",
   "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
+    "dev": "vite",
+    "dev:pages": "pnpm build && wrangler pages dev dist",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.functions.json",
+    "lint": "biome check .",
+    "format": "biome check --write .",
     "bench": "tsx bench/cli.ts",
     "bench:report": "tsx bench/report-cli.ts",
     "bench:slumbot": "tsx bench/slumbot/cli.ts",
-    "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts"
+    "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
-    "@typesafe-ai/sdk": "0.6.0"
+    "@typesafe-ai/sdk": "^0.6.0",
+    "i18next": "^26.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.14"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@biomejs/biome": "^2.5.14",
+    "@cloudflare/workers-types": "^5.20260916.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.0.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "vitest": "^3.0.0"
+    "typescript": "~5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "wrangler": "^4.133.0"
   }
 }

@@ -1,15 +1,23 @@
-import { execSync } from 'node:child_process';
-import { mkdir, rename, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { VERSION } from '@typesafe-ai/sdk';
-import { createMockBackend, createTypeSafeBackend, getPersona } from '../src/jev/index.js';
-import { expandMatchups } from './matchups.js';
-import { HelpRequested, USAGE, parseArgs, resultFileName, resultsToMarkdown, type CliOptions } from './report.js';
-import { runMatch } from './runner.js';
-import { summarize } from './stats.js';
-import type { BenchResult } from './types.js';
+import { execSync } from "node:child_process";
+import { mkdir, rename, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { VERSION } from "@typesafe-ai/sdk";
+import { createMockBackend } from "../src/jev/mock-backend";
+import { createNodeBackend, getPersona } from "./backend";
+import { expandMatchups } from "./matchups";
+import {
+  type CliOptions,
+  HelpRequested,
+  parseArgs,
+  resultFileName,
+  resultsToMarkdown,
+  USAGE,
+} from "./report";
+import { runMatch } from "./runner";
+import { summarize } from "./stats";
+import type { BenchResult } from "./types";
 
-const RESULTS_DIR = fileURLToPath(new URL('results/', import.meta.url));
+const RESULTS_DIR = fileURLToPath(new URL("results/", import.meta.url));
 const PROGRESS_EVERY = 10;
 
 function fail(message: string): never {
@@ -19,7 +27,10 @@ function fail(message: string): never {
 
 function gitCommit(): string | null {
   try {
-    return execSync('git rev-parse --short HEAD', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return execSync("git rev-parse --short HEAD", {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
   } catch {
     return null;
   }
@@ -41,20 +52,27 @@ async function main(): Promise<void> {
   const opts = readOptions();
 
   // The SDK client is built eagerly and throws without a key, so this check comes first.
-  if (opts.hero === 'jev' && opts.backend === 'typesafe' && (process.env['TYPESAFE_API_KEY'] ?? '') === '') {
-    fail('TYPESAFE_API_KEY is not set');
+  if (
+    opts.hero === "jev" &&
+    opts.backend === "typesafe" &&
+    (process.env.TYPESAFE_API_KEY ?? "") === ""
+  ) {
+    fail("TYPESAFE_API_KEY is not set");
   }
 
   const basePersona = getPersona(opts.persona);
-  const persona = opts.variance === null ? basePersona : { ...basePersona, variance: opts.variance };
+  const persona =
+    opts.variance === null ? basePersona : { ...basePersona, variance: opts.variance };
   const commit = gitCommit();
 
   let sigints = 0;
   let controller = new AbortController();
-  process.on('SIGINT', () => {
+  process.on("SIGINT", () => {
     sigints += 1;
     if (sigints >= 2) process.exit(130);
-    process.stderr.write('\ninterrupted: finishing the hands in flight, then writing results (Ctrl-C again to quit)\n');
+    process.stderr.write(
+      "\ninterrupted: finishing the hands in flight, then writing results (Ctrl-C again to quit)\n",
+    );
     controller.abort();
   });
 
@@ -65,8 +83,9 @@ async function main(): Promise<void> {
     controller = new AbortController();
 
     const backend =
-      opts.backend === 'typesafe'
-        ? createTypeSafeBackend({ ...(opts.model !== null ? { model: opts.model } : {}) })
+      // The heuristic hero never asks the backend, so it needs no API key.
+      opts.backend === "typesafe" && opts.hero !== "heuristic"
+        ? createNodeBackend({ ...(opts.model !== null ? { model: opts.model } : {}) })
         : createMockBackend();
 
     const startedAt = new Date().toISOString();
@@ -88,7 +107,8 @@ async function main(): Promise<void> {
       profile: opts.profile,
       signal: controller.signal,
       onHand: (done, total) => {
-        if (done % PROGRESS_EVERY === 0 || done === total) process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
+        if (done % PROGRESS_EVERY === 0 || done === total)
+          process.stderr.write(`[${tag}] ${done}/${total} hands\n`);
       },
       onDecision: (record) => {
         if (record.error === undefined || warnedFailOpen) return;
@@ -115,8 +135,8 @@ async function main(): Promise<void> {
         gitCommit: commit,
         promptStyle: opts.promptStyle,
         ...(opts.variance !== null ? { variance: opts.variance } : {}),
-        ...(opts.hero !== 'jev' ? { hero: opts.hero } : {}),
-        ...(opts.preflop !== 'jev' ? { preflop: opts.preflop } : {}),
+        ...(opts.hero !== "jev" ? { hero: opts.hero } : {}),
+        ...(opts.preflop !== "jev" ? { preflop: opts.preflop } : {}),
         ...(opts.rangeEquity ? { rangeEquity: true } : {}),
         ...(opts.profile ? { profile: true } : {}),
       },
@@ -129,7 +149,7 @@ async function main(): Promise<void> {
     // `resultFileName` adds the matchup itself; `--label` (or null) is all it needs.
     const file = `${RESULTS_DIR}${resultFileName(result, opts.label)}`;
     // Write then rename, so an interrupted run never leaves a truncated JSON behind.
-    await writeFile(`${file}.tmp`, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+    await writeFile(`${file}.tmp`, `${JSON.stringify(result, null, 2)}\n`, "utf8");
     await rename(`${file}.tmp`, file);
     process.stderr.write(`[${tag}] wrote ${file}\n`);
 

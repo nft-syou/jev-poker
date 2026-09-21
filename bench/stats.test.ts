@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { meanCi, percentile, summarize } from './stats.js';
-import type { HandRecord } from './types.js';
+import { describe, expect, it } from "vitest";
+import { meanCi, percentile, summarize } from "./stats";
+import type { HandRecord } from "./types";
 
-const rec = (seedIndex: number, rotation: number, jevNet: number, extra: Partial<HandRecord> = {}): HandRecord => ({
+const rec = (
+  seedIndex: number,
+  rotation: number,
+  jevNet: number,
+  extra: Partial<HandRecord> = {},
+): HandRecord => ({
   seedIndex,
   rotation,
   jevSeat: rotation,
@@ -15,9 +20,9 @@ const rec = (seedIndex: number, rotation: number, jevNet: number, extra: Partial
   oppPfr: 0,
   decisions: [
     {
-      street: 'preflop',
-      choice: 'check_or_call',
-      action: { type: 'call' },
+      street: "preflop",
+      choice: "check_or_call",
+      action: { type: "call" },
       probabilities: { fold: 0, check_or_call: 1, bet_or_raise: 0 },
       sizingScore: null,
       bluffIntent: null,
@@ -28,13 +33,13 @@ const rec = (seedIndex: number, rotation: number, jevNet: number, extra: Partial
   ...extra,
 });
 
-describe('stats', () => {
-  it('percentile', () => {
+describe("stats", () => {
+  it("percentile", () => {
     expect(percentile([1, 2, 3, 4], 0.5)).toBe(2.5);
     expect(percentile([1, 2, 3, 4], 0.95)).toBeCloseTo(3.85);
   });
 
-  it('meanCi', () => {
+  it("meanCi", () => {
     const r = meanCi([1, 1, 1, 1]);
     expect(r).toEqual({ mean: 1, ci: [1, 1] });
     // One sample has no spread to estimate: no interval rather than a zero-width one.
@@ -47,9 +52,9 @@ describe('stats', () => {
     expect(two.ci?.[1]).toBeCloseTo(4.94, 1);
   });
 
-  it('summarize groups mirrored hands per seed', () => {
+  it("summarize groups mirrored hands per seed", () => {
     const hands = [rec(0, 0, 2), rec(0, 1, -1), rec(1, 0, 4), rec(1, 1, 3)]; // x = [0.5, 3.5]
-    const s = summarize(hands, 'hu');
+    const s = summarize(hands, "hu");
     expect(s.jev.n).toBe(2);
     expect(s.jev.hands).toBe(4);
     expect(s.jev.bb100).toBeCloseTo(200);
@@ -67,25 +72,25 @@ describe('stats', () => {
     expect(s.opponent.bb100PerSeat).toBeCloseTo(-200);
   });
 
-  it('counts fail-open and showdown wins', () => {
+  it("counts fail-open and showdown wins", () => {
     const h = rec(0, 0, 1, {
       wentToShowdown: true,
       jevWonShowdown: true,
       decisions: [
         {
-          street: 'flop',
-          choice: 'check_or_call',
-          action: { type: 'check' },
+          street: "flop",
+          choice: "check_or_call",
+          action: { type: "check" },
           probabilities: { fold: 0, check_or_call: 0, bet_or_raise: 0 },
           sizingScore: null,
           bluffIntent: null,
           latencyMs: 5,
           apiCall: false,
-          error: 'x',
+          error: "x",
         },
       ],
     });
-    const s = summarize([h], 'hu');
+    const s = summarize([h], "hu");
     expect(s.jev.failOpen).toBe(1);
     expect(s.jev.apiCalls).toBe(0);
     expect(s.jev.showdownWinRate).toBe(1);
@@ -93,9 +98,9 @@ describe('stats', () => {
 });
 
 describe("summarize: balanced groups and Jev's own showdowns", () => {
-  it('leaves incomplete rotation groups out of the estimate for both sides', () => {
+  it("leaves incomplete rotation groups out of the estimate for both sides", () => {
     // Seed 0 is complete (+1, +1); seed 1 has only one of its two rotations (-1).
-    const s = summarize([rec(0, 0, 1), rec(0, 1, 1), rec(1, 0, -1)], 'hu');
+    const s = summarize([rec(0, 0, 1), rec(0, 1, 1), rec(1, 0, -1)], "hu");
     expect(s.jev.n).toBe(1);
     expect(s.jev.incompleteGroups).toBe(1);
     expect(s.jev.hands).toBe(3);
@@ -103,15 +108,24 @@ describe("summarize: balanced groups and Jev's own showdowns", () => {
     expect(s.jev.ci95).toBeNull();
     expect(s.opponent.bb100PerSeat).toBeCloseTo(-100);
   });
-  it('counts only showdowns Jev was still in', () => {
-    const fold = { street: 'flop' as const, choice: 'fold' as const, action: { type: 'fold' as const }, probabilities: { fold: 1, check_or_call: 0, bet_or_raise: 0 }, sizingScore: null, bluffIntent: null, latencyMs: 1, apiCall: true };
+  it("counts only showdowns Jev was still in", () => {
+    const fold = {
+      street: "flop" as const,
+      choice: "fold" as const,
+      action: { type: "fold" as const },
+      probabilities: { fold: 1, check_or_call: 0, bet_or_raise: 0 },
+      sizingScore: null,
+      bluffIntent: null,
+      latencyMs: 1,
+      apiCall: true,
+    };
     const hands = [
-      rec(0, 0, 5, { wentToShowdown: true }),                       // Jev showed down and won
-      rec(0, 1, -5, { wentToShowdown: true }),                      // Jev showed down and lost
-      rec(1, 0, -1, { wentToShowdown: true, decisions: [fold] }),   // table showed down after Jev folded (old file, derived)
-      rec(1, 1, -1, { wentToShowdown: true, jevAtShowdown: false }) // same, explicit flag
+      rec(0, 0, 5, { wentToShowdown: true }), // Jev showed down and won
+      rec(0, 1, -5, { wentToShowdown: true }), // Jev showed down and lost
+      rec(1, 0, -1, { wentToShowdown: true, decisions: [fold] }), // table showed down after Jev folded (old file, derived)
+      rec(1, 1, -1, { wentToShowdown: true, jevAtShowdown: false }), // same, explicit flag
     ];
-    const s = summarize(hands, 'hu');
+    const s = summarize(hands, "hu");
     expect(s.jev.showdowns).toBe(2);
     expect(s.jev.showdownWinRate).toBe(0.5);
   });

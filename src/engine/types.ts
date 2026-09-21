@@ -1,102 +1,155 @@
-import type { Card } from './cards.js';
-import type { HandValue } from './evaluate.js';
+import type { Card } from "./cards";
+import type { HandValue } from "./evaluator";
 
 export type SeatId = number;
-export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
-export type Position = 'BTN' | 'SB' | 'BB' | 'UTG' | 'MP' | 'CO';
-
-export type Action =
-  | { type: 'fold' }
-  | { type: 'check' }
-  | { type: 'call' }
-  | { type: 'bet'; amount: number }
-  | { type: 'raise'; amount: number }
-  | { type: 'allin' };
-
-export interface LegalActions {
-  canFold: boolean;
-  canCheck: boolean;
-  callAmount: number | null;
-  /** Smallest legal raise-to amount, or `null` when raising is not allowed at all. */
-  minRaiseTo: number | null;
-  /**
-   * Largest legal raise-to amount (the seat's whole stack), or `null`.
-   *
-   * Invariant: `minRaiseTo !== null` implies `maxRaiseTo !== null`. The converse
-   * does **not** hold — `maxRaiseTo` can be a number while `minRaiseTo` is
-   * `null` (e.g. a seat that has already acted and faces an incomplete all-in
-   * raise: it may call, but no raise is legal). So agents must gate raises
-   * **and all-ins-as-a-raise** on `minRaiseTo`, never on `maxRaiseTo`.
-   */
-  maxRaiseTo: number | null;
-}
+export type SeatKind = "human" | "cpu";
 
 export interface SeatConfig {
-  id: SeatId;
-  name: string;
-  kind: 'human' | 'cpu';
-  agentId?: string;
+  readonly id: SeatId;
+  readonly name: string;
+  readonly kind: SeatKind;
+  readonly personaId?: string;
 }
 
 export interface Blinds {
-  small: number;
-  big: number;
-  ante: number;
+  readonly small: number;
+  readonly big: number;
+  readonly ante: number;
 }
 
 export interface BlindSchedule {
+  /** Blinds for the given 0-based hand number and elapsed play time. */
   blindsFor(handNumber: number, elapsedMs: number): Blinds;
 }
 
-export function fixedBlinds(b: Blinds): BlindSchedule {
-  return { blindsFor: () => b };
-}
+export type GameFormat = "cash" | "tournament";
 
 export interface GameConfig {
-  format: 'cash' | 'tournament';
-  blinds: BlindSchedule;
-  startingStack: number;
-  seats: SeatConfig[];
-  seed?: number;
+  readonly format: GameFormat;
+  readonly blinds: BlindSchedule;
+  readonly startingStack: number;
+  readonly seats: readonly SeatConfig[];
+  /** RNG seed for reproducible games (tests). Random when omitted. */
+  readonly seed?: number;
 }
 
-export interface SeatState {
-  seat: SeatId;
-  stack: number;
-  isAllIn: boolean;
-  folded: boolean;
+export type Street = "preflop" | "flop" | "turn" | "river" | "showdown";
+
+export type Action =
+  | { readonly type: "fold" }
+  | { readonly type: "check" }
+  | { readonly type: "call" }
+  /** Open a betting round; `amount` is the total bet. */
+  | { readonly type: "bet"; readonly amount: number }
+  /** Raise to `amount` in total for this street ("raise to"). */
+  | { readonly type: "raise"; readonly amount: number }
+  | { readonly type: "allin" };
+
+export interface LegalActions {
+  readonly canFold: boolean;
+  readonly canCheck: boolean;
+  /** Chips needed to call (capped at stack), or null when checking is possible. */
+  readonly callAmount: number | null;
+  /** Smallest legal total bet/raise-to, or null when raising is impossible. */
+  readonly minRaiseTo: number | null;
+  /** Largest legal total bet/raise-to (all-in), or null when raising is impossible. */
+  readonly maxRaiseTo: number | null;
 }
 
-export interface HistoryEntry {
-  street: Street;
-  seat: SeatId;
-  action: Action;
+export const NO_ACTIONS: LegalActions = {
+  canFold: false,
+  canCheck: false,
+  callAmount: null,
+  minRaiseTo: null,
+  maxRaiseTo: null,
+};
+
+export interface HandPlayerSnapshot {
+  readonly seat: SeatId;
+  readonly stack: number;
+  readonly holeCards: readonly [Card, Card];
+  /** Total chips put in this hand (including blinds and antes). */
+  readonly contributed: number;
+  /** Chips put in during the current street (excluding antes). */
+  readonly streetBet: number;
+  readonly folded: boolean;
+  readonly allIn: boolean;
 }
 
-export interface PlayerView {
-  seat: SeatId;
-  street: Street;
-  holeCards: Card[];
-  board: Card[];
-  stacks: SeatState[];
-  pot: number;
-  toCall: number;
-  /** The bet every player must match on this street (a raise-to total); 0 when nobody has bet. */
-  currentBet: number;
-  /** Chips this seat has already put in on the current street (blinds included). */
-  committedThisStreet: number;
-  bigBlind: number;
-  position: Position;
-  history: HistoryEntry[];
+export interface HandSnapshot {
+  readonly handNumber: number;
+  readonly button: SeatId;
+  readonly street: Street;
+  readonly board: readonly Card[];
+  /** In clockwise seat order. */
+  readonly players: readonly HandPlayerSnapshot[];
+  readonly actingSeat: SeatId | null;
+  /** Seats still to act this street, in order, starting with `actingSeat`. */
+  readonly toAct: readonly SeatId[];
+  readonly currentBet: number;
+  readonly minRaise: number;
+  readonly bigBlind: number;
+  /** Sum of all contributions so far. */
+  readonly pot: number;
+  readonly complete: boolean;
 }
 
-export type TableEvent =
-  | { type: 'HandStarted'; handNumber: number; button: SeatId }
-  | { type: 'BlindsPosted'; posts: { seat: SeatId; amount: number }[] }
-  | { type: 'HoleCardsDealt'; seat: SeatId; cards: Card[] }
-  | { type: 'ActionTaken'; seat: SeatId; action: Action; street: Street }
-  | { type: 'StreetDealt'; street: Street; board: Card[] }
-  | { type: 'Showdown'; hands: { seat: SeatId; cards: Card[]; value: HandValue }[] }
-  | { type: 'PotAwarded'; seat: SeatId; amount: number; potIndex: number }
-  | { type: 'HandEnded'; stacks: { seat: SeatId; stack: number }[] }
-  | { type: 'SeatRebought'; seat: SeatId; amount: number };
+export interface SeatStack {
+  readonly id: SeatId;
+  readonly stack: number;
+}
+
+export type GameEvent =
+  | {
+      readonly type: "HandStarted";
+      readonly handNumber: number;
+      readonly button: SeatId;
+      readonly blinds: Blinds;
+      readonly seats: readonly SeatStack[];
+    }
+  | {
+      readonly type: "BlindsPosted";
+      readonly posts: readonly {
+        readonly seat: SeatId;
+        readonly kind: "ante" | "small" | "big";
+        readonly amount: number;
+      }[];
+    }
+  | {
+      readonly type: "HoleCardsDealt";
+      readonly hands: readonly { readonly seat: SeatId; readonly cards: readonly [Card, Card] }[];
+    }
+  | {
+      readonly type: "ActionTaken";
+      readonly street: Street;
+      readonly seat: SeatId;
+      /** Normalized action: `allin` becomes `call`/`bet`/`raise` with the real total. */
+      readonly action: Action;
+      /** Chips moved into the pot by this action. */
+      readonly amount: number;
+      readonly allIn: boolean;
+    }
+  | { readonly type: "StreetDealt"; readonly street: Street; readonly board: readonly Card[] }
+  | {
+      readonly type: "Showdown";
+      readonly hands: readonly {
+        readonly seat: SeatId;
+        readonly cards: readonly [Card, Card];
+        readonly value: HandValue;
+      }[];
+    }
+  | {
+      readonly type: "PotAwarded";
+      readonly pots: readonly { readonly amount: number; readonly eligible: readonly SeatId[] }[];
+      readonly awards: readonly {
+        readonly seat: SeatId;
+        readonly amount: number;
+        readonly potIndex: number;
+      }[];
+    }
+  | { readonly type: "SeatRebought"; readonly seat: SeatId; readonly amount: number }
+  | {
+      readonly type: "HandEnded";
+      readonly handNumber: number;
+      readonly stacks: readonly SeatStack[];
+    };

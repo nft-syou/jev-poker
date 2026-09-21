@@ -19,7 +19,7 @@ pnpm bench --help
 
 `TYPESAFE_BASE_URL` は SDK の既定どおり環境変数で上書きできる (Pages Functions は経由しない)。
 
-実行には Node 20+ が必要 (開発は 24 で実施)。
+実行には Node 24 と pnpm が必要 (リポジトリ全体と同じ)。
 
 ### オプション
 
