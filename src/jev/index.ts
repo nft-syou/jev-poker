@@ -1,4 +1,5 @@
-export { API_KEY_HEADER, createTypeSafeBackend, DEFAULT_MODEL, type JevBackend } from "./backend";
+export { createTypeSafeBackend, DEFAULT_MODEL, type JevBackend } from "./backend";
+export * from "./connection";
 export * from "./decide";
 export * from "./features";
 export * from "./personas";

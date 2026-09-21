@@ -47,6 +47,60 @@ Functions を薄いプロキシとする。
 - 検討して却下した案: (B) ブラウザ直叩き。CORS で動かない可能性が高い。
   (C) ホスト側で 1 本のキーを Secret 保持。「プレイにはキー必要」と逆で運営者が全額負担。
 
+#### 3.1.1 経路 (2026-09-21 追加: TypeSafe 直結 / Vercel / ロリポップ / Cloudflare)
+
+接続情報は `src/jev/connection.ts` の `Connection` 1 型にまとめ、UI・バックエンド・
+プロキシが同じ定義を共有する (このモジュールは依存ゼロ。`tsconfig.functions.json` が
+Pages Function 用にコンパイルするため)。ブラウザは `X-Jev-Route` で経路を宣言する
+(ヘッダが無い場合は `typesafe`。以前のバージョンが保存したキーとの互換のため)。
+
+| 経路 id | 上流 (固定) | `Authorization` | モデル |
+| --- | --- | --- | --- |
+| `typesafe` | `https://api.typesafe.ai` (`TYPESAFE_BASE_URL` で上書き可) | TypeSafe キー | `jev-latest` |
+| `vercel` | `https://ai-gateway.vercel.sh/typesafe` | Vercel AI Gateway キー | `typesafe-ai/jev` |
+| `lolipop` | `https://ai-gateway.lolipop.jp` | ロリポップ！AIゲートウェイの API キー | `typesafe/jev-latest` |
+| `cloudflare` | `https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/custom-{slug}` | TypeSafe キー (+ 任意で `cf-aig-authorization`) | `jev-latest` |
+
+- Cloudflare 経路の 3 値は `X-Jev-CF-Account` / `X-Jev-CF-Gateway` / `X-Jev-CF-Provider`、
+  認証付きゲートウェイのトークンは `X-Jev-CF-Token` で送る。slug は `custom-` を除いた形で
+  送り、`custom-` はプロキシ側で付ける (二重付与を防ぐため、`custom-` 始まりは 400)。
+- `localStorage` のキーは `jev-poker.connection`。旧 `jev-poker.apiKey` があり新キーが無い
+  場合のみ `{ route: "typesafe", apiKey }` に 1 度だけ移行し、旧キーを削除する。
+- Vercel / ロリポップ経路では課金も応答の `model` も TypeSafe ではないため、402 のモーダル文言と
+  showcase のモデル表記を経路に応じて切り替える。
+- ロリポップ！AIゲートウェイ (GMOペパボ、2026-09-18 から Jev 対応) は TypeSafe と同じ
+  `POST /v1/systemone` / `GET /v1/models` を `https://ai-gateway.lolipop.jp` 直下で提供する
+  (リクエストは `model` / `state` / `questions{type,instructions,criteria}`、応答は
+  `model` / `answers` / `usage` で SDK の送受信と同形)。認証ヘッダを 2 種類以上同時に
+  送ると値が正しくても 401 になるため、上流ヘッダをゼロから組み立てて `Authorization`
+  だけを載せる現行のプロキシ設計がそのまま要件を満たす。残高不足は 402
+  `insufficient_balance`、キー不正は 401、プロジェクト停止・予算超過は 403。
+
+#### 3.1.2 なぜ自由入力の URL を受け取らないか
+
+「上流 URL をヘッダやボディで渡す」案は却下した。プロキシは利用者の認証情報を
+`Authorization` に載せ替えて転送するので、上流を指定できる = 任意の第三者サーバーへ
+キーを送らせる SSRF / 認証情報窃取のプリミティブになる。代わりに:
+
+- 上流ホストは経路 id で選ぶ 4 つの定数のみ。文字列連結の材料は以下のみ。
+- 経路 id は `typesafe` | `vercel` | `lolipop` | `cloudflare` の完全一致。それ以外は 400 `invalid_route`。
+- Cloudflare の各値はサーバー側で先頭・末尾を固定した正規表現に通し、さらに
+  `encodeURIComponent` してから埋め込む: `accountId` `/^[0-9a-f]{32}$/i` (保存は小文字に統一)、
+  `gatewayId` `/^[A-Za-z0-9_-]{1,64}$/`、`providerSlug` `/^[a-z0-9][a-z0-9-]{0,62}$/`
+  かつ `custom-` 始まりでないこと、トークン `/^[\x21-\x7E]{1,512}$/`。
+  1 つでも外れたら 400 `invalid_gateway_config` で、上流には接続しない。
+- slug の判定 (`isProviderSlug`) は UI の `validateConnection` とプロキシの `upstreamUrl` が
+  同じ関数を共有する。正規化は `custom-` を 1 度だけ剥がすので `custom-custom-x` は
+  `custom-x` として残り、両層とも「フィールドエラー」として拒否する
+  (片方だけが受理すると、保存はできるのに毎ハンド 400 になって理由が見えない)。
+- `TYPESAFE_BASE_URL` は `https://…` か `http://localhost|127.0.0.1…` の形のときだけ採用し、
+  空文字・綴り間違い・他スキームは既定値にフォールバックする (相対 URL の生成や
+  平文での鍵送出を防ぐため)。
+- キーも `/^[\x21-\x7E]{1,512}$/` (trim 後)。外れたら 401 `missing_api_key`。
+  印字可能 ASCII に限るのは、空白・改行によるヘッダインジェクションを構文的に排除するため。
+- パスの許可は従来どおり `v1/systemone` (POST) と `v1/models` (GET) を `Object.hasOwn` で
+  引くだけ。`../`、`%2e%2e`、クエリ、フラグメントはすべて許可表に無いので 404。
+
 ### 3.2 リポジトリ構成 (単一パッケージ)
 
 ```
@@ -56,7 +110,9 @@ jev-poker/
   src/ui/            React コンポーネント、状態管理、観戦モード
   src/i18n/          i18next 初期化、locales/ja.json、locales/en.json
   src/main.tsx       エントリ
+  src/jev/connection.ts  経路・認証情報・上流 URL 組み立て (依存ゼロ。UI/バックエンド/プロキシ共通)
   src/proxy/handler.ts   プロキシの純ロジック (functions/ から import、単体テスト対象)
+  src/proxy/node-adapter.ts  Vite dev サーバー用 Node ⇄ WHATWG 変換
   functions/api/jev/[[path]].ts   Pages Functions プロキシ
   docs/superpowers/specs/          設計書
   LICENSE            MIT
@@ -240,8 +296,12 @@ interface Persona {
   再生速度はプレイ中でもテーブルヘッダのセレクタから変更でき、テーブルを作り直すことなく
   次の待ち時間から反映される。
 - ハンド履歴パネル: 各アクション。CPU は Jev の確率分布とブラフ意図を展開表示。
-- キー入力モーダル: 初回 / 401 時。「キーはこのブラウザの localStorage のみに保存され、
-  当サイトのサーバーには保存されない」旨を表示。削除ボタン付き。
+- 接続モーダル (`ConnectionModal`): 初回 / 401 時。経路のセレクトと、その経路に必要な
+  フィールドのみを出し、`validateConnection` の結果を各フィールドの下に i18n キーで表示する。
+  秘密情報は `type="password"`、既存接続の編集時は空欄のまま = 保存済みの値を維持
+  (経路を変えた場合は別サービスの資格情報なので再入力を求める)。「認証情報はこのブラウザの
+  localStorage のみに保存され、当サイトのプロキシ経由で選んだサービスにのみ送られる」旨を表示。
+  削除ボタン付き。
 - 状態管理は React の `useReducer` + エンジンのイベント購読。外部ライブラリ不要。
 - i18n: 全文字列を `locales/*.json` に置く。初期言語はブラウザ言語、切替は設定に保存。
 
@@ -251,10 +311,27 @@ interface Persona {
 ## 8. プロキシ (`functions/api/jev/[[path]].ts`)
 
 - `POST /v1/systemone`, `GET /v1/models` のみ許可。他は 404。
-- `X-TypeSafe-Key` が無ければ 401 (JSON `{ error: "missing_api_key" }`)。
-- 上流へ: メソッド、`Content-Type`、ボディをそのまま。`Authorization: Bearer <key>`。
-- 上流から: ステータス、`Content-Type`、ボディをそのまま。
-- ログ出力なし。上流 URL は環境変数 `TYPESAFE_BASE_URL` で上書き可 (既定 `https://api.typesafe.ai`)。
+- `X-TypeSafe-Key` が無い / 印字可能 ASCII 1〜512 文字でなければ 401
+  (JSON `{ error: "missing_api_key" }`)。上流には接続しない。
+- 上流は `X-Jev-Route` で選ぶ (無い場合は `typesafe`)。URL の組み立ては
+  `src/jev/connection.ts` の `upstreamUrl` 1 箇所のみ。ブラウザから URL は受け取らない
+  (理由と検証規則は 3.1.1 / 3.1.2)。不正な経路 id は 400 `invalid_route`、
+  Cloudflare の設定値が正規表現に外れれば 400 `invalid_gateway_config`。いずれも上流未接続。
+- 上流へ送るヘッダは毎回新規に組み立てる (転送ではない): `authorization`、`accept`、
+  `content-type`、Cloudflare 経路でトークンがある場合のみ `cf-aig-authorization`。
+  アプリ独自の `X-*` ヘッダは 1 つも上流に届かない。
+- 上流から: ステータス、`Content-Type`、`X-TypeSafe-Request-Id`、`Retry-After` 系、
+  ボディをそのまま。`Cache-Control: no-store` を付ける。204 / 205 / 304 は
+  `Response` がボディを持てないため `null` で返す。
+- プロキシ自身が返す 400 (`invalid_route` / `invalid_gateway_config`) は、保存された接続が
+  どの上流も指せないという意味なので、`decideAction` はこれを `errorKind: "auth"` として扱い、
+  テーブルを止めて接続モーダルを開く (上流由来の他の 400 は通常の 1 手分の失敗のまま)。
+- ログ出力なし。`typesafe` 経路の上流 URL のみ環境変数 `TYPESAFE_BASE_URL` で上書き可
+  (既定 `https://api.typesafe.ai`)。ゲートウェイ 2 経路のホストは定数。
+- `pnpm dev` も同じ `handleJevProxy` を Vite のミドルウェア
+  (`src/proxy/node-adapter.ts` で Node ⇄ WHATWG 変換) から呼ぶので、3 経路とも
+  ローカルと本番で同じ挙動になる。dev のボディ読み込みは 1 MiB で打ち切り、
+  超過時は 413 `payload_too_large`。
 
 ## 9. テスト
 

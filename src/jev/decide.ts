@@ -228,9 +228,20 @@ function toAction(
   }
 }
 
+/** Our own proxy's verdicts on a connection it cannot turn into any upstream request. */
+const CONNECTION_CONFIG_ERRORS: readonly string[] = ["invalid_route", "invalid_gateway_config"];
+
 function isAuthError(error: unknown): boolean {
   if (error instanceof AuthenticationError || error instanceof PermissionDeniedError) return true;
-  return error instanceof APIError && (error.status === 401 || error.status === 403);
+  if (!(error instanceof APIError)) return false;
+  if (error.status === 401 || error.status === 403) return true;
+  // A 400 is normally about the request, not the credentials — except when it is the proxy
+  // refusing the stored connection itself, which only the connection modal can fix.
+  if (error.status !== 400) return false;
+  const body = error.body;
+  if (typeof body !== "object" || body === null) return false;
+  const code = (body as { error?: unknown }).error;
+  return typeof code === "string" && CONNECTION_CONFIG_ERRORS.includes(code);
 }
 
 /** HTTP 402: the TypeSafe account has run out of credit. */

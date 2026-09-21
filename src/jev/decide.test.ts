@@ -450,6 +450,52 @@ describe("decideAction", () => {
     expect(record.fallback).toBe(true);
   });
 
+  it("treats our own proxy's connection-config rejections as auth failures", async () => {
+    // A 400 from `/api/jev` means the stored connection cannot address any upstream, so the
+    // player has to fix it: the auth path pauses the table and reopens the connection modal.
+    for (const body of [{ error: "invalid_route" }, { error: "invalid_gateway_config" }]) {
+      const hand = openHand();
+      const snapshot = hand.snapshot();
+      const backend = fakeBackend(() => new APIError(400, body, new Headers(), "bad request"));
+      const record = await decideAction({
+        backend,
+        seat: 0,
+        features: buildFeatures({ snapshot, seat: 0, actions: [], persona }),
+        legal: hand.legalActions(0),
+        snapshot,
+        variance: 0.5,
+        rng: createRng(1),
+      });
+      expect(record.errorKind, JSON.stringify(body)).toBe("auth");
+      expect(record.fallback).toBe(true);
+    }
+  });
+
+  it("leaves every other 400 as an ordinary per-decision failure", async () => {
+    for (const body of [
+      { error: "invalid_request" },
+      { error: "invalid_route_ish" },
+      { message: "invalid_route" },
+      "invalid_route",
+      undefined,
+      null,
+    ]) {
+      const hand = openHand();
+      const snapshot = hand.snapshot();
+      const backend = fakeBackend(() => new APIError(400, body, new Headers(), "bad request"));
+      const record = await decideAction({
+        backend,
+        seat: 0,
+        features: buildFeatures({ snapshot, seat: 0, actions: [], persona }),
+        legal: hand.legalActions(0),
+        snapshot,
+        variance: 0.5,
+        rng: createRng(1),
+      });
+      expect(record.errorKind, JSON.stringify(body)).toBe("other");
+    }
+  });
+
   it("falls back when Jev picks a label that was not offered", async () => {
     const hand = openHand();
     hand.act(0, { type: "call" });

@@ -15,28 +15,28 @@ interface Props {
   settings: Settings;
   personas: readonly Persona[];
   language: Language;
-  hasApiKey: boolean;
+  hasConnection: boolean;
   onChange: (settings: Settings) => void;
   onStart: () => void;
   onEditPersonas: () => void;
-  onOpenKey: () => void;
+  onOpenConnection: () => void;
 }
 
 export function Setup({
   settings,
   personas,
   language,
-  hasApiKey,
+  hasConnection,
   onChange,
   onStart,
   onEditPersonas,
-  onOpenKey,
+  onOpenConnection,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
   const problem = validateSettings(settings);
   const spectator = settings.seats.every((s) => s.kind === "cpu");
-  const canStart = hasApiKey && problem === null;
+  const canStart = hasConnection && problem === null;
 
   const updateSeat = (index: number, patch: Partial<SeatSetting>) => {
     const seats = settings.seats.map((s, i) => (i === index ? { ...s, ...patch } : s));
@@ -182,11 +182,11 @@ export function Setup({
       </table>
 
       {problem !== null && <p className="error">{t(`setup.${problem}`)}</p>}
-      {!hasApiKey && (
+      {!hasConnection && (
         <p className="error">
-          {t("setup.needKey")}{" "}
-          <button type="button" className="link" onClick={onOpenKey}>
-            {t("app.apiKey")}
+          {t("setup.needConnection")}{" "}
+          <button type="button" className="link" onClick={onOpenConnection}>
+            {t("app.connection")}
           </button>
         </p>
       )}

@@ -249,10 +249,12 @@ describe("TableView", () => {
   it("draws each seat's bet as chips out on the felt", () => {
     stubViewport(false);
     const { container } = renderTable();
-    // One stack per seat with chips in front of it, plus the pot's own stack.
+    // One stack per seat with chips in front of it. Those 3 chips are the blinds, still out
+    // on the felt, so the middle is empty and says so; the total is what they add up to.
     expect(container.querySelectorAll(".bet-stack")).toHaveLength(2);
-    expect(container.querySelector(".chip-stack.pot")).not.toBeNull();
-    expect(screen.getByText("Pot: 3")).toBeInTheDocument();
+    expect(container.querySelector(".chip-stack.pot")).toBeNull();
+    expect(screen.getByText("Pot: 0")).toBeInTheDocument();
+    expect(screen.getByText("Total: 3")).toBeInTheDocument();
     // The old number pill is gone.
     expect(container.querySelector(".seat-bet")).toBeNull();
   });
@@ -346,11 +348,46 @@ describe("TableView", () => {
     expect(container.querySelectorAll(".bet-stack")).toHaveLength(0);
   });
 
+  it("counts only swept-in chips in the middle and spells out the total beside them", () => {
+    stubViewport(false);
+    // Flop: 10 went in preflop from each seat, and seat 0 has now bet 6 more.
+    const flop: HandSnapshot = {
+      ...SNAPSHOT,
+      street: "flop",
+      pot: 26,
+      currentBet: 6,
+      players: SNAPSHOT.players.map((p) =>
+        p.seat === 0
+          ? { ...p, contributed: 16, streetBet: 6 }
+          : { ...p, contributed: 10, streetBet: 0 },
+      ),
+    };
+    const { container } = renderTable({ snapshot: flop });
+    expect(screen.getByText("Pot: 20")).toBeInTheDocument();
+    expect(screen.getByText("Total: 26")).toBeInTheDocument();
+    expect(container.querySelector(".chip-stack.pot")).not.toBeNull();
+    expect(container.querySelectorAll(".bet-stack")).toHaveLength(1);
+  });
+
+  it("drops the total once every bet has been swept in", () => {
+    stubViewport(false);
+    const swept: HandSnapshot = {
+      ...SNAPSHOT,
+      street: "turn",
+      pot: 26,
+      currentBet: 0,
+      players: SNAPSHOT.players.map((p) => ({ ...p, contributed: 13, streetBet: 0 })),
+    };
+    renderTable({ snapshot: swept });
+    expect(screen.getByText("Pot: 26")).toBeInTheDocument();
+    expect(screen.queryByText(/^Total:/)).not.toBeInTheDocument();
+  });
+
   it("follows the snapshot's pot again once the next hand has started", () => {
     stubViewport(false);
     const { container } = renderTable({ fx: { ...EMPTY_FX, potPaid: false } });
-    expect(screen.getByText("Pot: 3")).toBeInTheDocument();
-    expect(container.querySelector(".chip-stack.pot")).not.toBeNull();
+    // The new hand's blinds are out in front of their seats again, and count towards the total.
+    expect(screen.getByText("Total: 3")).toBeInTheDocument();
     expect(container.querySelectorAll(".bet-stack")).toHaveLength(2);
   });
 

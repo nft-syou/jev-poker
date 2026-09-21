@@ -10,7 +10,8 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["functions", "src/proxy/handler.ts"]
+  "include": ["functions", "src/proxy/handler.ts", "src/jev/connection.ts"]
 }

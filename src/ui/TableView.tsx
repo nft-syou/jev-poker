@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useId, useState } from "react";
+import { type CSSProperties, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
@@ -70,13 +70,35 @@ function useMediaQuery(query: string): boolean {
   return on;
 }
 
-/** The pot, drawn as chips, with its number rolling to whatever the last action made it. */
-function PotView({ pot, bigBlind, ms }: { pot: number; bigBlind: number; ms: number }) {
+interface PotViewProps {
+  /** Chips already swept into the middle. */
+  pot: number;
+  /** The same plus every bet still in front of a seat: what a caller is really playing for. */
+  total: number;
+  bigBlind: number;
+  ms: number;
+}
+
+/**
+ * The pot, drawn as chips, with its number rolling to whatever the last sweep made it. Only
+ * collected chips count here: a bet still out on the felt is drawn in front of its seat, and
+ * counting it in the middle as well showed the same chips twice. The total is spelled out
+ * underneath while the two differ, because that is the number pot odds are worked from.
+ */
+function PotView({ pot, total, bigBlind, ms }: PotViewProps) {
   const { t } = useTranslation();
   const shown = useCountUp(pot, ms);
   const label = `${t("table.pot")}: ${shown}`;
-  if (pot <= 0) return <div className="pot">{label}</div>;
-  return <ChipStack className="pot" amount={pot} bigBlind={bigBlind} label={label} />;
+  return (
+    <>
+      {pot <= 0 ? (
+        <div className="pot">{label}</div>
+      ) : (
+        <ChipStack className="pot" amount={pot} bigBlind={bigBlind} label={label} />
+      )}
+      {total > pot && <div className="pot-total">{`${t("table.potTotal")}: ${total}`}</div>}
+    </>
+  );
 }
 
 export function TableView({
@@ -116,6 +138,29 @@ export function TableView({
 
   const { state } = game;
   const snapshot = state.snapshot;
+
+  // On a phone the action bar is fixed over the bottom of the page, which is exactly where
+  // the player's own seat is drawn: left alone it hid their cards on their own turn. So the
+  // page keeps room for the bar below the felt, and a turn scrolls the felt clear of it. The
+  // room is never given back while the table is up — a page that grew and shrank with every
+  // turn would jump under the thumb.
+  const screenRef = useRef<HTMLElement>(null);
+  const feltRef = useRef<HTMLDivElement>(null);
+  const turnRef = useRef<HTMLDivElement>(null);
+  const legalForHuman = game.legalForHuman;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new turn is a new `legalForHuman`, and the bar is as tall as what it offers.
+  useLayoutEffect(() => {
+    const bar = turnRef.current;
+    if (!phone || bar === null || screenRef.current === null) return;
+    screenRef.current.style.setProperty("--turn-bar-height", `${bar.offsetHeight}px`);
+    const felt = feltRef.current;
+    if (felt === null || typeof felt.scrollIntoView !== "function") return;
+    if (felt.getBoundingClientRect().bottom <= bar.getBoundingClientRect().top) return;
+    // Instant on purpose. With the room kept this happens once per sitting, and a smooth
+    // scroll is an animation: a tab that is not painting never finishes it, and the cards
+    // stay under the bar.
+    felt.scrollIntoView({ block: "end" });
+  }, [phone, legalForHuman]);
   const names = new Map(state.seats.map((s) => [s.id, s.name]));
   const count = state.seats.length;
   // Put the first human seat (or seat 0) at the bottom of the table.
@@ -167,7 +212,11 @@ export function TableView({
   // The engine keeps `contributed` — and so `snapshot.pot` — until the next hand starts, but
   // the chips have visibly flown to the winner by then. Once the pot is paid the middle is
   // empty and the seats have nothing in front of them, whatever the snapshot still says.
-  const pot = fx.potPaid ? 0 : (snapshot?.pot ?? 0);
+  const total = fx.potPaid ? 0 : (snapshot?.pot ?? 0);
+  // `snapshot.pot` is everything contributed, this street's bets included, and those are still
+  // drawn in front of their seats until the street ends: the middle holds only the rest.
+  const outstanding = snapshot?.players.reduce((sum, p) => sum + p.streetBet, 0) ?? 0;
+  const pot = Math.max(0, total - outstanding);
   /** Durations the felt's animations read; one place to change, one place to speed up. */
   const feltVars = {
     "--callout-ms": `${timings.calloutMs}ms`,
@@ -177,7 +226,7 @@ export function TableView({
   } as CSSProperties;
 
   return (
-    <section className={showcase ? "table-screen showcase-mode" : "table-screen"}>
+    <section ref={screenRef} className={showcase ? "table-screen showcase-mode" : "table-screen"}>
       <div className="table-main">
         <div className="table-header row">
           <span>{snapshot !== null && t("table.hand", { number: snapshot.handNumber + 1 })}</span>
@@ -243,7 +292,7 @@ export function TableView({
         </div>
 
         {showFelt && (
-          <div className="felt" style={feltVars}>
+          <div ref={feltRef} className="felt" style={feltVars}>
             {layout.map(({ seat, player, x, y, inward }) => {
               const style = { left: `${x}%`, top: `${y}%` };
               const thinking = state.thinkingSeat === seat.id;
@@ -310,6 +359,7 @@ export function TableView({
               {snapshot !== null && (
                 <PotView
                   pot={pot}
+                  total={total}
                   bigBlind={bigBlind}
                   ms={reducedMotion ? 0 : timings.potCountMs}
                 />
@@ -331,11 +381,14 @@ export function TableView({
         )}
 
         {game.legalForHuman !== null && snapshot !== null && (
-          <div className="your-turn">
+          <div ref={turnRef} className="your-turn">
             <strong>{t("table.yourTurn")}</strong>
             <ActionBar
               legal={game.legalForHuman}
               currentBet={snapshot.currentBet}
+              pot={snapshot.pot}
+              bigBlind={bigBlind}
+              preflop={snapshot.street === "preflop"}
               onAct={game.humanAct}
             />
           </div>

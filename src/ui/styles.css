@@ -96,10 +96,24 @@ button.link {
   max-width: 480px;
   width: 100%;
 }
-.modal input {
+.modal input,
+.modal select {
   width: 100%;
   box-sizing: border-box;
   margin: 8px 0;
+}
+/* The Cloudflare route asks for five fields, so the dialog scrolls instead of overflowing. */
+.modal {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.modal .field {
+  margin: 12px 0;
+}
+.modal .field .muted,
+.modal .field .error {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
 }
 table.seats {
   width: 100%;
@@ -538,6 +552,13 @@ a {
   margin-top: 8px;
   font-weight: 600;
 }
+/* Bets still in front of their seats, added to the pot: the number pot odds come from. */
+.pot-total {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
 .chip-stack.pot {
   --chip-width: 34px;
   --chip-height: 11px;
@@ -602,19 +623,127 @@ a {
   border: 1px solid #ffd54f;
   border-radius: 10px;
 }
+/*
+ * Two rows: choose a size, then commit. Both rows are grids of equal columns, so no button
+ * changes width with its label and the three that end the turn are always in the same place.
+ */
 .action-bar {
-  display: flex;
+  display: grid;
   gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
   margin-top: 8px;
+  min-width: 0;
 }
-.action-bar input[type="number"] {
-  width: 90px;
+.action-sizing {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
-.action-bar input[type="range"] {
-  flex: 1;
-  min-width: 120px;
+.sizing-presets {
+  display: flex;
+  gap: 6px;
+}
+.sizing-presets .preset {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 2px;
+  background: transparent;
+  border-color: #2f4a3b;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* "All in" is the one long label; six even columns on a phone are 54px and cut it short. */
+.sizing-presets .preset:last-child {
+  flex-grow: 1.6;
+}
+.sizing-presets .preset.active {
+  border-color: #ffd54f;
+  color: #ffd54f;
+}
+.sizing-fine {
+  display: grid;
+  grid-template-columns: auto 84px auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+.sizing-fine .stepper {
+  min-width: 40px;
+  padding: 6px 0;
+  font-weight: 700;
+}
+.sizing-fine input[type="number"] {
+  /* `width: 100%` has to mean the grid cell, padding and border included. */
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sizing-fine input[type="range"] {
+  /* `width: 100%` has to mean the grid cell, padding and border included. */
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  accent-color: #ffd54f;
+}
+.sizing-info {
+  margin: 0;
+  font-size: 0.78rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Three fixed slots — give up, stay in, put more in — so a button that is not on offer
+ * leaves a gap instead of handing its place to the next one. */
+.action-main {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.action-main .fold {
+  grid-column: 1;
+}
+.action-main .passive {
+  grid-column: 2;
+}
+.action-main .aggressive {
+  grid-column: 3;
+}
+.action-main button {
+  min-height: 44px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.action-main .act-name,
+.action-main .act-amount {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+.action-main .act-name {
+  font-size: 0.8em;
+  font-weight: 500;
+  opacity: 0.9;
+}
+.action-main .act-amount {
+  font-size: 1.1em;
+}
+.action-main .fold {
+  border-color: #8a5a55;
+  color: #ffb4ab;
+}
+.action-main .aggressive {
+  background: #c9842b;
+  border-color: #c9842b;
+}
+.action-main .aggressive.shove {
+  background: #c0392b;
+  border-color: #c0392b;
 }
 .history {
   background: #10201a;
@@ -774,13 +903,19 @@ button.danger {
     --board-card-width: 28px;
     --callout-reach: 26px;
     gap: 8px;
-    /* Room for the fixed tab bar, plus the phone's own gesture area. */
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    /* Room for the fixed tab bar and the action bar above it, plus the gesture area. */
+    padding-bottom: calc(72px + var(--turn-bar-height, 0px) + env(safe-area-inset-bottom, 0px));
   }
   .felt {
     aspect-ratio: 3 / 4;
     margin: 12px 0;
     border-width: 5px;
+    /* Where a turn scrolls the felt to: its bottom edge resting on top of the action bar. */
+    scroll-margin-bottom: calc(
+      72px +
+      var(--turn-bar-height, 0px) +
+      env(safe-area-inset-bottom, 0px)
+    );
   }
   .table-header button,
   .table-header select {
@@ -802,6 +937,42 @@ button.danger {
     overflow: auto;
     border-radius: 0;
     background: #10201a;
+    padding: 8px 10px;
+    border-width: 1px 0 0;
+  }
+  /* The heading costs a row the felt needs more; the bar lighting up says it just as well. */
+  .your-turn > strong {
+    display: none;
+  }
+  .your-turn .action-bar {
+    margin-top: 0;
+  }
+  /* Thumb-sized targets, and no double-tap zoom stealing the second tap. */
+  .action-bar button {
+    touch-action: manipulation;
+  }
+  .sizing-presets .preset,
+  .sizing-fine .stepper {
+    min-height: 44px;
+  }
+  .sizing-presets .preset {
+    padding: 6px 0;
+    font-size: 0.8rem;
+  }
+  .sizing-fine .stepper {
+    min-width: 48px;
+  }
+  .sizing-fine input[type="number"] {
+    min-height: 44px;
+    /* Below 16px iOS zooms the page in on focus. */
+    font-size: 16px;
+  }
+  .sizing-fine input[type="range"] {
+    min-height: 44px;
+  }
+  .action-main button {
+    min-height: 56px;
+    font-size: 1rem;
   }
 }
 

@@ -125,6 +125,8 @@ export interface UseGameOptions {
   settings: Settings;
   personas: readonly Persona[];
   backend: JevBackend | null;
+  /** Model id to ask for; defaults to `settings.model` (the Vercel route pins its own). */
+  model?: string;
   onAuthFailed: () => void;
   onBillingFailed: () => void;
   seed?: number;
@@ -248,6 +250,7 @@ function toConfig(settings: Settings, seed: number): GameConfig {
 
 export function useGame(options: UseGameOptions): GameController {
   const { settings, personas, backend, onAuthFailed, onBillingFailed } = options;
+  const model = options.model ?? settings.model;
   const [state, dispatch] = useReducer(reducer, {
     snapshot: null,
     seats: [],
@@ -390,14 +393,14 @@ export function useGame(options: UseGameOptions): GameController {
             snapshot: target.snapshot,
             variance: persona.variance,
             rng: rngFor(key),
-            model: settings.model,
+            model,
             signal,
           }),
         );
       }
       reportPrefetch();
     },
-    [backend, personas, reportPrefetch, rngFor, settings.model],
+    [backend, model, personas, reportPrefetch, rngFor],
   );
 
   const loop = useCallback(
@@ -459,7 +462,7 @@ export function useGame(options: UseGameOptions): GameController {
                     snapshot,
                     variance: persona.variance,
                     rng: rngFor(key),
-                    model: settings.model,
+                    model,
                     signal: run.abort.signal,
                   })),
                   prefetched: false,
@@ -500,12 +503,12 @@ export function useGame(options: UseGameOptions): GameController {
     },
     [
       backend,
+      model,
       onAuthFailed,
       onBillingFailed,
       personas,
       reportPrefetch,
       rngFor,
-      settings.model,
       speculate,
       sync,
     ],

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18next, { detectLanguage, initI18n, type Language } from "../i18n";
+import type { Connection } from "../jev/connection";
 import { loadPersonas, type Persona, saveCustomPersonas } from "../jev/personas";
-import { ApiKeyModal } from "./ApiKeyModal";
+import { ConnectionModal } from "./ConnectionModal";
 import { GameScreen } from "./GameScreen";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { PersonaEditor } from "./PersonaEditor";
 import { Setup } from "./Setup";
 import {
-  clearApiKey,
-  loadApiKey,
+  clearConnection,
+  loadConnection,
   loadLanguage,
   loadSettings,
   type Settings,
-  saveApiKey,
+  saveConnection,
   saveLanguage,
   saveSettings,
 } from "./storage";
@@ -29,9 +30,9 @@ initI18n(initialLanguage);
 export function App() {
   const { t } = useTranslation();
   const [language, setLanguage] = useState<Language>(initialLanguage);
-  const [apiKey, setApiKey] = useState<string | null>(() => loadApiKey());
+  const [connection, setConnection] = useState<Connection | null>(() => loadConnection());
   const [keyError, setKeyError] = useState<string | null>(null);
-  const [keyModalOpen, setKeyModalOpen] = useState(apiKey === null);
+  const [keyModalOpen, setKeyModalOpen] = useState(connection === null);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas());
   const [screen, setScreen] = useState<Screen>("setup");
@@ -41,7 +42,8 @@ export function App() {
   }, [language]);
 
   const onAuthFailed = useCallback(() => {
-    setKeyError(t("apiKey.invalid"));
+    // Deliberately generic: which of the services refused is not ours to guess.
+    setKeyError(t("connection.invalid"));
     setKeyModalOpen(true);
   }, [t]);
 
@@ -83,7 +85,7 @@ export function App() {
         </div>
         <nav className="row">
           <button type="button" className="secondary" onClick={() => setKeyModalOpen(true)}>
-            {apiKey === null ? t("app.apiKey") : t("app.apiKeySet")}
+            {connection === null ? t("app.connection") : t(`connection.route_${connection.route}`)}
           </button>
           <LanguageSwitch language={language} onChange={changeLanguage} />
           <a href="https://github.com/nft-syou/jev-poker" target="_blank" rel="noreferrer">
@@ -98,11 +100,11 @@ export function App() {
             settings={settings}
             personas={personas}
             language={language}
-            hasApiKey={apiKey !== null}
+            hasConnection={connection !== null}
             onChange={changeSettings}
             onStart={() => setScreen("table")}
             onEditPersonas={() => setScreen("personas")}
-            onOpenKey={() => setKeyModalOpen(true)}
+            onOpenConnection={() => setKeyModalOpen(true)}
           />
         )}
         {screen === "personas" && (
@@ -117,7 +119,7 @@ export function App() {
           <GameScreen
             settings={settings}
             personas={personas}
-            apiKey={apiKey}
+            connection={connection}
             language={language}
             onSettingsChange={changeSettings}
             onLeave={() => setScreen("setup")}
@@ -126,19 +128,19 @@ export function App() {
         )}
       </main>
 
-      <ApiKeyModal
+      <ConnectionModal
         open={keyModalOpen}
-        currentKey={apiKey}
+        connection={connection}
         error={keyError}
-        onSave={(key) => {
-          saveApiKey(key);
-          setApiKey(key);
+        onSave={(next) => {
+          saveConnection(next);
+          setConnection(next);
           setKeyError(null);
           setKeyModalOpen(false);
         }}
         onRemove={() => {
-          clearApiKey();
-          setApiKey(null);
+          clearConnection();
+          setConnection(null);
           setKeyError(null);
           setScreen("setup");
         }}
