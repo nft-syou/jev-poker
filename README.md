@@ -193,7 +193,10 @@ confirmed on a second unused seed set (`--base-seed 300001`, 1,000 seeds each): 
 swing a 100-seed result by 60 bb/100. Five further ideas (always taking the most likely action,
 range-aware equity, a preflop chart, opponent session statistics, another model) were each measured on
 1,000 seeds and none beat this default, so they are options only. A fixed rule set over the same
-features shows what the classifier adds: about +30 to +50 bb/100 heads-up, nothing six-handed. The
+features shows what the classifier adds: about +30 to +50 bb/100 heads-up, nothing six-handed.
+Against a real poker AI — [Slumbot](https://www.slumbot.com/), heads-up at 200 bb, 12,000 hands each via
+`pnpm bench:slumbot` — the Jev agent loses **-49.4 bb/100 [-65.8, -33.0]**, exactly like the heuristic
+(-49.4) and the rule-based bot (-50.4): the edge over simple bots does not carry over to a strong opponent. The
 improvements were all in what Jev is told — exact hand strength, equity vs. pot odds, whether its bet
 was raised, pot commitment, blind-stealing spots — plus conventional preflop raise sizes; the engine
 and the baselines are unchanged. Heads-up vs `random` remains inconclusive (random all-ins). `station`
@@ -211,6 +214,9 @@ persona raises occasionally.
 さらに 5 つの案 (常に最尤の行動、レンジ対応エクイティ、プリフロップのチャート化、相手プロファイル、別モデル) を
 各 1,000 シードで計測しましたが、どれも既定を上回らなかったためオプション扱いです。Jev と同じ特徴量だけを読む
 固定ルールとの比較では、分類器の上乗せは HU で +30〜+50 bb/100、6-max ではゼロでした。
+本格的なポーカー AI である [Slumbot](https://www.slumbot.com/) とのヘッズアップ (200bb、各 12,000 ハンド、`pnpm bench:slumbot`) では、
+Jev エージェントは **-49.4 bb/100 [-65.8, -33.0]** で負けました。ヒューリスティック (-49.4) とルールベース (-50.4) と同じ負け幅で、
+単純なボットに対する優位は強い相手には持ち越されません。
 改善はすべて「Jev に何を伝えるか」(正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、
 ポットコミット、スティールの機会) とプリフロップの標準的なレイズ額で、エンジンと対照群は変えていません。
 `random` とのヘッズアップは依然として結論が出ません (ランダムなオールイン)。

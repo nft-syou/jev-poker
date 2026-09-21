@@ -77,6 +77,23 @@ pnpm bench --help
 すべて同じ結果の中で最新の 1 件だけを残す (再実行は置き換え、別の実験は並べて表示)。集計値は毎回
 生のハンド記録から計算し直すので、統計コードの修正は古いファイルにも反映される。
 
+### Slumbot との対戦 (`pnpm bench:slumbot`)
+
+本格的なポーカー AI である [Slumbot](https://www.slumbot.com/) (CFR 系、ACPC 複数回優勝) の公開 API と
+ヘッズアップで対戦する。ゲームは Slumbot 側の固定仕様 (ブラインド 50/100、**200bb スタック**、毎ハンドリセット)。
+配牌はサーバー側なのでミラーハンドは使えず、CI は独立したハンドに対して計算する (1 ハンドの標準偏差は約 10bb、
+±20 bb/100 の精度に約 1 万ハンド必要)。
+
+```sh
+TYPESAFE_API_KEY=... pnpm bench:slumbot --hero jev --persona tag --hands 2000 --sessions 4
+pnpm bench:slumbot --hero heuristic --hands 2000 --sessions 2   # API キー不要
+pnpm bench:slumbot:report                                       # 同じ構成の結果ファイルをまとめて集計
+```
+
+- `--hero` は `jev` / `heuristic` / `rules` / `caller` / `random`。結果は `bench/results-slumbot/` に保存される。
+- **他人のサーバーなので `--sessions` は小さく保つこと** (同時接続の合計で 8 程度まで)。2,000 ハンドで約 8〜20 分。
+- 長時間の計測は 2,000 ハンドずつに分けて回すと、途中で止まっても結果が残る。
+
 ### 実験用オプション
 
 既定のエージェントは変えずに、案を同じシードで比較するためのオプション。どれも既定では無効で、

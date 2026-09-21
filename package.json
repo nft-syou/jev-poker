@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "bench": "tsx bench/cli.ts",
     "bench:report": "tsx bench/report-cli.ts",
-    "bench:slumbot": "tsx bench/slumbot/cli.ts"
+    "bench:slumbot": "tsx bench/slumbot/cli.ts",
+    "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0"

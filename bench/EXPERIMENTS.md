@@ -166,6 +166,40 @@ Lessons:
   range-aware equity and opponent statistics each left play unchanged or made it worse, while the
   per-row `isMe` flag helps six-handed.
 
+## Against a real poker AI: Slumbot (2026-09-21) / 本格的な AI との比較
+
+[Slumbot](https://www.slumbot.com/) is a CFR-based heads-up no-limit bot, several times Annual
+Computer Poker Competition champion, playable through a public HTTP API. `pnpm bench:slumbot`
+(`bench/slumbot/`) replays Slumbot's action strings into the engine's `PlayerView` /
+`LegalActions`, so any `Agent` of this repo can sit down. The game is Slumbot's own: heads-up,
+blinds 50/100, **200 bb stacks** reset every hand. The server deals, so mirrored hands are not
+possible; the CI is over independent hands (sd about 10 bb per hand).
+
+12,000 hands per hero (one 2,000-hand trial plus five 2,000-hand chunks, code `1f8ccb1`, no
+fail-open, Jev model `jev-1.13.0`):
+
+| hero | hands | bb/100 | 95% CI | as big blind | as button | VPIP | PFR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Jev `tag` | 12,000 | **-49.4** | [-65.8, -33.0] | -60.0 | -38.8 | 51% | 47% |
+| heuristic over the same features (no model) | 12,000 | -49.4 | [-68.9, -30.0] | -60.8 | -38.0 | 23% | 17% |
+| `rules` bot | 12,000 | -50.4 | [-69.2, -31.7] | -88.8 | -12.0 | 11% | 6% |
+
+Differences: Jev - heuristic 0.0 [-25.4, +25.5]; Jev - rules +1.0 [-23.9, +26.0].
+
+- All three lose to Slumbot by about 50 bb/100, and they are indistinguishable from each other.
+  For scale, folding every hand loses 75 bb/100, so each of them recovers about a third of that.
+- The edge Jev shows over the heuristic against `rules` (+30 to +50 bb/100 heads-up) does **not**
+  carry over to a strong opponent. That edge came from exploiting a bot that folds to raises;
+  Slumbot does not.
+- Where Jev loses: it folds preflop in 55% of hands (6,615 of 12,000; -70.4 bb/100 in blinds and
+  abandoned raises) and wins that back only partly when Slumbot folds (+77.0 over all streets);
+  folding after the flop costs another -51.1, showdowns are close to even (-4.9). Against an
+  opponent that raises and 3-bets as often as Slumbot does, a 100 bb-tuned tight-aggressive
+  style at 200 bb depth gives up too many pots before the flop.
+- Slumbot's per-hand `baseline_winnings` (its own strategy's result with the client's cards) did
+  not reduce variance here: its sd is 16-18 bb per hand against about 10 for these heroes, so the
+  baseline-adjusted figure is noisier than the raw one and is reported only in the result files.
+
 ## Reproduce / 再現
 
 ```sh
