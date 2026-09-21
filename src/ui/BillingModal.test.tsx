@@ -42,6 +42,16 @@ describe("BillingModal", () => {
     );
   });
 
+  it("points a lolipop 402 at the prepaid credit of that gateway", () => {
+    render(<BillingModal open={true} route="lolipop" onResume={() => {}} onClose={() => {}} />);
+    const text = screen.getByRole("dialog").textContent ?? "";
+    expect(text).toContain("The Lolipop AI Gateway returned 402 Payment Required");
+    expect(text).not.toContain("Top up your TypeSafe account");
+    expect(
+      screen.getByRole("link", { name: "Open the Lolipop AI Gateway console" }),
+    ).toHaveAttribute("href", "https://ai-gateway.lolipop.jp/");
+  });
+
   it("calls onResume and onClose from their buttons", () => {
     const onResume = vi.fn();
     const onClose = vi.fn();

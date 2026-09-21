@@ -42,7 +42,7 @@ export function App() {
   }, [language]);
 
   const onAuthFailed = useCallback(() => {
-    // Deliberately generic: which of the three services refused is not ours to guess.
+    // Deliberately generic: which of the services refused is not ours to guess.
     setKeyError(t("connection.invalid"));
     setKeyModalOpen(true);
   }, [t]);

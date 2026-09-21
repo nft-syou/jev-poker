@@ -7,6 +7,7 @@ import {
   CF_TOKEN_HEADER,
   type Connection,
   connectionHeaders,
+  LOLIPOP_MODEL,
   modelFor,
   normalizeProviderSlug,
   ROUTE_HEADER,
@@ -97,7 +98,7 @@ describe("provider slug agreement between the validator and the url builder", ()
 });
 
 describe("validateConnection", () => {
-  it("accepts the three routes and rejects anything else", () => {
+  it("accepts the listed routes and rejects anything else", () => {
     expect(connectionOf({ route: "typesafe", apiKey: "sk-1" })).toEqual({
       route: "typesafe",
       apiKey: "sk-1",
@@ -105,6 +106,10 @@ describe("validateConnection", () => {
     expect(connectionOf({ route: "vercel", apiKey: "vck_1" })).toEqual({
       route: "vercel",
       apiKey: "vck_1",
+    });
+    expect(connectionOf({ route: "lolipop", apiKey: "lp-1" })).toEqual({
+      route: "lolipop",
+      apiKey: "lp-1",
     });
     for (const route of ["", "TypeSafe", "openai", "typesafe ", null, 7, undefined]) {
       expect(errorsOf({ route, apiKey: "sk-1" }).route, String(route)).toBe(
@@ -273,6 +278,10 @@ describe("connectionHeaders", () => {
       [API_KEY_HEADER]: "vck",
       [ROUTE_HEADER]: "vercel",
     });
+    expect(connectionHeaders({ route: "lolipop", apiKey: "lp" })).toEqual({
+      [API_KEY_HEADER]: "lp",
+      [ROUTE_HEADER]: "lolipop",
+    });
     expect(connectionHeaders(CF)).toEqual({
       [API_KEY_HEADER]: "sk-cf",
       [ROUTE_HEADER]: "cloudflare",
@@ -285,16 +294,18 @@ describe("connectionHeaders", () => {
 });
 
 describe("modelFor", () => {
-  it("pins the vercel gateway to its own model id and passes the setting through elsewhere", () => {
+  it("pins each reselling gateway to its own model id and passes the setting through elsewhere", () => {
     expect(modelFor({ route: "vercel", apiKey: "k" }, "jev-latest")).toBe(VERCEL_MODEL);
     expect(VERCEL_MODEL).toBe("typesafe-ai/jev");
+    expect(modelFor({ route: "lolipop", apiKey: "k" }, "jev-2026-09")).toBe(LOLIPOP_MODEL);
+    expect(LOLIPOP_MODEL).toBe("typesafe/jev-latest");
     expect(modelFor({ route: "typesafe", apiKey: "k" }, "jev-latest")).toBe("jev-latest");
     expect(modelFor(CF, "jev-2026-09")).toBe("jev-2026-09");
   });
 });
 
 describe("upstreamUrl", () => {
-  it("builds the exact url for all three routes and both paths", () => {
+  it("builds the exact url for every route and both paths", () => {
     expect(upstreamUrl("typesafe", "v1/systemone", null, {})).toBe(
       "https://api.typesafe.ai/v1/systemone",
     );
@@ -306,6 +317,12 @@ describe("upstreamUrl", () => {
     );
     expect(upstreamUrl("vercel", "v1/models", null, {})).toBe(
       "https://ai-gateway.vercel.sh/typesafe/v1/models",
+    );
+    expect(upstreamUrl("lolipop", "v1/systemone", null, {})).toBe(
+      "https://ai-gateway.lolipop.jp/v1/systemone",
+    );
+    expect(upstreamUrl("lolipop", "v1/models", null, {})).toBe(
+      "https://ai-gateway.lolipop.jp/v1/models",
     );
     expect(upstreamUrl("cloudflare", "v1/systemone", CF_CONFIG, {})).toBe(
       "https://gateway.ai.cloudflare.com/v1/0123456789abcdef0123456789abcdef/my-gateway/custom-typesafe/v1/systemone",

@@ -12,7 +12,7 @@ import {
 
 /**
  * `pnpm dev` serves `/api/jev/*` with the same handler the Cloudflare Pages Function runs,
- * so every route (typesafe, vercel, cloudflare) behaves locally exactly as in production.
+ * so every route (typesafe, vercel, lolipop, cloudflare) behaves locally exactly as in production.
  */
 function jevProxyDev(): Plugin {
   return {

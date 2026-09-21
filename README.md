@@ -3,12 +3,12 @@
 No-Limit Texas Hold'em in the browser where every CPU player thinks with
 [TypeSafe Jev](https://typesafe.ai). Play against them, or let a full table of
 CPUs play each other while you watch. Bring your own credentials: a TypeSafe API
-key, or a Vercel AI Gateway or Cloudflare AI Gateway of your own.
+key, or a Vercel, Lolipop or Cloudflare AI Gateway of your own.
 
 ブラウザで遊べるノーリミット・テキサスホールデム。CPU プレイヤーは全員
 [TypeSafe Jev](https://typesafe.ai) で考えます。人間 1 人 + CPU、または全席 CPU の
 観戦モード。プレイにはあなた自身の TypeSafe API キー、または Vercel AI Gateway /
-Cloudflare AI Gateway の設定が必要です。
+ロリポップ！AIゲートウェイ / Cloudflare AI Gateway の設定が必要です。
 
 ## How it works / 仕組み
 
@@ -39,18 +39,21 @@ Your credentials never leave your browser except inside requests to this site's
 
 ## Routes / 経路
 
-The connection modal offers three ways to reach Jev. Pick one; you can change it
+The connection modal offers four ways to reach Jev. Pick one; you can change it
 at any time from the button in the header.
 
 | Route | You provide | Requests go to | Model | Billed by |
 | --- | --- | --- | --- | --- |
 | TypeSafe direct | a TypeSafe API key | `https://api.typesafe.ai` | `jev-latest` | TypeSafe |
 | Vercel AI Gateway | a Vercel AI Gateway API key | `https://ai-gateway.vercel.sh/typesafe` | `typesafe-ai/jev` | Vercel (or your own TypeSafe key if you added one there) |
+| Lolipop AI Gateway | a Lolipop AI Gateway API key | `https://ai-gateway.lolipop.jp` | `typesafe/jev-latest` | Lolipop (prepaid credit, in yen) |
 | Cloudflare AI Gateway | a TypeSafe API key + account id, gateway id, custom provider slug, optional gateway token | `https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/custom-{slug}` | `jev-latest` | TypeSafe (Cloudflare adds logging, caching and rate limits) |
 
-接続モーダルで 3 つの経路から 1 つを選びます。ヘッダのボタンからいつでも変更できます。
+接続モーダルで 4 つの経路から 1 つを選びます。ヘッダのボタンからいつでも変更できます。
 TypeSafe 直結は TypeSafe のキーのみ、Vercel AI Gateway は Vercel のキーのみ
-(モデル id は `typesafe-ai/jev`、課金は Vercel)、Cloudflare AI Gateway は
+(モデル id は `typesafe-ai/jev`、課金は Vercel)、ロリポップ！AIゲートウェイは
+ロリポップの API キーのみ (モデル id は `typesafe/jev-latest`、課金はロリポップの
+前払いクレジット)、Cloudflare AI Gateway は
 TypeSafe のキーに加えてアカウント ID・ゲートウェイ ID・カスタムプロバイダの slug
 (認証付きゲートウェイならトークンも) が必要です。
 
@@ -59,6 +62,17 @@ TypeSafe のキーに加えてアカウント ID・ゲートウェイ ID・カ�
 1. Vercel dashboard → AI Gateway → **API keys** → create a key (`vck_…`).
 2. Paste it as the AI Gateway API key. Nothing else is needed: the gateway speaks the TypeSafe API at `https://ai-gateway.vercel.sh/typesafe`, and the app asks for the model id `typesafe-ai/jev`.
 3. Optional BYOK: add your own TypeSafe key under the gateway's provider settings and Vercel routes the calls with it, so TypeSafe bills you instead.
+
+### Lolipop AI Gateway / ロリポップ！AIゲートウェイ
+
+1. [ai-gateway.lolipop.jp](https://ai-gateway.lolipop.jp/) → your project → **API keys** → create a key, and make sure the project may call `typesafe/jev-latest`.
+2. Paste it as the Lolipop AI Gateway API key. Nothing else is needed: the gateway serves the same `POST /v1/systemone` ([typed probabilistic decisions](https://ai-gateway.lolipop.jp/docs/guides/features/probabilistic-decision)) and the app asks for the model id `typesafe/jev-latest`.
+3. Calls are charged to the organization's prepaid credit. When it runs out the gateway answers 402 and the table pauses with a top-up prompt.
+
+ロリポップ！AIゲートウェイのコンソールでプロジェクトの API キーを発行し、そのまま貼り付けるだけです。
+ゲートウェイは TypeSafe と同じ `POST /v1/systemone` (型付き確率的判断) を提供しており、
+アプリはモデル id `typesafe/jev-latest` を指定します。課金は組織の前払いクレジットで、
+残高が尽きると 402 が返り、テーブルは一時停止してチャージを促します。
 
 ### Cloudflare AI Gateway
 
@@ -69,8 +83,8 @@ TypeSafe のキーに加えてアカウント ID・ゲートウェイ ID・カ�
 
 ### Security / セキュリティ
 
-The proxy never accepts a URL from the browser. It chooses one of three fixed
-hosts from a route id (`typesafe`, `vercel`, `cloudflare`) and interpolates only
+The proxy never accepts a URL from the browser. It chooses one of four fixed
+hosts from a route id (`typesafe`, `vercel`, `lolipop`, `cloudflare`) and interpolates only
 values that matched an anchored regex server-side — account id `[0-9a-f]{32}`,
 gateway id `[A-Za-z0-9_-]{1,64}`, provider slug `[a-z0-9][a-z0-9-]{0,62}` with no
 `custom-` prefix left on it, keys and tokens printable ASCII up to 512

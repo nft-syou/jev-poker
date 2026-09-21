@@ -31,6 +31,7 @@ type TextField = Exclude<keyof Form, "route">;
 const HELP_LINKS: Record<JevRoute, string> = {
   typesafe: "https://typesafe.ai",
   vercel: "https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe",
+  lolipop: "https://ai-gateway.lolipop.jp/docs/guides/features/probabilistic-decision",
   cloudflare: "https://developers.cloudflare.com/ai-gateway/configuration/custom-providers/",
 };
 

@@ -29,7 +29,7 @@ const PASSTHROUGH_RESPONSE_HEADERS = [
  * Forwards an allow-listed request to the service the caller's route header names, with the
  * caller's key moved from `X-TypeSafe-Key` into `Authorization`. Nothing is logged or stored.
  *
- * The upstream is never taken from the request: `upstreamUrl` picks one of three fixed hosts
+ * The upstream is never taken from the request: `upstreamUrl` picks one of four fixed hosts
  * by route id and interpolates only regex-validated, percent-encoded segments. Upstream
  * headers are built from scratch, so none of our own `X-*` headers can leak onward.
  */

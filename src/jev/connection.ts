@@ -4,18 +4,20 @@
  * Cloudflare Pages Function, so it may not import React, the SDK or any node/browser API.
  *
  * The security rule this module exists to enforce: the proxy never accepts a free-form
- * upstream URL. It picks one of three fixed hosts by route id and interpolates only values
+ * upstream URL. It picks one of four fixed hosts by route id and interpolates only values
  * that passed an anchored regex here and then `encodeURIComponent`.
  */
 
-export type JevRoute = "typesafe" | "vercel" | "cloudflare";
+export type JevRoute = "typesafe" | "vercel" | "lolipop" | "cloudflare";
 
-export const JEV_ROUTES: readonly JevRoute[] = ["typesafe", "vercel", "cloudflare"];
+export const JEV_ROUTES: readonly JevRoute[] = ["typesafe", "vercel", "lolipop", "cloudflare"];
 
 export type Connection =
   | { route: "typesafe"; apiKey: string }
   /** `apiKey` is a Vercel AI Gateway key, not a TypeSafe one. */
   | { route: "vercel"; apiKey: string }
+  /** `apiKey` is a Lolipop AI Gateway project key, not a TypeSafe one. */
+  | { route: "lolipop"; apiKey: string }
   | {
       route: "cloudflare";
       apiKey: string;
@@ -42,10 +44,13 @@ export const CF_PROVIDER_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 export const TYPESAFE_UPSTREAM = "https://api.typesafe.ai";
 export const VERCEL_UPSTREAM = "https://ai-gateway.vercel.sh/typesafe";
+export const LOLIPOP_UPSTREAM = "https://ai-gateway.lolipop.jp";
 export const CLOUDFLARE_UPSTREAM = "https://gateway.ai.cloudflare.com";
 
 /** The Vercel AI Gateway addresses Jev by this id instead of `jev-latest`. */
 export const VERCEL_MODEL = "typesafe-ai/jev";
+/** The Lolipop AI Gateway lists Jev under this id. */
+export const LOLIPOP_MODEL = "typesafe/jev-latest";
 
 /** The only paths the proxy will ever forward, with the method each one allows. */
 export const ALLOWED_PATHS: Readonly<Record<string, "GET" | "POST">> = {
@@ -171,7 +176,9 @@ export function connectionHeaders(connection: Connection): Record<string, string
 }
 
 export function modelFor(connection: Connection, settingsModel: string): string {
-  return connection.route === "vercel" ? VERCEL_MODEL : settingsModel;
+  if (connection.route === "vercel") return VERCEL_MODEL;
+  if (connection.route === "lolipop") return LOLIPOP_MODEL;
+  return settingsModel;
 }
 
 /**
@@ -198,6 +205,7 @@ export function upstreamUrl(
     return `${base}/${path}`;
   }
   if (id === "vercel") return `${VERCEL_UPSTREAM}/${path}`;
+  if (id === "lolipop") return `${LOLIPOP_UPSTREAM}/${path}`;
 
   const accountId = trimmed(cf?.accountId) ?? "";
   const gatewayId = trimmed(cf?.gatewayId) ?? "";

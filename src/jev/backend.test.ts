@@ -73,6 +73,14 @@ describe("createTypeSafeBackend", () => {
     expect(JSON.parse(String(call.init?.body)).model).toBe("typesafe-ai/jev");
   });
 
+  it("asks the lolipop gateway for typesafe/jev-latest whatever the settings model says", async () => {
+    const call = await ask({ route: "lolipop", apiKey: "lp-1" }, "jev-2026-09");
+    const headers = new Headers(call.init?.headers);
+    expect(headers.get(API_KEY_HEADER)).toBe("lp-1");
+    expect(headers.get(ROUTE_HEADER)).toBe("lolipop");
+    expect(JSON.parse(String(call.init?.body)).model).toBe("typesafe/jev-latest");
+  });
+
   it("sends the four cloudflare headers and keeps the settings model", async () => {
     const call = await ask(
       {

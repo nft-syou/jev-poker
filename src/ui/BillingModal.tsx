@@ -13,6 +13,7 @@ interface Props {
 const TOP_UP_LINKS: Record<JevRoute, string> = {
   typesafe: "https://typesafe.ai",
   vercel: "https://vercel.com/docs/ai-gateway",
+  lolipop: "https://ai-gateway.lolipop.jp/",
   cloudflare: "https://typesafe.ai",
 };
 
@@ -25,8 +26,8 @@ export function BillingModal({ open, route, onResume, onClose }: Props) {
   const { t } = useTranslation();
   const titleId = useId();
   if (!open) return null;
-  // Only the Vercel route bills someone other than TypeSafe.
-  const suffix = route === "vercel" ? "_vercel" : "";
+  // Vercel and Lolipop bill their own credit; the other routes are paid with a TypeSafe key.
+  const suffix = route === "vercel" || route === "lolipop" ? `_${route}` : "";
   return (
     <div className="modal-backdrop" role="presentation">
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>

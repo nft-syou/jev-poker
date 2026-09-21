@@ -40,7 +40,7 @@ function open(connection: Connection | null = null) {
 const type = (label: string | RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
-const chooseRoute = (route: "typesafe" | "vercel" | "cloudflare") =>
+const chooseRoute = (route: "typesafe" | "vercel" | "lolipop" | "cloudflare") =>
   fireEvent.change(screen.getByLabelText("Route"), { target: { value: route } });
 
 describe("ConnectionModal", () => {
@@ -119,6 +119,15 @@ describe("ConnectionModal", () => {
     type("AI Gateway API key", "vck_1");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith({ route: "vercel", apiKey: "vck_1" });
+  });
+
+  it("saves a lolipop connection with nothing but its key", () => {
+    const { onSave } = open();
+    chooseRoute("lolipop");
+    expect(screen.queryByLabelText("Account ID")).toBeNull();
+    type("Lolipop AI Gateway API key", "lp-1");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith({ route: "lolipop", apiKey: "lp-1" });
   });
 
   it("normalizes the provider slug and keeps the token optional", () => {

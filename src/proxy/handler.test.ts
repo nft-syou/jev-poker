@@ -175,6 +175,30 @@ describe("handleJevProxy", () => {
       expect(sent.get("cf-aig-authorization")).toBeNull();
     });
 
+    it("sends the lolipop route to its gateway with exactly one credential header", async () => {
+      const { fetch, calls } = fakeFetch(new Response('{"model":"typesafe/jev-latest"}'));
+      const response = await handleJevProxy(
+        post({
+          "content-type": "application/json",
+          "x-typesafe-key": "lp-1",
+          // The gateway answers 401 to two credentials at once, so none of these may go on.
+          "x-api-key": "stray",
+          "anthropic-api-key": "stray",
+          [ROUTE_HEADER]: "lolipop",
+        }),
+        "v1/systemone",
+        { TYPESAFE_BASE_URL: "https://staging.typesafe.test" },
+        fetch,
+      );
+      expect(response.status).toBe(200);
+      expect(calls[0]?.url).toBe("https://ai-gateway.lolipop.jp/v1/systemone");
+      const sent = new Headers(calls[0]?.init?.headers);
+      expect(sent.get("authorization")).toBe("Bearer lp-1");
+      expect(sent.get("x-api-key")).toBeNull();
+      expect(sent.get("anthropic-api-key")).toBeNull();
+      expect(sent.get("cf-aig-authorization")).toBeNull();
+    });
+
     it("builds the cloudflare custom-provider url and never forwards our own x- headers", async () => {
       const { fetch, calls } = fakeFetch(new Response("{}"));
       await handleJevProxy(

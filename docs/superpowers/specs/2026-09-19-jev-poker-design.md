@@ -47,7 +47,7 @@ Functions を薄いプロキシとする。
 - 検討して却下した案: (B) ブラウザ直叩き。CORS で動かない可能性が高い。
   (C) ホスト側で 1 本のキーを Secret 保持。「プレイにはキー必要」と逆で運営者が全額負担。
 
-#### 3.1.1 経路 (2026-09-21 追加: TypeSafe 直結 / Vercel / Cloudflare)
+#### 3.1.1 経路 (2026-09-21 追加: TypeSafe 直結 / Vercel / ロリポップ / Cloudflare)
 
 接続情報は `src/jev/connection.ts` の `Connection` 1 型にまとめ、UI・バックエンド・
 プロキシが同じ定義を共有する (このモジュールは依存ゼロ。`tsconfig.functions.json` が
@@ -58,6 +58,7 @@ Pages Function 用にコンパイルするため)。ブラウザは `X-Jev-Route
 | --- | --- | --- | --- |
 | `typesafe` | `https://api.typesafe.ai` (`TYPESAFE_BASE_URL` で上書き可) | TypeSafe キー | `jev-latest` |
 | `vercel` | `https://ai-gateway.vercel.sh/typesafe` | Vercel AI Gateway キー | `typesafe-ai/jev` |
+| `lolipop` | `https://ai-gateway.lolipop.jp` | ロリポップ！AIゲートウェイの API キー | `typesafe/jev-latest` |
 | `cloudflare` | `https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/custom-{slug}` | TypeSafe キー (+ 任意で `cf-aig-authorization`) | `jev-latest` |
 
 - Cloudflare 経路の 3 値は `X-Jev-CF-Account` / `X-Jev-CF-Gateway` / `X-Jev-CF-Provider`、
@@ -65,8 +66,15 @@ Pages Function 用にコンパイルするため)。ブラウザは `X-Jev-Route
   送り、`custom-` はプロキシ側で付ける (二重付与を防ぐため、`custom-` 始まりは 400)。
 - `localStorage` のキーは `jev-poker.connection`。旧 `jev-poker.apiKey` があり新キーが無い
   場合のみ `{ route: "typesafe", apiKey }` に 1 度だけ移行し、旧キーを削除する。
-- Vercel 経路では課金も応答の `model` も TypeSafe ではないため、402 のモーダル文言と
+- Vercel / ロリポップ経路では課金も応答の `model` も TypeSafe ではないため、402 のモーダル文言と
   showcase のモデル表記を経路に応じて切り替える。
+- ロリポップ！AIゲートウェイ (GMOペパボ、2026-09-18 から Jev 対応) は TypeSafe と同じ
+  `POST /v1/systemone` / `GET /v1/models` を `https://ai-gateway.lolipop.jp` 直下で提供する
+  (リクエストは `model` / `state` / `questions{type,instructions,criteria}`、応答は
+  `model` / `answers` / `usage` で SDK の送受信と同形)。認証ヘッダを 2 種類以上同時に
+  送ると値が正しくても 401 になるため、上流ヘッダをゼロから組み立てて `Authorization`
+  だけを載せる現行のプロキシ設計がそのまま要件を満たす。残高不足は 402
+  `insufficient_balance`、キー不正は 401、プロジェクト停止・予算超過は 403。
 
 #### 3.1.2 なぜ自由入力の URL を受け取らないか
 
@@ -74,8 +82,8 @@ Pages Function 用にコンパイルするため)。ブラウザは `X-Jev-Route
 `Authorization` に載せ替えて転送するので、上流を指定できる = 任意の第三者サーバーへ
 キーを送らせる SSRF / 認証情報窃取のプリミティブになる。代わりに:
 
-- 上流ホストは経路 id で選ぶ 3 つの定数のみ。文字列連結の材料は以下のみ。
-- 経路 id は `typesafe` | `vercel` | `cloudflare` の完全一致。それ以外は 400 `invalid_route`。
+- 上流ホストは経路 id で選ぶ 4 つの定数のみ。文字列連結の材料は以下のみ。
+- 経路 id は `typesafe` | `vercel` | `lolipop` | `cloudflare` の完全一致。それ以外は 400 `invalid_route`。
 - Cloudflare の各値はサーバー側で先頭・末尾を固定した正規表現に通し、さらに
   `encodeURIComponent` してから埋め込む: `accountId` `/^[0-9a-f]{32}$/i` (保存は小文字に統一)、
   `gatewayId` `/^[A-Za-z0-9_-]{1,64}$/`、`providerSlug` `/^[a-z0-9][a-z0-9-]{0,62}$/`
