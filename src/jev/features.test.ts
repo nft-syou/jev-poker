@@ -14,6 +14,7 @@ import {
   preflopStrength,
   TASK,
 } from "./features";
+import { OPPONENT_TYPE_GUIDANCE, OPPONENT_TYPES_INTRO, type OpponentType } from "./opponent-type";
 import { PRESET_PERSONAS, personaPrompt } from "./personas";
 
 function riggedDeck(front: string): Card[] {
@@ -606,5 +607,200 @@ describe("featuresFromView opponent statistics", () => {
       opponentStatsFor: () => stats,
     });
     expect(s.table.opponentStats).toEqual([{ seat: 2, ...stats }]);
+  });
+
+  it("passes foldToBetPct through when it is known and explains it", () => {
+    const withFolds: OpponentStats = { ...stats, foldToBetPct: 12 };
+    const s = featuresFromView(view, preset("tag"), {
+      opponentStatsFor: (seat) => (seat === 1 ? withFolds : stats),
+    });
+    expect(s.table.opponentStats).toEqual([
+      { seat: 1, ...withFolds },
+      { seat: 2, ...stats },
+    ]);
+    expect("foldToBetPct" in (s.table.opponentStats?.[1] ?? {})).toBe(false);
+    expect(s.importantContext.at(-1)).toContain("foldToBetPct");
+  });
+});
+
+describe("featuresFromView opponent types", () => {
+  const typeLines = Object.values(OPPONENT_TYPE_GUIDANCE).filter((l) => l !== null);
+  const seat = (id: number, over: Partial<PlayerView["stacks"][number]> = {}) => ({
+    seat: id,
+    stack: 5000,
+    isAllIn: false,
+    folded: false,
+    ...over,
+  });
+  const from = (types: Record<number, OpponentType | null>) => (s: number) => types[s] ?? null;
+
+  it("lists the known live opponents and appends the intro and the guidance of their types", () => {
+    const asked: number[] = [];
+    const s = featuresFromView(view, preset("tag"), {
+      opponentTypeFor: (id) => {
+        asked.push(id);
+        return id === 1 ? "nit" : null;
+      },
+    });
+    expect(s.table.opponentTypes).toEqual([{ seat: 1, type: "nit" }]);
+    expect(asked).not.toContain(0); // never the acting seat
+    expect(asked.sort()).toEqual([1, 2]);
+    const plain = featuresFromView(view, preset("tag"));
+    expect(s.importantContext).toEqual([
+      ...plain.importantContext,
+      OPPONENT_TYPES_INTRO,
+      OPPONENT_TYPE_GUIDANCE.nit,
+    ]);
+    // Nothing else about the state moves.
+    const { opponentTypes: _types, ...table } = s.table;
+    expect(table).toEqual(plain.table);
+    expect(s.hand).toEqual(plain.hand);
+    expect(s.history).toEqual(plain.history);
+  });
+
+  it("never lists the hero, even when the lookup knows a type for its seat", () => {
+    const s = featuresFromView(view, preset("tag"), { opponentTypeFor: () => "maniac" });
+    expect(s.table.opponentTypes).toEqual([
+      { seat: 1, type: "maniac" },
+      { seat: 2, type: "maniac" },
+    ]);
+  });
+
+  it("is absent, with no extra guidance, when nothing is known or nothing was asked for", () => {
+    const plain = featuresFromView(view, preset("tag"));
+    expect("opponentTypes" in plain.table).toBe(false);
+    expect(plain.importantContext).not.toContain(OPPONENT_TYPES_INTRO);
+    const unknown = featuresFromView(view, preset("tag"), { opponentTypeFor: () => null });
+    expect("opponentTypes" in unknown.table).toBe(false);
+    expect(unknown).toEqual(plain);
+  });
+
+  it("leaves folded opponents out, and their guidance with them", () => {
+    const stacks = view.stacks.map((s) => (s.seat === 1 ? { ...s, folded: true } : s));
+    const s = featuresFromView({ ...view, stacks }, preset("tag"), {
+      opponentTypeFor: from({ 1: "maniac", 2: "calling_station" }),
+    });
+    expect(s.table.opponentTypes).toEqual([{ seat: 2, type: "calling_station" }]);
+    expect(s.importantContext).toContain(OPPONENT_TYPE_GUIDANCE.calling_station);
+    expect(s.importantContext).not.toContain(OPPONENT_TYPE_GUIDANCE.maniac);
+    // Only a folded opponent is known: nothing at all is added.
+    const onlyFolded = featuresFromView({ ...view, stacks }, preset("tag"), {
+      opponentTypeFor: from({ 1: "maniac" }),
+    });
+    expect(onlyFolded).toEqual(featuresFromView({ ...view, stacks }, preset("tag")));
+  });
+
+  it("adds the intro but no guidance line when every known opponent is a regular", () => {
+    const plain = featuresFromView(view, preset("tag"));
+    const s = featuresFromView(view, preset("tag"), { opponentTypeFor: () => "regular" });
+    expect(s.table.opponentTypes).toEqual([
+      { seat: 1, type: "regular" },
+      { seat: 2, type: "regular" },
+    ]);
+    expect(s.importantContext).toEqual([...plain.importantContext, OPPONENT_TYPES_INTRO]);
+    for (const line of typeLines) expect(s.importantContext).not.toContain(line);
+  });
+
+  it("works heads-up", () => {
+    const stacks = view.stacks.slice(0, 2);
+    const plain = featuresFromView({ ...view, stacks }, preset("tag"));
+    const s = featuresFromView({ ...view, stacks }, preset("tag"), {
+      opponentTypeFor: from({ 0: "nit", 1: "calling_station" }),
+    });
+    expect(s.table.opponentTypes).toEqual([{ seat: 1, type: "calling_station" }]);
+    expect(s.importantContext).toEqual([
+      ...plain.importantContext,
+      OPPONENT_TYPES_INTRO,
+      OPPONENT_TYPE_GUIDANCE.calling_station,
+    ]);
+  });
+
+  it("six-handed: one guidance line per distinct type that is still in the hand", () => {
+    // The hero is seat 2; seat 4 (the only maniac) has folded; seat 5 is unknown.
+    const six: PlayerView = {
+      ...view,
+      seat: 2,
+      stacks: [seat(0), seat(1), seat(2), seat(3), seat(4, { folded: true }), seat(5)],
+      history: [],
+    };
+    const plain = featuresFromView(six, preset("tag"));
+    const s = featuresFromView(six, preset("tag"), {
+      opponentTypeFor: from({
+        0: "calling_station",
+        1: "regular",
+        2: "nit",
+        3: "calling_station",
+        4: "maniac",
+      }),
+    });
+    expect(s.table.opponentTypes).toEqual([
+      { seat: 0, type: "calling_station" },
+      { seat: 1, type: "regular" },
+      { seat: 3, type: "calling_station" },
+    ]);
+    const added = s.importantContext.slice(plain.importantContext.length);
+    expect(s.importantContext.slice(0, plain.importantContext.length)).toEqual(
+      plain.importantContext,
+    );
+    expect(added).toEqual([OPPONENT_TYPES_INTRO, OPPONENT_TYPE_GUIDANCE.calling_station]);
+
+    const all = featuresFromView(
+      { ...six, stacks: six.stacks.map((x) => ({ ...x, folded: false })) },
+      preset("tag"),
+      {
+        opponentTypeFor: from({
+          0: "nit",
+          1: "maniac",
+          3: "nit",
+          4: "calling_station",
+          5: "maniac",
+        }),
+      },
+    );
+    expect(all.table.opponentTypes?.map((o) => o.seat)).toEqual([0, 1, 3, 4, 5]);
+    const lines = all.importantContext.slice(plain.importantContext.length);
+    expect(lines[0]).toBe(OPPONENT_TYPES_INTRO);
+    expect(lines).toHaveLength(4);
+    expect([...lines.slice(1)].sort()).toEqual([...typeLines].sort());
+  });
+
+  it("stands next to the statistics: both fields, the statistics guidance first", () => {
+    const stats: OpponentStats = { hands: 40, vpipPct: 60, pfrPct: 4, postflopAggressionPct: 10 };
+    const plain = featuresFromView(view, preset("tag"));
+    const s = featuresFromView(view, preset("tag"), {
+      opponentStatsFor: (id) => (id === 1 ? stats : null),
+      opponentTypeFor: (id) => (id === 2 ? "maniac" : null),
+    });
+    expect(s.table.opponentStats).toEqual([{ seat: 1, ...stats }]);
+    expect(s.table.opponentTypes).toEqual([{ seat: 2, type: "maniac" }]);
+    const added = s.importantContext.slice(plain.importantContext.length);
+    expect(added).toHaveLength(3);
+    expect(added[0]).toContain("opponentStats describes");
+    expect(added.slice(1)).toEqual([OPPONENT_TYPES_INTRO, OPPONENT_TYPE_GUIDANCE.maniac]);
+    // Each is independent of the other: a known type without statistics adds only the type lines.
+    const typesOnly = featuresFromView(view, preset("tag"), {
+      opponentStatsFor: () => null,
+      opponentTypeFor: () => "nit",
+    });
+    expect("opponentStats" in typesOnly.table).toBe(false);
+    expect(typesOnly.importantContext.slice(plain.importantContext.length)).toEqual([
+      OPPONENT_TYPES_INTRO,
+      OPPONENT_TYPE_GUIDANCE.nit,
+    ]);
+  });
+
+  it("keeps the type lines with the range wording and in the split format", () => {
+    for (const options of [{ rangeEquity: true }, { style: "split" as const }]) {
+      const plain = featuresFromView(view, preset("tag"), options);
+      const s = featuresFromView(view, preset("tag"), {
+        ...options,
+        opponentTypeFor: () => "nit",
+      });
+      expect(s.importantContext).toEqual([
+        ...plain.importantContext,
+        OPPONENT_TYPES_INTRO,
+        OPPONENT_TYPE_GUIDANCE.nit,
+      ]);
+    }
   });
 });

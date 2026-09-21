@@ -1,4 +1,11 @@
-import type { OpponentStats } from "../src/jev/features";
+import type { JevBackend } from "../src/jev/backend";
+import {
+  classifyByThresholds,
+  classifyWithJev,
+  MIN_HANDS_FOR_TYPE,
+  type OpponentStats,
+  type OpponentType,
+} from "../src/jev/opponent-type";
 import type { HandAction } from "./types";
 
 interface Tally {
@@ -7,12 +14,15 @@ interface Tally {
   pfr: number;
   postflopActions: number;
   postflopAggressive: number;
+  /** Postflop actions that answer a bet: a fold, a call or a raise. */
+  facedBet: number;
+  foldedToBet: number;
 }
 
 /**
- * Session memory for the benchmark: how each kind of opponent has played so far in this
- * matchup. Keyed by agent id, not by seat, because Jev rotates through the seats while the
- * opponents around it stay the same kind of player.
+ * Session memory for the benchmark: how each player at the table has played so far in this
+ * matchup. Keyed by player id, not by seat, because Jev rotates through the seats while the
+ * players around it keep their identity.
  *
  * Hands finish out of order under concurrency, so what a decision sees is "the hands that
  * had finished by then" — an honest stand-in for a player's memory of a live session.
@@ -20,32 +30,44 @@ interface Tally {
 export class ProfileTracker {
   private readonly tallies = new Map<string, Tally>();
 
-  /** Fold one finished hand into the tallies. `agentIdOfSeat` lists every seat, Jev's included (it is skipped by the caller's choice of seats). */
-  record(actions: readonly HandAction[], opponentSeats: ReadonlyMap<number, string>): void {
-    for (const [seat, agentId] of opponentSeats) {
+  /** Fold one finished hand into the tallies; `players` maps each opponent's seat to its player id. */
+  record(actions: readonly HandAction[], players: ReadonlyMap<number, string>): void {
+    for (const [seat, playerId] of players) {
       const mine = actions.filter((a) => a.seat === seat);
       const pre = mine.filter((a) => a.street === "preflop");
       const post = mine.filter((a) => a.street !== "preflop");
       const aggressive = (t: HandAction["type"]) => t === "bet" || t === "raise" || t === "allin";
-      const t = this.tallies.get(agentId) ?? {
+      // A check or a bet means nothing was due; an all-in is ambiguous and is left out.
+      const answered = post.filter(
+        (a) => a.type === "fold" || a.type === "call" || a.type === "raise",
+      );
+      const t = this.tallies.get(playerId) ?? {
         hands: 0,
         vpip: 0,
         pfr: 0,
         postflopActions: 0,
         postflopAggressive: 0,
+        facedBet: 0,
+        foldedToBet: 0,
       };
       t.hands += 1;
       if (pre.some((a) => a.type === "call" || aggressive(a.type))) t.vpip += 1;
       if (pre.some((a) => aggressive(a.type))) t.pfr += 1;
       t.postflopActions += post.length;
       t.postflopAggressive += post.filter((a) => aggressive(a.type)).length;
-      this.tallies.set(agentId, t);
+      t.facedBet += answered.length;
+      t.foldedToBet += answered.filter((a) => a.type === "fold").length;
+      this.tallies.set(playerId, t);
     }
   }
 
+  playerIds(): string[] {
+    return [...this.tallies.keys()];
+  }
+
   /** `null` until a few hands have been seen: a percentage over three hands is noise. */
-  statsFor(agentId: string, minHands = 20): OpponentStats | null {
-    const t = this.tallies.get(agentId);
+  statsFor(playerId: string, minHands = MIN_HANDS_FOR_TYPE): OpponentStats | null {
+    const t = this.tallies.get(playerId);
     if (t === undefined || t.hands < minHands) return null;
     return {
       hands: t.hands,
@@ -53,6 +75,76 @@ export class ProfileTracker {
       pfrPct: Math.round((100 * t.pfr) / t.hands),
       postflopAggressionPct:
         t.postflopActions === 0 ? 0 : Math.round((100 * t.postflopAggressive) / t.postflopActions),
+      ...(t.facedBet === 0 ? {} : { foldToBetPct: Math.round((100 * t.foldedToBet) / t.facedBet) }),
     };
+  }
+
+  /** The player's type by fixed thresholds over the statistics so far. */
+  typeFor(playerId: string): OpponentType | null {
+    const stats = this.statsFor(playerId);
+    return stats === null ? null : classifyByThresholds(stats);
+  }
+}
+
+/** How many more hands of a player must be seen before Jev is asked about that player again. */
+const RELABEL_EVERY = 25;
+
+/**
+ * Player types as judged by Jev from the tracker's statistics. A decision reads the latest
+ * label synchronously; `refresh` is called between hands and asks again only for players whose
+ * sample has grown by `RELABEL_EVERY` hands, so the extra calls stay a small share of the run.
+ */
+export class JevTypeLabeler {
+  private readonly labels = new Map<string, { type: OpponentType | null; hands: number }>();
+  private readonly pending = new Set<string>();
+  private readonly given = new Map<string, OpponentType[]>();
+  /** Classification requests made so far (for the run's bookkeeping). */
+  calls = 0;
+
+  constructor(
+    private readonly tracker: ProfileTracker,
+    private readonly backend: JevBackend,
+    private readonly model?: string,
+  ) {}
+
+  typeFor(playerId: string): OpponentType | null {
+    return this.labels.get(playerId)?.type ?? null;
+  }
+
+  /** Every label given so far, in order, per player: shows whether Jev's judgement was stable. */
+  history(): Record<string, OpponentType[]> {
+    return Object.fromEntries([...this.given].map(([id, types]) => [id, [...types]]));
+  }
+
+  async refresh(): Promise<void> {
+    const due = this.tracker.playerIds().filter((id) => {
+      if (this.pending.has(id)) return false;
+      const stats = this.tracker.statsFor(id);
+      if (stats === null) return false;
+      const known = this.labels.get(id);
+      return known === undefined || stats.hands - known.hands >= RELABEL_EVERY;
+    });
+    await Promise.all(
+      due.map(async (id) => {
+        const stats = this.tracker.statsFor(id);
+        if (stats === null) return;
+        this.pending.add(id);
+        try {
+          this.calls += 1;
+          const type = await classifyWithJev(
+            this.backend,
+            stats,
+            this.model === undefined ? {} : { model: this.model },
+          );
+          // A failed request keeps the previous label; it is asked again only after another
+          // `RELABEL_EVERY` hands, so a broken backend is not hammered once per hand.
+          const previous = this.labels.get(id)?.type ?? null;
+          this.labels.set(id, { type: type ?? previous, hands: stats.hands });
+          if (type !== null) this.given.set(id, [...(this.given.get(id) ?? []), type]);
+        } finally {
+          this.pending.delete(id);
+        }
+      }),
+    );
   }
 }

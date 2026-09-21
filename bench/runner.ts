@@ -19,9 +19,10 @@ import {
 import type { JevBackend } from "../src/jev/backend";
 import type { Persona } from "../src/jev/personas";
 import type { PromptStyle } from "../src/jev/questions";
-import { rotations, seatCount } from "./matchups";
-import { ProfileTracker } from "./profile";
-import type { Format, HandAction, HandRecord, Opponent } from "./types";
+import { getPersona } from "./backend";
+import { HERO_PLAYER, kindOf, playersAt, rotations, seatCount } from "./matchups";
+import { JevTypeLabeler, ProfileTracker } from "./profile";
+import type { Format, HandAction, HandRecord, Opponent, ProfileMode } from "./types";
 
 const SMALL_BLIND = 50;
 const BIG_BLIND = 100;
@@ -50,7 +51,11 @@ export interface RunOptions {
   /** Passed to every `JevAgent`; default `unified`. */
   promptStyle?: PromptStyle;
   /** Feed the Jev agent per-opponent session statistics accumulated over the matchup. */
-  profile?: boolean;
+  profile?: boolean | ProfileMode;
+  /** Reports how many requests the `jev-label` mode spent on player types. */
+  onLabelCalls?: (calls: number) => void;
+  /** Called once at the end with the player types the hero was given (`label` and `jev-label`). */
+  onPlayerTypes?: (types: Record<string, string[]>) => void;
   /** Opt-in range-aware equity feature for the Jev agent. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent uses the preflop chart in code and asks Jev only after the flop. */
@@ -80,8 +85,27 @@ export interface PlayHandArgs {
   rangeEquity?: boolean;
   /** Shared session memory; when present the Jev agent sees opponent statistics and the hand is recorded into it. */
   tracker?: ProfileTracker;
+  /** How the tracker's memory reaches the Jev agent; `numbers` when absent. */
+  profileMode?: ProfileMode;
+  /** Player types as judged by Jev (`jev-label`). */
+  labeler?: JevTypeLabeler;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: GameEvent) => void;
+}
+
+/** A player of a mixed table: a baseline bot, the heuristic, or a Jev CPU with its own persona. */
+function opponentAgent(kind: string, seed: number, args: PlayHandArgs): Agent {
+  if (kind === "heuristic") return new HeuristicAgent();
+  if (kind.startsWith("jev:")) {
+    return new JevAgent({
+      persona: getPersona(kind.slice("jev:".length)),
+      backend: args.backend,
+      seed,
+      ...(args.model !== undefined ? { model: args.model } : {}),
+    });
+  }
+  if (kind === "random" || kind === "caller" || kind === "rules") return createAgent(kind, seed);
+  throw new Error(`unknown player kind: ${kind}`);
 }
 
 /**
@@ -93,6 +117,9 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const { seedIndex, rotation, opponent, format, baseSeed, persona, backend } = args;
   const n = seatCount(format);
   const jevSeat: SeatId = rotation;
+  const players = playersAt(opponent, format, jevSeat);
+  const playerAt = (seat: number): string => players[seat] ?? HERO_PLAYER;
+  const profileMode = args.profileMode ?? "numbers";
 
   const decisions: AgentDecision[] = [];
   const agents: Agent[] = [];
@@ -110,14 +137,26 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
               ...(args.promptStyle !== undefined ? { promptStyle: args.promptStyle } : {}),
               ...(args.preflop !== undefined ? { preflop: args.preflop } : {}),
               ...(args.rangeEquity !== undefined ? { rangeEquity: args.rangeEquity } : {}),
-              ...(args.tracker !== undefined
+              ...(args.tracker !== undefined && profileMode === "numbers"
                 ? {
                     opponentStatsFor: (s: number) =>
-                      s === jevSeat ? null : (args.tracker?.statsFor(opponent) ?? null),
+                      s === jevSeat ? null : (args.tracker?.statsFor(playerAt(s)) ?? null),
+                  }
+                : {}),
+              ...(args.tracker !== undefined && profileMode === "label"
+                ? {
+                    opponentTypeFor: (s: number) =>
+                      s === jevSeat ? null : (args.tracker?.typeFor(playerAt(s)) ?? null),
+                  }
+                : {}),
+              ...(args.labeler !== undefined && profileMode === "jev-label"
+                ? {
+                    opponentTypeFor: (s: number) =>
+                      s === jevSeat ? null : (args.labeler?.typeFor(playerAt(s)) ?? null),
                   }
                 : {}),
             })
-        : createAgent(opponent, hashSeed(baseSeed, seedIndex, seat)),
+        : opponentAgent(kindOf(playerAt(seat)), hashSeed(baseSeed, seedIndex, seat), args),
     );
   }
 
@@ -192,6 +231,7 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
       seedIndex,
       rotation,
       jevSeat,
+      players,
       net,
       wentToShowdown,
       // The table can show down after Jev folded; only Jev's own showdowns count for its win rate.
@@ -235,7 +275,17 @@ export async function runMatch(
   const total = jobs.length;
   const hands: HandRecord[] = [];
   const play = opts.playHandImpl ?? playHand;
-  const tracker = opts.profile === true ? new ProfileTracker() : undefined;
+  const profileMode: ProfileMode | null =
+    opts.profile === undefined || opts.profile === false
+      ? null
+      : opts.profile === true
+        ? "numbers"
+        : opts.profile;
+  const tracker = profileMode === null ? undefined : new ProfileTracker();
+  const labeler =
+    tracker !== undefined && profileMode === "jev-label"
+      ? new JevTypeLabeler(tracker, backend, opts.model)
+      : undefined;
   let nextJob = 0;
   let done = 0;
   // Set by the first worker whose hand throws, so the others stop claiming jobs
@@ -267,6 +317,8 @@ export async function runMatch(
           ...(opts.preflop !== undefined ? { preflop: opts.preflop } : {}),
           ...(opts.rangeEquity !== undefined ? { rangeEquity: opts.rangeEquity } : {}),
           ...(tracker !== undefined ? { tracker } : {}),
+          ...(profileMode !== null ? { profileMode } : {}),
+          ...(labeler !== undefined ? { labeler } : {}),
         });
       } catch (err) {
         failed = true;
@@ -275,9 +327,14 @@ export async function runMatch(
       hands.push(record);
       if (tracker !== undefined && record.actions !== undefined) {
         const seats = new Map<number, string>();
+        const players = record.players ?? playersAt(opponent, format, record.jevSeat);
         for (let s = 0; s < seatCount(format); s++)
-          if (s !== record.jevSeat) seats.set(s, opponent);
+          if (s !== record.jevSeat) seats.set(s, players[s] ?? opponent);
         tracker.record(record.actions, seats);
+        if (labeler !== undefined) {
+          await labeler.refresh();
+          opts.onLabelCalls?.(labeler.calls);
+        }
       }
       for (const decision of record.decisions) {
         onDecision?.(decision);
@@ -300,6 +357,13 @@ export async function runMatch(
 
   const workerCount = Math.max(1, Math.min(Math.trunc(opts.concurrency) || 1, total));
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+  if (tracker !== undefined && profileMode === "label") {
+    opts.onPlayerTypes?.(
+      Object.fromEntries(tracker.playerIds().map((id) => [id, [tracker.typeFor(id) ?? "unknown"]])),
+    );
+  }
+  if (labeler !== undefined) opts.onPlayerTypes?.(labeler.history());
 
   hands.sort((a, b) => a.seedIndex - b.seedIndex || a.rotation - b.rotation);
   return { hands, partial: (signal?.aborted ?? false) && hands.length < total };

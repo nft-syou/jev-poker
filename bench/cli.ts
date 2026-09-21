@@ -92,6 +92,8 @@ async function main(): Promise<void> {
     // One loud warning per matchup: a fail-open means the table saw the fallback
     // action, not a Jev decision, so the numbers below are diluted.
     let warnedFailOpen = false;
+    let labelCalls = 0;
+    let playerTypes: Record<string, string[]> | null = null;
     const { hands, partial } = await runMatch({
       opponent: matchup.opponent,
       format: matchup.format,
@@ -105,6 +107,12 @@ async function main(): Promise<void> {
       preflop: opts.preflop,
       rangeEquity: opts.rangeEquity,
       profile: opts.profile,
+      onLabelCalls: (calls) => {
+        labelCalls = calls;
+      },
+      onPlayerTypes: (types) => {
+        playerTypes = types;
+      },
       signal: controller.signal,
       onHand: (done, total) => {
         if (done % PROGRESS_EVERY === 0 || done === total)
@@ -138,7 +146,9 @@ async function main(): Promise<void> {
         ...(opts.hero !== "jev" ? { hero: opts.hero } : {}),
         ...(opts.preflop !== "jev" ? { preflop: opts.preflop } : {}),
         ...(opts.rangeEquity ? { rangeEquity: true } : {}),
-        ...(opts.profile ? { profile: true } : {}),
+        ...(opts.profile !== false ? { profile: opts.profile } : {}),
+        ...(labelCalls > 0 ? { profileLabelCalls: labelCalls } : {}),
+        ...(playerTypes !== null ? { profilePlayerTypes: playerTypes } : {}),
       },
       summary: summarize(hands, matchup.format),
       hands,

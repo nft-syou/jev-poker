@@ -222,6 +222,171 @@ describe("report identity", () => {
   });
 });
 
+describe("parseArgs --profile", () => {
+  it("is off by default and means the numbers as a bare flag", () => {
+    expect(parseArgs([]).profile).toBe(false);
+    expect(parseArgs(["--profile"]).profile).toBe("numbers");
+    expect(parseArgs(["--seeds", "5", "--profile"])).toMatchObject({
+      seeds: 5,
+      profile: "numbers",
+    });
+  });
+
+  it("takes an optional mode", () => {
+    expect(parseArgs(["--profile", "numbers"]).profile).toBe("numbers");
+    expect(parseArgs(["--profile", "label"]).profile).toBe("label");
+    expect(parseArgs(["--profile", "jev-label"]).profile).toBe("jev-label");
+    expect(parseArgs(["--profile", "label", "--seeds", "7"])).toMatchObject({
+      profile: "label",
+      seeds: 7,
+    });
+    // The last one wins, like every other flag.
+    expect(parseArgs(["--profile", "label", "--profile"]).profile).toBe("numbers");
+    expect(parseArgs(["--profile", "--profile", "jev-label"]).profile).toBe("jev-label");
+  });
+
+  it("does not swallow a following token that is not a mode", () => {
+    expect(parseArgs(["--profile", "--seeds", "5"])).toMatchObject({
+      profile: "numbers",
+      seeds: 5,
+    });
+    expect(parseArgs(["--profile", "--backend", "mock", "--opponent", "mixed"])).toMatchObject({
+      profile: "numbers",
+      backend: "mock",
+      opponent: "mixed",
+    });
+    expect(parseArgs(["--profile", "--range-equity"])).toMatchObject({
+      profile: "numbers",
+      rangeEquity: true,
+    });
+    expect(parseArgs(["--profile", "--backend=mock"])).toMatchObject({
+      profile: "numbers",
+      backend: "mock",
+    });
+    // A value that belongs to another flag is left for that flag to reject or accept.
+    expect(parseArgs(["--label", "label", "--profile"])).toMatchObject({
+      label: "label",
+      profile: "numbers",
+    });
+    expect(parseArgs(["--profile", "--label", "label"])).toMatchObject({
+      label: "label",
+      profile: "numbers",
+    });
+  });
+
+  it("still rejects a stray word after it", () => {
+    expect(() => parseArgs(["--profile", "everything"])).toThrow("unexpected argument: everything");
+    expect(() => parseArgs(["--profile", "Label"])).toThrow("unexpected argument: Label");
+    expect(() => parseArgs(["--profile", "true"])).toThrow("unexpected argument: true");
+  });
+
+  it("leaves --help reachable after it", () => {
+    expect(() => parseArgs(["--profile", "--help"])).toThrow("help requested");
+  });
+});
+
+describe("parseArgs --opponent mixed", () => {
+  it("accepts the two mixed tables by name", () => {
+    expect(parseArgs(["--opponent", "mixed"]).opponent).toBe("mixed");
+    expect(parseArgs(["--opponent=mixed-jev", "--format", "6max"])).toMatchObject({
+      opponent: "mixed-jev",
+      format: "6max",
+    });
+    expect(() => parseArgs(["--opponent", "mixed-bots"])).toThrow(
+      "invalid value for --opponent: mixed-bots (expected random|caller|rules|mixed|mixed-jev|all)",
+    );
+  });
+
+  it("documents the mixed tables and the profile modes", () => {
+    for (const word of ["--profile", "numbers", "label", "jev-label", "mixed", "mixed-jev"]) {
+      expect(USAGE).toContain(word);
+    }
+    expect(USAGE).toContain("--profile [numbers|label|jev-label]");
+  });
+});
+
+describe("report profile conditions", () => {
+  const withProfile = (profile: BenchResult["config"]["profile"], finishedAt?: string) => {
+    const base = mk(finishedAt === undefined ? {} : { finishedAt });
+    return { ...base, config: { ...base.config, ...(profile === undefined ? {} : { profile }) } };
+  };
+  const conditionsOf = (r: BenchResult): string =>
+    (resultsToMarkdown([r]).split("\n")[2] ?? "").split(" | ").at(-1)?.replace(" |", "") ?? "";
+
+  it("shows `profile` for the numbers and `profile:<mode>` for the labels", () => {
+    expect(conditionsOf(withProfile("numbers"))).toBe("base 1 profile mock");
+    expect(conditionsOf(withProfile("label"))).toBe("base 1 profile:label mock");
+    expect(conditionsOf(withProfile("jev-label"))).toBe("base 1 profile:jev-label mock");
+  });
+
+  it("renders an old result with `profile: true` as `profile`", () => {
+    expect(conditionsOf(withProfile(true))).toBe("base 1 profile mock");
+    expect(resultsToMarkdown([withProfile(true)])).toBe(
+      resultsToMarkdown([withProfile("numbers")]),
+    );
+  });
+
+  it("shows nothing when the memory was off or the field is absent", () => {
+    expect(conditionsOf(withProfile(undefined))).toBe("base 1 mock");
+    expect(conditionsOf(withProfile(false))).toBe("base 1 mock");
+  });
+
+  it("keeps its place among the other conditions, and ignores the label-call count", () => {
+    const base = mk({});
+    const r: BenchResult = {
+      ...base,
+      config: {
+        ...base.config,
+        promptStyle: "split",
+        rangeEquity: true,
+        profile: "jev-label",
+        profileLabelCalls: 12,
+        variance: 0.5,
+        model: "jev-x",
+      },
+    };
+    expect(conditionsOf(r)).toBe("base 1 split range profile:jev-label var 0.5 mock jev-x");
+  });
+
+  it("keeps the profile modes of one matchup apart when picking the latest", () => {
+    const none = withProfile(undefined, "2026-09-19T01:00:00.000Z");
+    const numbers = withProfile("numbers", "2026-09-19T02:00:00.000Z");
+    const label = withProfile("label", "2026-09-19T03:00:00.000Z");
+    const jevLabel = withProfile("jev-label", "2026-09-19T04:00:00.000Z");
+    const rerun = withProfile("label", "2026-09-19T05:00:00.000Z");
+    const picked = pickLatest([none, numbers, label, jevLabel, rerun]);
+    expect(picked).toEqual([none, numbers, jevLabel, rerun]);
+    const md = resultsToMarkdown(picked);
+    expect(md).toContain("| base 1 profile mock |");
+    expect(md).toContain("| base 1 profile:label mock |");
+    expect(md).toContain("| base 1 profile:jev-label mock |");
+  });
+});
+
+describe("report mixed tables", () => {
+  it("sorts the mixed tables after the single-kind opponents", () => {
+    const rows = resultsToMarkdown([
+      mk({ opponent: "mixed-jev", format: "6max" }),
+      mk({ opponent: "mixed", format: "6max" }),
+      mk({ opponent: "rules", format: "6max" }),
+      mk({ opponent: "random", format: "hu" }),
+    ])
+      .split("\n")
+      .slice(2)
+      .map((line) => line.split(" | ").slice(0, 2).join("/").replace("| ", ""));
+    expect(rows).toEqual(["random/HU", "rules/6-max", "mixed/6-max", "mixed-jev/6-max"]);
+  });
+
+  it("names their result files like any other matchup", () => {
+    expect(resultFileName(mk({ opponent: "mixed", format: "6max" }), null)).toBe(
+      "2026-09-19T00-00-00-000Z-mixed-6max.json",
+    );
+    expect(resultFileName(mk({ opponent: "mixed-jev", format: "6max" }), "types")).toBe(
+      "2026-09-19T00-00-00-000Z-types-mixed-jev-6max.json",
+    );
+  });
+});
+
 describe("parseArgs --variance", () => {
   it("accepts 0..1 and rejects anything else", () => {
     expect(parseArgs(["--variance", "0"]).variance).toBe(0);

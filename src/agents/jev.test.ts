@@ -13,6 +13,7 @@ import {
   TASK,
 } from "../jev/features";
 import { createMockBackend } from "../jev/mock-backend";
+import { OPPONENT_TYPE_GUIDANCE, OPPONENT_TYPES_INTRO } from "../jev/opponent-type";
 import { type Persona, PRESET_PERSONAS } from "../jev/personas";
 import { PREFLOP_SIZING_RUBRIC, SIZING_RUBRIC } from "../jev/questions";
 import { type AgentDecision, JevAgent } from "./jev";
@@ -412,6 +413,8 @@ describe("JevAgent options", () => {
     expect(requests[0]?.model).toBeUndefined();
     expect("equityVsRangePct" in state.hand).toBe(false);
     expect("opponentStats" in state.table).toBe(false);
+    expect("opponentTypes" in state.table).toBe(false);
+    expect(state.importantContext).not.toContain(OPPONENT_TYPES_INTRO);
   });
 
   it("promptStyle split changes both the state and the questions", async () => {
@@ -458,6 +461,50 @@ describe("JevAgent options", () => {
     });
     await agent.decide(preflopView, open);
     expect(stateOf(requests[0]).table.opponentStats).toEqual([{ seat: 1, ...stats }]);
+  });
+
+  it("opponentTypeFor adds the player types of live opponents and their guidance", async () => {
+    const { backend, requests } = spyBackend();
+    const asked: number[] = [];
+    const agent = new JevAgent({
+      persona: getPersona("tag"),
+      backend,
+      seed: 1,
+      opponentTypeFor: (seat) => {
+        asked.push(seat);
+        return seat === 1 ? "calling_station" : null;
+      },
+    });
+    await agent.decide(preflopView, open);
+    await agent.decide({ ...view, stacks: twoSeats }, legal);
+    expect(requests).toHaveLength(2);
+    for (const request of requests) {
+      const state = stateOf(request);
+      expect(state.table.opponentTypes).toEqual([{ seat: 1, type: "calling_station" }]);
+      expect(state.importantContext.slice(-2)).toEqual([
+        OPPONENT_TYPES_INTRO,
+        OPPONENT_TYPE_GUIDANCE.calling_station,
+      ]);
+      expect("opponentStats" in state.table).toBe(false);
+    }
+    expect(asked).toEqual([1, 1]);
+  });
+
+  it("sends statistics and types together when both lookups are given", async () => {
+    const { backend, requests } = spyBackend();
+    const stats: OpponentStats = { hands: 30, vpipPct: 12, pfrPct: 9, postflopAggressionPct: 20 };
+    const agent = new JevAgent({
+      persona: getPersona("tag"),
+      backend,
+      seed: 1,
+      opponentStatsFor: () => stats,
+      opponentTypeFor: () => "nit",
+    });
+    await agent.decide(preflopView, open);
+    const state = stateOf(requests[0]);
+    expect(state.table.opponentStats).toEqual([{ seat: 1, ...stats }]);
+    expect(state.table.opponentTypes).toEqual([{ seat: 1, type: "nit" }]);
+    expect(state.importantContext).toContain(OPPONENT_TYPE_GUIDANCE.nit);
   });
 
   it("forwards the model", async () => {

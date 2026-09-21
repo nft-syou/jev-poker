@@ -10,6 +10,7 @@ import {
   type FeatureOptions,
   featuresFromView,
   type OpponentStats,
+  type OpponentType,
 } from "../jev/features";
 import { type Persona, personaPrompt } from "../jev/personas";
 import type { ActionLabel, PromptStyle } from "../jev/questions";
@@ -52,6 +53,8 @@ export interface JevAgentOptions {
   rangeEquity?: boolean;
   /** Session statistics lookup for opponents (adds `table.opponentStats`). */
   opponentStatsFor?: (seat: number) => OpponentStats | null;
+  /** Session player-type lookup for opponents (adds `table.opponentTypes` and its guidance). */
+  opponentTypeFor?: (seat: number) => OpponentType | null;
 }
 
 function labelOf(action: Action): ActionLabel {
@@ -87,6 +90,9 @@ export class JevAgent implements Agent {
       ...(options.opponentStatsFor === undefined
         ? {}
         : { opponentStatsFor: options.opponentStatsFor }),
+      ...(options.opponentTypeFor === undefined
+        ? {}
+        : { opponentTypeFor: options.opponentTypeFor }),
     };
   }
 

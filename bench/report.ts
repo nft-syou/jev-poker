@@ -1,4 +1,4 @@
-import type { BenchResult, Format, Opponent } from "./types";
+import type { BenchResult, Format, Opponent, ProfileMode } from "./types";
 
 export interface CliOptions {
   opponent: Opponent | "all";
@@ -16,12 +16,13 @@ export interface CliOptions {
   hero: "jev" | "heuristic";
   preflop: "jev" | "chart";
   rangeEquity: boolean;
-  profile: boolean;
+  profile: false | ProfileMode;
 }
 
 export const USAGE = `Usage: pnpm bench [options]
 
-  --opponent random|caller|rules|all   default all
+  --opponent random|caller|rules|all   default all; also mixed (rules, caller, random, heuristic, rules around Jev)
+                                       and mixed-jev (rock, lag, maniac, station, tag Jev CPUs), both 6max only
   --format   hu|6max|all               default all
   --seeds N                            default 100  (hands = seeds x seats)
   --persona <id>                       default tag
@@ -31,7 +32,9 @@ export const USAGE = `Usage: pnpm bench [options]
   --label <text>                       extra tag in the result file name, before "<opponent>-<format>"
   --model <name>                       model passed to the SDK, default the SDK's own
   --prompt unified|split               one state/question format, or separate preflop/postflop ones (default unified)
-  --profile                            feed Jev per-opponent session statistics accumulated over the matchup
+  --profile [numbers|label|jev-label]  feed Jev each opponent's session tendencies accumulated over the matchup:
+                                       numbers (default) = VPIP/PFR/aggression/fold-to-bet, label = a player type
+                                       from fixed thresholds, jev-label = a player type Jev itself judges from the numbers
   --range-equity                       add the opt-in equityVsRangePct feature to the state
   --preflop jev|chart                  chart: preflop from the position chart in code, Jev decides postflop only
   --hero jev|heuristic                 who sits in the measured seat: Jev (default) or the fixed heuristic over the same features
@@ -41,7 +44,7 @@ export const USAGE = `Usage: pnpm bench [options]
 Results are written to bench/results/. Render them again with: pnpm bench:report [files...]`;
 
 /** Sort key: opponents in table order, then formats, then persona alphabetically. */
-const OPPONENT_ORDER: readonly Opponent[] = ["random", "caller", "rules"];
+const OPPONENT_ORDER: readonly Opponent[] = ["random", "caller", "rules", "mixed", "mixed-jev"];
 const FORMAT_ORDER: readonly Format[] = ["hu", "6max"];
 
 const FORMAT_LABEL: Record<Format, string> = { hu: "HU", "6max": "6-max" };
@@ -100,7 +103,8 @@ function conditions(r: BenchResult): string {
   if (r.config.hero === "heuristic") parts.push("heuristic");
   if (r.config.preflop === "chart") parts.push("chart");
   if (r.config.rangeEquity === true) parts.push("range");
-  if (r.config.profile === true) parts.push("profile");
+  const profile = r.config.profile === true ? "numbers" : (r.config.profile ?? false);
+  if (profile !== false) parts.push(profile === "numbers" ? "profile" : `profile:${profile}`);
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === "mock") parts.push("mock");
   if (r.config.model !== null) parts.push(r.config.model);
@@ -194,6 +198,7 @@ export function resultFileName(result: BenchResult, label: string | null): strin
 const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, "all"];
 const FORMAT_VALUES: readonly string[] = [...FORMAT_ORDER, "all"];
 const BACKEND_VALUES: readonly string[] = ["typesafe", "mock"];
+const PROFILE_VALUES: readonly string[] = ["numbers", "label", "jev-label"];
 
 /** Thrown by `parseArgs` when `--help` / `-h` is given; the CLI prints `USAGE` and exits 0. */
 export class HelpRequested extends Error {
@@ -244,8 +249,17 @@ export function parseArgs(argv: string[]): CliOptions {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] as string;
     if (arg === "--help" || arg === "-h") throw new HelpRequested();
+    if (arg.startsWith("--profile=")) {
+      options.profile = enumValue<ProfileMode>("--profile", arg.slice(10), PROFILE_VALUES);
+      continue;
+    }
     if (arg === "--profile") {
-      options.profile = true;
+      // The mode is optional: a bare `--profile` keeps meaning the numbers.
+      const next = argv[i + 1];
+      if (next !== undefined && PROFILE_VALUES.includes(next)) {
+        options.profile = next as ProfileMode;
+        i += 1;
+      } else options.profile = "numbers";
       continue;
     }
     if (arg === "--range-equity") {

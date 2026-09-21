@@ -12,6 +12,12 @@ import {
 } from "../engine/strength";
 import type { Action, HandSnapshot, SeatId, Street } from "../engine/types";
 import { type ActionTakenEvent, type PlayerView, type Position, playerView } from "../engine/view";
+import {
+  OPPONENT_TYPE_GUIDANCE,
+  OPPONENT_TYPES_INTRO,
+  type OpponentStats,
+  type OpponentType,
+} from "./opponent-type";
 import type { PromptStyle } from "./questions";
 
 export { type Draw, detectDraws, type PreflopStrength, preflopStrength } from "../engine/strength";
@@ -89,21 +95,17 @@ export interface FeatureOptions {
   rangeEquity?: boolean;
   /** Session statistics for a seat, or `null` when too few hands have been seen. Adds `table.opponentStats`. */
   opponentStatsFor?: (seat: SeatId) => OpponentStats | null;
+  /**
+   * What kind of player a seat has been this session, or `null` when unknown. Adds
+   * `table.opponentTypes` and the guidance for the types that are in the hand.
+   */
+  opponentTypeFor?: (seat: SeatId) => OpponentType | null;
 }
 
-/** How an opponent has played so far in this session. */
-export interface OpponentStats {
-  hands: number;
-  /** Share of hands in which they voluntarily put chips in preflop. */
-  vpipPct: number;
-  /** Share of hands in which they raised preflop. */
-  pfrPct: number;
-  /** Share of their postflop actions that were bets or raises. */
-  postflopAggressionPct: number;
-}
+export type { OpponentStats, OpponentType } from "./opponent-type";
 
 const OPPONENT_STATS_GUIDANCE =
-  "opponentStats describes how each live opponent has played so far in this session: vpipPct is how often they enter a pot, pfrPct how often they raise preflop, postflopAggressionPct how often their postflop actions are bets or raises. A raise from an opponent with a low pfrPct means a very strong hand, and their blinds are easy to steal; against an opponent with a high vpipPct who rarely folds, bluff less and bet good hands for value.";
+  "opponentStats describes how each live opponent has played so far in this session: vpipPct is how often they enter a pot, pfrPct how often they raise preflop, postflopAggressionPct how often their postflop actions are bets or raises, foldToBetPct how often they fold when they face a postflop bet. A raise from an opponent with a low pfrPct means a very strong hand, and their blinds are easy to steal; against an opponent with a high vpipPct or a low foldToBetPct, bluff less and bet good hands for value; an opponent with a very high pfrPct and postflopAggressionPct is often bluffing, so do not fold good made hands to them.";
 
 const RANGE_WORDING: readonly (readonly [string, string])[] = [
   [
@@ -186,6 +188,8 @@ export interface FeaturesTable {
   myBetWasRaisedThisStreet: boolean;
   /** Session statistics of live opponents; present only when the caller supplies them and some are known. */
   opponentStats?: ({ seat: SeatId } & OpponentStats)[];
+  /** What kind of player each live opponent has been this session; present only when the caller supplies it. */
+  opponentTypes?: { seat: SeatId; type: OpponentType }[];
   stacksBB: FeaturesSeat[];
 }
 
@@ -301,9 +305,25 @@ export function featuresFromView(
           return stats === null ? [] : [{ seat: o.seat, ...stats }];
         })
     : [];
+  const opponentTypes = options.opponentTypeFor
+    ? live
+        .filter((o) => o.seat !== view.seat)
+        .flatMap((o) => {
+          const type = options.opponentTypeFor?.(o.seat) ?? null;
+          return type === null ? [] : [{ seat: o.seat, type }];
+        })
+    : [];
+  const typeGuidance = [...new Set(opponentTypes.map((o) => o.type))].flatMap((type) => {
+    const line = OPPONENT_TYPE_GUIDANCE[type];
+    return line === null ? [] : [line];
+  });
   const withRange =
     options.rangeEquity === true ? importantContext.map(withRangeWording) : importantContext;
-  const context = opponentStats.length > 0 ? [...withRange, OPPONENT_STATS_GUIDANCE] : withRange;
+  const context = [
+    ...withRange,
+    ...(opponentStats.length > 0 ? [OPPONENT_STATS_GUIDANCE] : []),
+    ...(opponentTypes.length > 0 ? [OPPONENT_TYPES_INTRO, ...typeGuidance] : []),
+  ];
   const table: FeaturesTable = {
     position: view.position,
     playersInHand: live.length,
@@ -319,6 +339,7 @@ export function featuresFromView(
     raisesThisStreet,
     myBetWasRaisedThisStreet,
     ...(opponentStats.length > 0 ? { opponentStats } : {}),
+    ...(opponentTypes.length > 0 ? { opponentTypes } : {}),
     effectiveStackBB: bb(Math.min(me?.stack ?? 0, maxOther), bigBlind),
     stacksBB: view.stacks.map((s) => ({
       seat: s.seat,

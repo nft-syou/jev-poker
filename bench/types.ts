@@ -1,13 +1,18 @@
 import type { AgentDecision } from "../src/agents";
 import type { Action, SeatId, Street } from "../src/engine";
 
-export type Opponent = "random" | "caller" | "rules";
+/** One kind of bot in every other seat, or a table of different players (six-handed only). */
+export type Opponent = "random" | "caller" | "rules" | "mixed" | "mixed-jev";
+/** How the opponents' session tendencies reach the Jev agent. */
+export type ProfileMode = "numbers" | "label" | "jev-label";
 export type Format = "hu" | "6max";
 
 export interface HandRecord {
   seedIndex: number;
   rotation: number;
   jevSeat: SeatId;
+  /** Player id per seat (`hero` for the measured seat). Absent in older result files. */
+  players?: string[];
   /** net result in bb, indexed by seat */
   net: number[];
   /** The table reached a showdown — possibly after Jev had folded. */
@@ -72,8 +77,12 @@ export interface BenchConfig {
   gitCommit: string | null;
   /** Absent in results written before the split-format experiment (= `unified`). */
   promptStyle?: "unified" | "split";
-  /** Opponent session statistics were fed to the Jev agent. */
-  profile?: boolean;
+  /** Opponent session tendencies were fed to the Jev agent; `true` in older files means `numbers`. */
+  profile?: boolean | ProfileMode;
+  /** Requests spent on asking Jev for player types (`jev-label` only). */
+  profileLabelCalls?: number;
+  /** Player types the hero was given: the final one for `label`, every one in order for `jev-label`. */
+  profilePlayerTypes?: Record<string, string[]>;
   /** The opt-in range-aware equity feature was on. */
   rangeEquity?: boolean;
   /** `chart`: the Jev agent takes its preflop decisions from the chart in code. */
