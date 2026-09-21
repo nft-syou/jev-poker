@@ -264,13 +264,35 @@ and not changed after it. Decision runs are on base seed 400001, never used befo
   is a calling station in all 168 labels and `lag` a maniac in 165. It did not turn into more chips.
 - Without any profile the `tag` CPU is level with this table (+5.3), so there is little to take.
 
+**Extension** (code `3f89047`): another 1,000 seeds on base seed 500001, never used before, through the
+Lolipop AI Gateway (`--route lolipop`, the same model behind it; 6 to 9 of about 7,700 hero decisions
+per condition timed out and failed open).
+
+| condition | 500001 alone, paired vs none | pooled with the 700 seeds above (1,700 seeds) |
+| --- | --- | --- |
+| label | +9.7 [-11.0, +30.5] | +16.1 [+0.1, +32.0] |
+| jev-label | -6.8 [-27.0, +13.5] | +4.8 [-12.1, +21.8] |
+| jev-label - label | -16.5 [-39.7, +6.7] | -11.3 [-28.7, +6.2] |
+
+- The first run's +25 did not hold up: on fresh seeds the label is worth +10 with an interval across
+  zero, and pooled it is +16 with the interval starting at zero. Against Jev personas the effect is
+  small at best, somewhere between nothing and +30 bb/100.
+- Jev's own labels show no gain at all here (+4.8 pooled). Its judgement is still the one closer to
+  the characters (`station` a calling station in 239 of 240 labels; `lag` regular in 209, maniac in 31),
+  so a more faithful label did not mean more chips: the counter-strategy lines were written for
+  extreme players, and these personas are not extreme.
+- The gateway is slower than the direct API (mean response 1.8 s against 0.3 s under this load, a
+  ceiling of about 27 requests a second shared by two keys), which does not affect the results.
+
 ### Verdict
 
-Per-player session tendencies make the CPU stronger when the table has players with real leaks,
-and the form matters: a type word plus one line of counter-strategy beats the numbers. Whether
-code or Jev assigns the type does not change the result; the code version is free and the Jev
-version copes with players the thresholds were not written for. All of it stays opt-in on this
-branch; the default agent is unchanged.
+Per-player session tendencies make the CPU stronger when the table has players with real leaks
+(+110 to +130 bb/100 against the extreme bots, also with a 100-hand memory), and the form matters:
+a type word plus one line of counter-strategy beats the numbers. Against the game's own Jev
+personas the gain is not established: +16 [+0.1, +32.0] for the code label over 1,700 seeds, nothing
+for the Jev label. Whether code or Jev assigns the type made no difference where the effect is
+large, and the code version is free. The feature is for tables with leaky players (humans, most
+likely), not for CPU-only tables. All of it stays opt-in on this branch; the default agent is unchanged.
 
 問い: セッション中の相手ごとの傾向を CPU に伝えると強くなるか。以前の `--profile` は逆効果でしたが
 (6-max -10.6)、相手が全員同じ `rules` で打ち分ける余地がありませんでした。今回は傾向の違うプレイヤーが
@@ -281,8 +303,11 @@ branch; the default agent is unchanged.
 - タイプをコードの閾値で決めても Jev に判定させても結果は同じです (差 +9.8、有意差なし)。Jev の判定は
   安定していて人格の意図にも近いですが、呼び出しが 12% 増えます。
 - 得をした相手は弱いプレイヤー (`caller` と `random`) で、タイトな相手からの収支は変わりません。
-- Jev 人格だけの卓では効果は +20 〜 +25 bb/100 で、信頼区間の下端がほぼ 0 です。人格の個性は統計上は穏やかで、
-  そもそも取れるものが少ない卓でした。
+- Jev 人格だけの卓では効果は確立できませんでした。最初の 700 シードでは +25 でしたが、未使用シード 500001 の
+  1,000 シード (ロリポップ！AIゲートウェイ経由) ではコード判定 +9.7 [-11.0, +30.5]、Jev 判定 -6.8 [-27.0, +13.5]。
+  合計 1,700 シードでコード判定 +16.1 [+0.1, +32.0]、Jev 判定 +4.8 [-12.1, +21.8] です。人格の個性は統計上は穏やかで、
+  極端な相手向けに書いた対策文が効く場面が少ない卓でした。
+- つまりこの機能が効くのは、癖の強いプレイヤー (おそらく人間) がいる卓です。CPU だけの卓では効果はほぼありません。
 - すべてこのブランチ上のオプションで、既定の CPU は変えていません。
 
 ## Reproduce / 再現
