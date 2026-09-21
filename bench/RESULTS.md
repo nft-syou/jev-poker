@@ -42,6 +42,30 @@ Jev モジュール (`src/jev`) に移植したので、現在の `pnpm bench` �
 - 新エンジン上のヒューリスティック (同じシード): HU +16.6 [+2.5, +30.7]、6-max +22.5 [+4.9, +40.0]。
   これまでの run と同じ傾向です (HU は Jev が上、6-max は互角)。
 
+## The game's CPU before and after the merge / マージ前後の製品 CPU の直接比較
+
+The Jev module the game shipped before the merge (`src/jev` of `59a8518`: made hand, draws, pot
+odds, a pot-fraction sizing question, `tag` variance 0.4) was copied verbatim next to the benchmark
+and seated in the same harness: same engine, same `rules` opponents, same 1,000 seeds on base seed
+300001, so both CPUs were dealt identical hands. 0 fail-open on either side.
+Files: `results/*-premerge-cpu-rules-*.json` (old) and `results/*-port-rules-*.json` (new).
+
+| format | before the merge (`59a8518`) | after the merge (`e39461e`) | paired difference, same deals |
+| --- | --- | --- | --- |
+| heads-up | -4.5 [-25.0, +16.1], VPIP 14%, PFR 5% | +48.8 [+38.4, +59.1], VPIP 47%, PFR 46% | **+53.2 [+31.5, +75.0]** |
+| 6-max | -24.5 [-49.4, +0.5], VPIP 20%, PFR 11% | +11.3 [-0.2, +22.8], VPIP 28%, PFR 21% | **+35.8 [+9.9, +61.7]** |
+
+The merged CPU is significantly stronger in both formats. The old one could not be told apart from
+break-even heads-up and was behind six-handed; it entered few pots and mostly by calling.
+
+マージ前にゲームが積んでいた Jev モジュール (`59a8518` の `src/jev`: 完成役、ドロー、ポットオッズ、
+ポット比のサイジング質問、`tag` の variance 0.4) をそのままコピーし、同じハーネスに座らせました。
+エンジン、相手 (`rules`)、シード (ベース 300001 の 1,000 シード) が同じなので、両方の CPU に同一の配牌が
+配られています。フェイルオープンはどちらも 0 件です。
+
+マージ後の CPU は両形式で有意に強くなりました。旧 CPU はヘッズアップで収支ゼロと区別がつかず、6-max では
+負け越しで、参加するハンドが少なく、参加してもほとんどコールでした。
+
 ## Before the port / 移植前
 
 **Run: 2026-09-19** — model `jev-1.13.0`, SDK 0.6.0, all 5 presets, `--seeds 100 --concurrency 8`

@@ -85,7 +85,9 @@ The `rules` row is the game's CPU as shipped. The Slumbot row was measured befor
 ported onto the game's engine, where the same agent scored +62.7 [+48.7, +76.8] and +12.9
 [+1.3, +24.5] against `rules`.
 
-- Out of the box the Jev CPU lost to the rule-based bot; it wins now because of what it is told
+- The CPU this game first shipped with did not beat the rule-based bot (-4.5 heads-up, -24.5
+  six-handed); on the same deals the current one is **+53.2 [+31.5, +75.0]** and
+  **+35.8 [+9.9, +61.7]** bb/100 better. It wins now because of what it is told
   (exact hand strength, equity against pot odds, whether its bet was raised, pot commitment,
   blind-stealing spots) and conventional preflop raise sizes. The strength comes from the code
   around the model.
@@ -99,7 +101,9 @@ ported onto the game's engine, where the same agent scored +62.7 [+48.7, +76.8] 
 カード運の分散が小さく、ヘッズアップと 6-max の両方を測ります。`pnpm bench:slumbot` は本格的な
 ヘッズアップ AI の [Slumbot](https://www.slumbot.com/) と公開 API 経由で対戦します。
 
-- 素の Jev CPU はルールベースに負けていました。勝てるようになったのは「Jev に何を伝えるか」
+- このゲームが最初に積んでいた CPU はルールベースに勝てていませんでした (HU -4.5、6-max -24.5)。
+  同じ配牌での直接比較で、現在の CPU は **+53.2 [+31.5, +75.0]** / **+35.8 [+9.9, +61.7]** bb/100 上回ります。
+  勝てるようになったのは「Jev に何を伝えるか」
   (正確なハンド強度、エクイティと必要エクイティ、自分のベットがレイズされたか、ポットコミット、
   スティールの機会) と標準的なプリフロップのレイズ額のおかげで、強さはモデルの周りのコードから来ています。
 - 同じ特徴量だけを読む固定ルールは、ヘッズアップで Jev より 30〜50 bb/100 弱く、6-max では互角です。
