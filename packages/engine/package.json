@@ -1,0 +1,54 @@
+{
+  "name": "@jev-poker/engine",
+  "version": "0.1.0",
+  "description": "No-Limit Texas Hold'em engine: dealing, betting rules, side pots, hand evaluation, equity. Zero dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nft-syou/jev-poker.git",
+    "directory": "packages/engine"
+  },
+  "homepage": "https://github.com/nft-syou/jev-poker/tree/main/packages/engine#readme",
+  "bugs": {
+    "url": "https://github.com/nft-syou/jev-poker/issues"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "engine",
+    "typescript"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/__snapshots__",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "typescript": "~7.0.2"
+  }
+}

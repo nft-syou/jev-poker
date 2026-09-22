@@ -42,12 +42,18 @@ function jevProxyDev(): Plugin {
 export default defineConfig({
   plugins: [react(), jevProxyDev()],
   test: {
-    include: [
-      "src/**/*.test.ts",
-      "src/**/*.test.tsx",
-      "functions/**/*.test.ts",
-      "bench/**/*.test.ts",
-    ],
     passWithNoTests: true,
+    projects: [
+      { test: { name: "engine", include: ["packages/engine/src/**/*.test.ts"] } },
+      { test: { name: "agent", include: ["packages/agent/src/**/*.test.ts"] } },
+      {
+        extends: true,
+        test: {
+          name: "app",
+          include: ["src/**/*.test.ts", "src/**/*.test.tsx", "functions/**/*.test.ts"],
+        },
+      },
+      { test: { name: "bench", include: ["bench/**/*.test.ts"] } },
+    ],
   },
 });

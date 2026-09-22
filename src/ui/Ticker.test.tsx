@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { SeatId } from "@jev-poker/engine";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SeatId } from "../engine/types";
 import { initI18n } from "../i18n";
 import { EMPTY_STATS, type PlayerStats } from "./stats";
 import { Ticker } from "./Ticker";

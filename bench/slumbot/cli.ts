@@ -5,10 +5,10 @@ import {
   type Agent,
   type AgentDecision,
   createAgent,
+  createMockBackend,
   HeuristicAgent,
   JevAgent,
-} from "../../src/agents";
-import { createMockBackend } from "../../src/jev/mock-backend";
+} from "@jev-poker/agent";
 import {
   BENCH_ROUTES,
   type BenchRoute,

@@ -1,11 +1,11 @@
-import type { JevBackend } from "../src/jev/backend";
 import {
   classifyByThresholds,
   classifyWithJev,
+  type JevBackend,
   MIN_HANDS_FOR_TYPE,
   type OpponentStats,
   type OpponentType,
-} from "../src/jev/opponent-type";
+} from "@jev-poker/agent";
 import type { HandAction } from "./types";
 
 interface Tally {
@@ -72,7 +72,6 @@ export class ProfileTracker {
    */
   constructor(private readonly windowHands?: number) {}
 
-  /** Fold one finished hand into the tallies; `players` maps each opponent's seat to its player id. */
   /**
    * Fold one finished hand into the tallies; `players` maps each opponent's seat to its player
    * id, `net` is every seat's result in big blinds (omitted by callers that do not track money).

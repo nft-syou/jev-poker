@@ -1,8 +1,8 @@
+import { loadPersonas, type Persona, saveCustomPersonas } from "@jev-poker/agent";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18next, { detectLanguage, initI18n, type Language } from "../i18n";
 import type { Connection } from "../jev/connection";
-import { loadPersonas, type Persona, saveCustomPersonas } from "../jev/personas";
 import { ConnectionModal } from "./ConnectionModal";
 import { GameScreen } from "./GameScreen";
 import { LanguageSwitch } from "./LanguageSwitch";
@@ -34,7 +34,7 @@ export function App() {
   const [keyError, setKeyError] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(connection === null);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
-  const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas());
+  const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas(localStorage));
   const [screen, setScreen] = useState<Screen>("setup");
 
   useEffect(() => {

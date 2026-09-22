@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import { PRESET_PERSONAS } from "@jev-poker/agent";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initI18n } from "../i18n";
-import { PRESET_PERSONAS } from "../jev/personas";
 import { PersonaEditor } from "./PersonaEditor";
 
 initI18n("en");

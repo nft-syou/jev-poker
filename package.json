@@ -4,6 +4,23 @@
   "private": true,
   "description": "No-Limit Texas Hold'em where the CPU players think with TypeSafe Jev. Bring your own API key.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nft-syou/jev-poker.git"
+  },
+  "homepage": "https://github.com/nft-syou/jev-poker#readme",
+  "bugs": {
+    "url": "https://github.com/nft-syou/jev-poker/issues"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "typesafe",
+    "jev",
+    "cloudflare-pages",
+    "react",
+    "typescript"
+  ],
   "type": "module",
   "packageManager": "pnpm@12.4.2",
   "engines": {
@@ -23,9 +40,15 @@
     "bench:report": "tsx bench/report-cli.ts",
     "bench:slumbot": "tsx bench/slumbot/cli.ts",
     "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "build:packages": "pnpm -r --filter \"./packages/*\" run build",
+    "verify:packages": "pnpm build:packages && node scripts/verify-packages.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:packages",
+    "changeset": "changeset",
+    "release": "pnpm build:packages && changeset publish"
   },
   "dependencies": {
+    "@jev-poker/agent": "workspace:*",
+    "@jev-poker/engine": "workspace:*",
     "@typesafe-ai/sdk": "^0.6.0",
     "i18next": "^26.4.2",
     "react": "^19.3.0",
@@ -33,7 +56,10 @@
     "react-i18next": "^17.0.14"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@cloudflare/workers-types": "^5.20260916.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -42,8 +68,9 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.0.1",
+    "publint": "^0.3.24",
     "tsx": "^4.19.0",
-    "typescript": "~5.9.3",
+    "typescript": "~7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1",
     "wrangler": "^4.133.0"

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { LegalActions } from "@jev-poker/engine";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { LegalActions } from "../engine/types";
 import { initI18n } from "../i18n";
 import { ActionBar } from "./ActionBar";
 

@@ -1,6 +1,6 @@
+import type { HandPlayerSnapshot } from "@jev-poker/engine";
 import type { CSSProperties, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { HandPlayerSnapshot } from "../engine/types";
 import { CalloutView, INWARD_UP, type Inward } from "./CalloutView";
 import { CardView } from "./CardView";
 import type { Callout } from "./fx";

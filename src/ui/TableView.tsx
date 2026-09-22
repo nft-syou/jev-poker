@@ -1,6 +1,6 @@
+import type { SeatId } from "@jev-poker/engine";
 import { type CSSProperties, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
 import { ActionBar } from "./ActionBar";
 import { ActionFeed } from "./ActionFeed";

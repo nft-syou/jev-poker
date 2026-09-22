@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { HandSnapshot, LegalActions } from "@jev-poker/engine";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { HandSnapshot, LegalActions } from "../engine/types";
 import { initI18n } from "../i18n";
 import { EMPTY_FX, type TableFx } from "./fx";
 import { TableView } from "./TableView";

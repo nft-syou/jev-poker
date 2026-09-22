@@ -1,5 +1,5 @@
-import type { AgentDecision } from "../src/agents";
-import type { Action, SeatId, Street } from "../src/engine";
+import type { AgentDecision } from "@jev-poker/agent";
+import type { Action, SeatId, Street } from "@jev-poker/engine";
 
 /** One kind of bot in every other seat, or a table of different players (six-handed only). */
 export type Opponent = "random" | "caller" | "rules" | "mixed" | "mixed-jev";

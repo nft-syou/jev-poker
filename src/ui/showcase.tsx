@@ -1,8 +1,6 @@
+import { type ActionLabel, type DecisionFeatures, SIZING_RUBRIC } from "@jev-poker/agent";
+import type { Action } from "@jev-poker/engine";
 import type { TFunction } from "i18next";
-import type { Action } from "../engine/types";
-import type { DecisionFeatures } from "../jev/features";
-import type { ActionLabel } from "../jev/questions";
-import { SIZING_RUBRIC } from "../jev/questions";
 import type { DecisionInfo } from "./useGame";
 
 /** Order of the probability bars; the same three, always, so they never jump about. */

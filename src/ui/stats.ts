@@ -1,5 +1,5 @@
-import type { GameEvent, SeatId } from "../engine/types";
-import type { DecisionRecord } from "../jev/decide";
+import type { DecisionRecord } from "@jev-poker/agent";
+import type { GameEvent, SeatId } from "@jev-poker/engine";
 
 /** `persona:<id>` for a CPU seat, `human:<name>` for a human one. */
 export type StatsKey = string;

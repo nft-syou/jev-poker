@@ -1,6 +1,6 @@
+import type { Action, LegalActions } from "@jev-poker/engine";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Action, LegalActions } from "../engine/types";
 import { potShare, type SizingSpot, sizingPresets } from "./betSizing";
 
 interface Props {

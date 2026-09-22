@@ -1,4 +1,4 @@
-import type { GameEvent, SeatId, Street } from "../engine/types";
+import type { GameEvent, SeatId, Street } from "@jev-poker/engine";
 
 /** The shout that flashes at a seat the moment it acts. */
 export type CalloutKind = "fold" | "check" | "call" | "bet" | "raise" | "allin";

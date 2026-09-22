@@ -1,8 +1,18 @@
-import type { Hand } from "../engine/hand";
-import type { Action, GameEvent, HandSnapshot, LegalActions, SeatId } from "../engine/types";
-import { type DecisionRecord, sizingToAmount } from "./decide";
-import type { ActionTakenEvent, DecisionFeatures } from "./features";
-import { legalLabels } from "./questions";
+import {
+  type ActionTakenEvent,
+  type DecisionFeatures,
+  type DecisionRecord,
+  legalLabels,
+  sizingToAmount,
+} from "@jev-poker/agent";
+import type {
+  Action,
+  GameEvent,
+  Hand,
+  HandSnapshot,
+  LegalActions,
+  SeatId,
+} from "@jev-poker/engine";
 
 /** Identifies one decision: the same state asked the same way reuses the same answer. */
 export type DecisionKey = string;

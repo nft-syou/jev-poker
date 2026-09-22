@@ -1,5 +1,5 @@
+import { PRESET_PERSONAS } from "@jev-poker/agent";
 import { describe, expect, it } from "vitest";
-import { PRESET_PERSONAS } from "../src/jev/personas";
 import { createNodeBackend, getPersona } from "./backend";
 
 describe("getPersona", () => {
@@ -26,6 +26,16 @@ describe("createNodeBackend", () => {
   it("accepts a model and a timeout", () => {
     const backend = createNodeBackend({ apiKey: "test", model: "jev-latest", timeoutMs: 1234 });
     expect(backend.kind).toBe("typesafe");
+  });
+
+  it("refuses to build without a key", () => {
+    const saved = process.env.TYPESAFE_API_KEY;
+    delete process.env.TYPESAFE_API_KEY;
+    try {
+      expect(() => createNodeBackend()).toThrow("TYPESAFE_API_KEY is not set");
+    } finally {
+      if (saved !== undefined) process.env.TYPESAFE_API_KEY = saved;
+    }
   });
 });
 

@@ -1,8 +1,8 @@
 import { execSync } from "node:child_process";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { createMockBackend } from "@jev-poker/agent";
 import { VERSION } from "@typesafe-ai/sdk";
-import { createMockBackend } from "../src/jev/mock-backend";
 import { createNodeBackend, getPersona, ROUTE_KEY_ENV } from "./backend";
 import { expandMatchups } from "./matchups";
 import {

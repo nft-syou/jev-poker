@@ -1,5 +1,5 @@
+import { createAgent, HeuristicAgent } from "@jev-poker/agent";
 import { describe, expect, it } from "vitest";
-import { createAgent, HeuristicAgent } from "../../src/agents";
 import { type FetchLike, SlumbotClient, type SlumbotResponse } from "./client";
 import { BIG_BLIND, type Pos, replay } from "./protocol";
 import { runSlumbot, type SlumbotHand, summarizeSlumbot } from "./runner";

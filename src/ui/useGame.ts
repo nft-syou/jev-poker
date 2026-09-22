@@ -1,21 +1,30 @@
+import {
+  type ActionTakenEvent,
+  buildFeatures,
+  type DecisionFeatures,
+  type DecisionRecord,
+  decideAction,
+  type Persona,
+  PRESET_PERSONAS,
+  personaPrompt,
+} from "@jev-poker/agent";
+import {
+  type Action,
+  createRng,
+  fixedBlinds,
+  type GameConfig,
+  type GameEvent,
+  type Hand,
+  type HandSnapshot,
+  type LegalActions,
+  type Rng,
+  randomSeed,
+  type SeatId,
+  type SeatKind,
+  Table,
+} from "@jev-poker/engine";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { fixedBlinds } from "../engine/blinds";
-import type { Hand } from "../engine/hand";
-import { createRng, type Rng, randomSeed } from "../engine/rng";
-import { Table } from "../engine/table";
-import type {
-  Action,
-  GameConfig,
-  GameEvent,
-  HandSnapshot,
-  LegalActions,
-  SeatId,
-  SeatKind,
-} from "../engine/types";
 import type { JevBackend } from "../jev/backend";
-import { type DecisionRecord, decideAction } from "../jev/decide";
-import { type ActionTakenEvent, buildFeatures, type DecisionFeatures } from "../jev/features";
-import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
 import {
   DecisionCache,
   type DecisionKey,

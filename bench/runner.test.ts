@@ -1,18 +1,18 @@
-import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
-import { describe, expect, it, vi } from "vitest";
-import type { AgentDecision } from "../src/agents";
-import { formatCard, type GameEvent } from "../src/engine";
-import type { JevBackend } from "../src/jev/backend";
-import type { DecisionFeatures } from "../src/jev/features";
-import { createMockBackend } from "../src/jev/mock-backend";
 import {
+  type ActionLabel,
+  type AgentDecision,
+  createMockBackend,
+  type DecisionFeatures,
+  type JevBackend,
   OPPONENT_TYPE_GUIDANCE,
   OPPONENT_TYPES_INTRO,
   type OpponentStats,
   type OpponentType,
-} from "../src/jev/opponent-type";
-import type { Persona } from "../src/jev/personas";
-import type { ActionLabel } from "../src/jev/questions";
+  type Persona,
+} from "@jev-poker/agent";
+import { formatCard, type GameEvent } from "@jev-poker/engine";
+import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
+import { describe, expect, it, vi } from "vitest";
 import { getPersona } from "./backend";
 import {
   expandMatchups,

@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createMockBackend, PRESET_PERSONAS } from "@jev-poker/agent";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
-import { createMockBackend } from "../jev/mock-backend";
-import { PRESET_PERSONAS } from "../jev/personas";
 import { MAX_CHIP_MOVES } from "./fx";
 import type { PlayerStats } from "./stats";
 import { DEFAULT_SETTINGS, type Settings, STATS_STORAGE_KEY } from "./storage";
