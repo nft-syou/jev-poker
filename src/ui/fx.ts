@@ -248,12 +248,23 @@ export function reduceFx(fx: TableFx, event: GameEvent, at: number): TableFx {
   }
 }
 
-/** Hands per minute over the window `handTimes` covers, or null before there are two. */
+/** A gap between two hands longer than this was a pause, not play, and does not count. */
+export const PAUSE_GAP_MS = 120_000;
+
+/**
+ * Hands per minute over the window `handTimes` covers, or null before there are two. The
+ * table can sit paused for as long as the player likes; that time is left out, or one long
+ * break would read as a crawl for the next hundred hands.
+ */
 export function handsPerMinute(handTimes: readonly number[]): number | null {
-  if (handTimes.length < 2) return null;
-  const first = handTimes[0] ?? 0;
-  const last = handTimes[handTimes.length - 1] ?? 0;
-  const span = last - first;
-  if (span <= 0) return null;
-  return Math.round(((handTimes.length - 1) / span) * 60_000);
+  let hands = 0;
+  let span = 0;
+  for (let i = 1; i < handTimes.length; i++) {
+    const gap = (handTimes[i] ?? 0) - (handTimes[i - 1] ?? 0);
+    if (gap <= 0 || gap > PAUSE_GAP_MS) continue;
+    hands += 1;
+    span += gap;
+  }
+  if (hands === 0) return null;
+  return Math.round((hands / span) * 60_000);
 }

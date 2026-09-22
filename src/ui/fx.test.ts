@@ -216,4 +216,11 @@ describe("handsPerMinute", () => {
     expect(handsPerMinute([0, 1000, 2000])).toBe(60);
     expect(handsPerMinute([0, 60_000])).toBe(1);
   });
+
+  it("leaves a pause out of the rate", () => {
+    // Three quick hands, a ten-minute break, two more: still 60 a minute, not 0.4.
+    expect(handsPerMinute([0, 1000, 2000, 602_000, 603_000])).toBe(60);
+    // A single gap that could only have been a pause says nothing about the rate.
+    expect(handsPerMinute([0, 600_000])).toBeNull();
+  });
 });

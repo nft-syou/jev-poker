@@ -1236,11 +1236,14 @@ body.showcase .app {
   align-items: stretch;
 }
 .table-screen.showcase-mode .felt {
-  margin: 12px 0;
-  max-height: 70vh;
+  /* Headroom for the top seats' decision bubbles, which grow upwards and were cut off by the
+   * viewport edge on a 16:9 recording: a bubble with its three bars is about 130px tall. */
+  margin: 58px 0 12px;
+  /* 64vh instead of 70vh pays for the headroom, so the ticker still ends inside the viewport. */
+  max-height: 62vh;
   aspect-ratio: 16 / 10;
   margin-inline: auto;
-  width: min(100%, calc(70vh * 1.6));
+  width: min(100%, calc(62vh * 1.6));
 }
 .table-screen.showcase-mode .table-header {
   justify-content: flex-end;
