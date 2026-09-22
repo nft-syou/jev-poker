@@ -34,7 +34,7 @@ export function App() {
   const [keyError, setKeyError] = useState<string | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(connection === null);
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
-  const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas());
+  const [personas, setPersonas] = useState<Persona[]>(() => loadPersonas(localStorage));
   const [screen, setScreen] = useState<Screen>("setup");
 
   useEffect(() => {

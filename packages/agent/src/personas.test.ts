@@ -102,3 +102,24 @@ describe("personas", () => {
     expect(loaded[loaded.length - 1]?.description).toEqual(a.description);
   });
 });
+
+describe("loadPersonas without storage", () => {
+  it("returns the presets and reads no global", () => {
+    const g = globalThis as { localStorage?: unknown };
+    const saved = g.localStorage;
+    g.localStorage = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error("library code touched localStorage");
+        },
+      },
+    );
+    try {
+      expect(loadPersonas(null).map((p) => p.id)).toEqual(PRESET_PERSONAS.map((p) => p.id));
+    } finally {
+      if (saved === undefined) delete g.localStorage;
+      else g.localStorage = saved;
+    }
+  });
+});

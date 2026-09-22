@@ -91,11 +91,9 @@ export function duplicatePersona(source: Persona, id: string): Persona {
   };
 }
 
-export function loadPersonas(
-  storage: KeyValueStorage | null | undefined = defaultStorage(),
-): Persona[] {
+export function loadPersonas(storage: KeyValueStorage | null): Persona[] {
   const presets = [...PRESET_PERSONAS];
-  if (storage === null || storage === undefined) return presets;
+  if (storage === null) return presets;
   let raw: string | null;
   try {
     raw = storage.getItem(PERSONA_STORAGE_KEY);
@@ -127,14 +125,6 @@ export function saveCustomPersonas(personas: readonly Persona[], storage: KeyVal
     storage.setItem(PERSONA_STORAGE_KEY, JSON.stringify(custom));
   } catch {
     // Storage may be unavailable (private mode); the game still works without persistence.
-  }
-}
-
-function defaultStorage(): KeyValueStorage | null {
-  try {
-    return typeof localStorage === "undefined" ? null : localStorage;
-  } catch {
-    return null;
   }
 }
 
