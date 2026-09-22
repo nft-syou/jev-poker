@@ -13,7 +13,6 @@ import { HistoryPanel } from "./HistoryPanel";
 import { SeatView } from "./SeatView";
 import { ShowcasePanel } from "./ShowcasePanel";
 import { StatsPanel } from "./StatsPanel";
-import { compactBubble } from "./showcase";
 import { SPEEDS, type Speed } from "./storage";
 import { TableFxLayer } from "./TableFxLayer";
 import { Ticker } from "./Ticker";
@@ -310,7 +309,6 @@ export function TableView({
                     bigBlind={snapshot?.bigBlind ?? 0}
                     visibleUntil={decided === null ? null : decided.at + timings.decisionHoldMs}
                     speed={speed}
-                    compact={compactBubble(inward)}
                   />
                 ) : null;
               return (
