@@ -7,15 +7,14 @@ import {
   JevAgent,
   type Persona,
   type PromptStyle,
+  playHand as playOneHand,
 } from "@jev-poker/agent";
 import {
-  type ActionTakenEvent,
   fixedBlinds,
   type GameConfig,
   type GameEvent,
   hashSeed,
   historyEntry,
-  playerView,
   type SeatId,
   Table,
 } from "@jev-poker/engine";
@@ -138,9 +137,8 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const pfr = new Set<SeatId>();
   const folded = new Set<SeatId>();
   const actions: HandAction[] = [];
-  const taken: ActionTakenEvent[] = [];
   let wentToShowdown = false;
-  const unsubscribe = table.on((e: GameEvent) => {
+  function onTableEvent(e: GameEvent): void {
     args.onEvent?.(e);
     if (e.type === "Showdown") wentToShowdown = true;
     if (e.type === "ActionTaken" && e.street === "preflop") {
@@ -151,7 +149,6 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
     }
     if (e.type === "ActionTaken" && e.action.type === "fold") folded.add(e.seat);
     if (e.type === "ActionTaken") {
-      taken.push(e);
       // Logged the way the agents see it: a bet or raise that is all in reads `allin`.
       const a = historyEntry(e).action;
       actions.push({
@@ -161,54 +158,39 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
         ...(a.type === "bet" || a.type === "raise" ? { amountBB: a.amount / BIG_BLIND } : {}),
       });
     }
-  });
-
-  try {
-    let snapshot = table.startHand();
-    while (!snapshot.complete) {
-      const s = snapshot.actingSeat;
-      if (s === null) throw new Error("hand is not over but no seat is to act");
-      const agent = agents[s];
-      if (agent === undefined) throw new Error(`no agent for seat ${s}`);
-      const action = await agent.decide(playerView(snapshot, s, taken), table.legalActions(s));
-      table.act(s, action);
-      const next = table.snapshot();
-      if (next === null) throw new Error("the table lost its hand");
-      snapshot = next;
-    }
-
-    // Read from the hand, not the table: a cash table rebuys busted seats as the hand ends.
-    const net = new Array<number>(n).fill(0);
-    for (const { id, stack } of table.currentHand?.stacks() ?? []) {
-      net[id] = (stack - STARTING_STACK) / BIG_BLIND;
-    }
-
-    const jevAtShowdown = wentToShowdown && !folded.has(jevSeat);
-    const oppSeats = net.map((_, seat) => seat).filter((seat) => seat !== jevSeat);
-    const fraction = (set: Set<SeatId>): number =>
-      oppSeats.length === 0 ? 0 : oppSeats.filter((seat) => set.has(seat)).length / oppSeats.length;
-
-    return {
-      seedIndex,
-      rotation,
-      jevSeat,
-      net,
-      wentToShowdown,
-      // The table can show down after Jev folded; only Jev's own showdowns count for its win rate.
-      jevAtShowdown,
-      // "Won" means Jev finished the hand ahead: a chop or a lost side pot is not a win.
-      jevWonShowdown: jevAtShowdown ? (net[jevSeat] ?? 0) > 0 : null,
-      jevVpip: vpip.has(jevSeat),
-      jevPfr: pfr.has(jevSeat),
-      oppVpip: fraction(vpip),
-      oppPfr: fraction(pfr),
-      decisions,
-      actions,
-    };
-    // (the tracker is updated by the caller once the record exists)
-  } finally {
-    unsubscribe();
   }
+
+  await playOneHand(table, agents, { onEvent: onTableEvent });
+
+  // Read from the hand, not the table: a cash table rebuys busted seats as the hand ends.
+  const net = new Array<number>(n).fill(0);
+  for (const { id, stack } of table.currentHand?.stacks() ?? []) {
+    net[id] = (stack - STARTING_STACK) / BIG_BLIND;
+  }
+
+  const jevAtShowdown = wentToShowdown && !folded.has(jevSeat);
+  const oppSeats = net.map((_, seat) => seat).filter((seat) => seat !== jevSeat);
+  const fraction = (set: Set<SeatId>): number =>
+    oppSeats.length === 0 ? 0 : oppSeats.filter((seat) => set.has(seat)).length / oppSeats.length;
+
+  return {
+    seedIndex,
+    rotation,
+    jevSeat,
+    net,
+    wentToShowdown,
+    // The table can show down after Jev folded; only Jev's own showdowns count for its win rate.
+    jevAtShowdown,
+    // "Won" means Jev finished the hand ahead: a chop or a lost side pot is not a win.
+    jevWonShowdown: jevAtShowdown ? (net[jevSeat] ?? 0) > 0 : null,
+    jevVpip: vpip.has(jevSeat),
+    jevPfr: pfr.has(jevSeat),
+    oppVpip: fraction(vpip),
+    oppPfr: fraction(pfr),
+    decisions,
+    actions,
+  };
+  // (the tracker is updated by the caller once the record exists)
 }
 
 /**
