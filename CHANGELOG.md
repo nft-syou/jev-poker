@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Link previews and app icons: Open Graph / Twitter card metadata, a 1200x630 card image, SVG/ICO/PNG favicons, an Apple touch icon, a web manifest and robots.txt.
 - No-Limit Texas Hold'em engine (dealing, betting rules, side pots, hand
   evaluation) with seeded random-play tests.
 - CPU players that decide through TypeSafe Jev: typed questions for action,
