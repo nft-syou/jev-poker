@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work the way the README says it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: route
+    attributes:
+      label: Route
+      description: How the browser reached Jev when it happened.
+      options:
+        - TypeSafe direct
+        - Vercel AI Gateway
+        - Lolipop AI Gateway
+        - Cloudflare AI Gateway
+        - Not related to Jev (engine, UI, docs)
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start a table with …
+        2. On the flop, press …
+        3. …
+  - type: input
+    id: env
+    attributes:
+      label: Browser and device
+      placeholder: Safari 26 on iPhone 17, Chrome 141 on Windows 11, …
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, the "Jev" panel of the hand, console errors. Never paste an API key.
