@@ -33,6 +33,21 @@ stand-in.
 - Commit messages follow Conventional Commits (`feat(ui): …`, `fix(proxy): …`,
   `docs: …`, `chore: …`), and the PR description explains why, not just what.
 
+## Changes to the published packages
+
+`packages/engine` and `packages/agent` are published to npm as `@jev-poker/engine` and
+`@jev-poker/agent`. A change under `packages/` that users can notice — a new export, a
+changed signature, a fixed bug — needs a changeset in the same PR:
+
+    pnpm changeset
+
+Pick the package(s), the bump (`patch` for fixes, `minor` for additions, `major` for
+breaking changes) and write one sentence for the changelog. Merging to `main` opens or
+updates a "Version Packages" PR; merging that PR publishes.
+
+`packages/agent/src/index.test.ts` pins the public export list. Adding an export means
+updating that list on purpose, with a `minor` changeset.
+
 ## Things to keep true
 
 - **The proxy never takes a URL from the browser.** Upstreams are the fixed hosts

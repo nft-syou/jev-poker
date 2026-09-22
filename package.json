@@ -42,7 +42,9 @@
     "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
     "build:packages": "pnpm -r --filter \"./packages/*\" run build",
     "verify:packages": "pnpm build:packages && node scripts/verify-packages.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:packages"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:packages",
+    "changeset": "changeset",
+    "release": "pnpm build:packages && changeset publish"
   },
   "dependencies": {
     "@jev-poker/agent": "workspace:*",
@@ -56,6 +58,8 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@cloudflare/workers-types": "^5.20260916.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
