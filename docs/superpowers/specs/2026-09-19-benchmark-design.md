@@ -37,7 +37,7 @@ TimidBot・UnpredictableBot、PyPokerEngine の FishPlayer と同じ定番の対
 | 対戦形式 | ヘッズアップ (Jev vs 各対照群) と 6-max (Jev 1 席 + 同種対照群 5 席) の両方 |
 | Jev 側人格 | 既定 `tag`。`--persona` で差し替え |
 | 指標 | bb/100 と 95% 信頼区間。ミラーハンド (同一配牌で席を入れ替え) で分散削減 |
-| 出力 | `bench/results/<日時>-<ラベル>.json` + 標準出力に Markdown 表。`pnpm bench:report` で再集計 |
+| 出力 | `bench/results/<日時>-<ラベル>.json.gz` + 標準出力に Markdown 表。`pnpm bench:report` で再集計 |
 | README | 最新の集計表を手動で貼る。結果 JSON はコミットする |
 | 実装順 | engine → agents (対照群) → jev (JevAgent + mock) → bench |
 
@@ -165,7 +165,7 @@ pnpm bench [options]
   --label <text>                          結果ファイル名に付く。既定 "<opponent>-<format>"
   --model <name>                          SDK に渡す model。既定は SDK の既定 (jev-latest)
 
-pnpm bench:report [bench/results/*.json ...]   既定は results/ 内の全ファイル
+pnpm bench:report [bench/results/*.json.gz ...]   既定は results/ 内の全ファイル
 ```
 
 - `--backend typesafe` は環境変数 `TYPESAFE_API_KEY` を要求。無ければ起動時にエラー終了
@@ -173,7 +173,7 @@ pnpm bench:report [bench/results/*.json ...]   既定は results/ 内の全フ�
 - `TYPESAFE_BASE_URL` は SDK の既定どおり環境変数で上書き可。Pages Functions は経由しない。
 - `--opponent all --format all` は 3 × 2 = 6 マッチを順に回し、6 ファイルを書く。
 
-### 6.2 結果 JSON (`bench/results/<ISO日時>-<label>.json`)
+### 6.2 結果 JSON (`bench/results/<ISO日時>-<label>.json.gz`)
 
 ```ts
 interface BenchResult {

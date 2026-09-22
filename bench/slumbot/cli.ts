@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   type Agent,
@@ -16,6 +16,7 @@ import {
   getPersona,
   ROUTE_KEY_ENV,
 } from "../backend";
+import { writeResult } from "../results-io";
 import { SlumbotClient } from "./client";
 import { runSlumbot, type SlumbotSummary, summarizeSlumbot } from "./runner";
 
@@ -276,10 +277,9 @@ async function main(): Promise<void> {
   };
 
   await mkdir(RESULTS_DIR, { recursive: true });
-  const name = `${startedAt.replace(/[:.]/g, "-")}-${opts.label === null ? "" : `${opts.label}-`}slumbot-${heroName.replace(":", "-")}.json`;
+  const name = `${startedAt.replace(/[:.]/g, "-")}-${opts.label === null ? "" : `${opts.label}-`}slumbot-${heroName.replace(":", "-")}.json.gz`;
   const file = `${RESULTS_DIR}${name}`;
-  await writeFile(`${file}.tmp`, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-  await rename(`${file}.tmp`, file);
+  await writeResult(file, result);
   process.stderr.write(`wrote ${file}\n`);
   process.stdout.write(`${table(heroName, summary)}\n`);
 }

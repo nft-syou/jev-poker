@@ -1,5 +1,5 @@
-import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { listResultFiles, readResult } from "../results-io";
 import { type SlumbotHand, summarizeSlumbot } from "./runner";
 
 const RESULTS_DIR = fileURLToPath(new URL("../results-slumbot/", import.meta.url));
@@ -21,19 +21,14 @@ const signed = (x: number): string => (x >= 0 ? "+" : "") + x.toFixed(1);
 /** Pool every result file of the same hero configuration (hands are independent deals) and print one row each. */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const files =
-    args.length > 0
-      ? args
-      : (await readdir(RESULTS_DIR))
-          .filter((f) => f.endsWith(".json"))
-          .map((f) => `${RESULTS_DIR}${f}`);
+  const files = args.length > 0 ? args : await listResultFiles(RESULTS_DIR);
   if (files.length === 0) {
     process.stderr.write(`no result files in ${RESULTS_DIR}; run pnpm bench:slumbot first\n`);
     process.exit(1);
   }
   const pools = new Map<string, { label: string; hands: SlumbotHand[]; files: number }>();
   for (const file of files) {
-    const r = JSON.parse(await readFile(file, "utf8")) as ResultFile;
+    const r = await readResult<ResultFile>(file);
     const c = r.config;
     const label = c.hero === "jev" ? `jev:${c.persona}` : c.hero;
     const key = JSON.stringify([label, c.model, c.variance, c.gitCommit]);

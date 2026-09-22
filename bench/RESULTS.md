@@ -16,7 +16,7 @@ Jev モジュール (`src/jev`) に移植したので、現在の `pnpm bench` �
 ## After the port / 移植後の確認
 
 `tag` against `rules`, 1,000 seeds on base seed 300001 (never used for tuning), model `jev-1.13.0`,
-0 fail-open, code `e39461e` (the merge that ported the agent). Files: `results/*-port-rules-*.json`.
+0 fail-open, code `e39461e` (the merge that ported the agent). Files: `results/*-port-rules-*.json.gz`.
 
 | format | before the port (`1014659` behaviour) | after the port (the game's CPU) |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ Jev モジュール (`src/jev`) に移植したので、現在の `pnpm bench` �
   [+4.9, +40.0], in line with the earlier runs (Jev ahead of it heads-up, level six-handed).
 
 `tag` 対 `rules`、ベースシード 300001 (チューニング未使用) の 1,000 シード、モデル `jev-1.13.0`、
-フェイルオープン 0 件、コードは移植マージの `e39461e`。ファイルは `results/*-port-rules-*.json`。
+フェイルオープン 0 件、コードは移植マージの `e39461e`。ファイルは `results/*-port-rules-*.json.gz`。
 
 - 結論は変わりません。ゲームの CPU はヘッズアップでルールベースに勝ち、6-max でも移植前とほぼ同じ幅で
   上回っています (信頼区間の下端がわずかに 0 にかかります)。
@@ -48,7 +48,7 @@ The Jev module the game shipped before the merge (`src/jev` of `59a8518`: made h
 odds, a pot-fraction sizing question, `tag` variance 0.4) was copied verbatim next to the benchmark
 and seated in the same harness: same engine, same `rules` opponents, same 1,000 seeds on base seed
 300001, so both CPUs were dealt identical hands. 0 fail-open on either side.
-Files: `results/*-premerge-cpu-rules-*.json` (old) and `results/*-port-rules-*.json` (new).
+Files: `results/*-premerge-cpu-rules-*.json.gz` (old) and `results/*-port-rules-*.json.gz` (new).
 
 | format | before the merge (`59a8518`) | after the merge (`e39461e`) | paired difference, same deals |
 | --- | --- | --- | --- |

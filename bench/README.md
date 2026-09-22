@@ -129,10 +129,10 @@ pnpm bench:slumbot:report                                       # 同じ構成�
 
 ## 結果 JSON
 
-- 置き場所: `bench/results/<startedAt>-<opponent>-<format>.json` (例
-  `2026-09-19T10-00-00-000Z-random-hu.json`)。1 マッチ 1 ファイル。`--label smoke` を
-  付けた場合は `<startedAt>-smoke-<opponent>-<format>.json` (例
-  `2026-09-19T10-00-00-000Z-smoke-random-hu.json`) になり、**マッチ名は常に残る**ので
+- 置き場所: `bench/results/<startedAt>-<opponent>-<format>.json.gz` (例
+  `2026-09-19T10-00-00-000Z-random-hu.json.gz`)。1 マッチ 1 ファイル。`--label smoke` を
+  付けた場合は `<startedAt>-smoke-<opponent>-<format>.json.gz` (例
+  `2026-09-19T10-00-00-000Z-smoke-random-hu.json.gz`) になり、**マッチ名は常に残る**ので
   `--opponent all` でもファイル名が衝突しない。
 - 書き込みは `<file>.tmp` に出してから `rename` する (アトミック)。途中で落ちても
   壊れかけの JSON が残ることはない。
@@ -154,12 +154,12 @@ pnpm bench:slumbot:report                                       # 同じ構成�
 
 ```bash
 pnpm bench:report                              # results/ 内の全 JSON
-pnpm bench:report bench/results/a.json b.json  # ファイル指定
+pnpm bench:report bench/results/a.json.gz b.json.gz  # ファイル指定
 ```
 
-> **Windows PowerShell**: PowerShell はグロブ (`bench/results/*.json`) を展開しないので、
+> **Windows PowerShell**: PowerShell はグロブ (`bench/results/*.json.gz`) を展開しないので、
 > ワイルドカードをそのまま渡しても動かない。引数なしの形 (`pnpm bench:report`) を使うか、
-> `pnpm bench:report (Get-ChildItem bench/results/*.json).FullName` のように展開して渡す。
+> `pnpm bench:report (Get-ChildItem bench/results/*.json.gz).FullName` のように展開して渡す。
 
 同じ (相手, 形式, 人格) の組み合わせが複数あるときは `finishedAt` が最新のものだけを表にする。
 

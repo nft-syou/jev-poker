@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createMockBackend } from "@jev-poker/agent";
 import { VERSION } from "@typesafe-ai/sdk";
@@ -13,6 +13,7 @@ import {
   resultsToMarkdown,
   USAGE,
 } from "./report";
+import { writeResult } from "./results-io";
 import { runMatch } from "./runner";
 import { summarize } from "./stats";
 import type { BenchResult } from "./types";
@@ -168,9 +169,7 @@ async function main(): Promise<void> {
     await mkdir(RESULTS_DIR, { recursive: true });
     // `resultFileName` adds the matchup itself; `--label` (or null) is all it needs.
     const file = `${RESULTS_DIR}${resultFileName(result, opts.label)}`;
-    // Write then rename, so an interrupted run never leaves a truncated JSON behind.
-    await writeFile(`${file}.tmp`, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-    await rename(`${file}.tmp`, file);
+    await writeResult(file, result);
     process.stderr.write(`[${tag}] wrote ${file}\n`);
 
     if (controller.signal.aborted) break;

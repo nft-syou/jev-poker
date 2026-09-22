@@ -199,15 +199,15 @@ export function pickLatest(results: BenchResult[]): BenchResult[] {
 }
 
 /**
- * `2026-09-19T00-00-00-000Z-random-hu.json`, or with a user label
- * `2026-09-19T00-00-00-000Z-smoke-random-hu.json` — colons and dots are not
+ * `2026-09-19T00-00-00-000Z-random-hu.json.gz`, or with a user label
+ * `2026-09-19T00-00-00-000Z-smoke-random-hu.json.gz` — colons and dots are not
  * portable in file names. The matchup is always part of the name, so one
  * `--label` shared by every matchup of a run cannot collide with itself.
  */
 export function resultFileName(result: BenchResult, label: string | null): string {
   const { opponent, format } = result.config;
   const suffix = label === null ? `${opponent}-${format}` : `${label}-${opponent}-${format}`;
-  return `${result.startedAt.replace(/[:.]/g, "-")}-${suffix}.json`;
+  return `${result.startedAt.replace(/[:.]/g, "-")}-${suffix}.json.gz`;
 }
 
 const OPPONENT_VALUES: readonly string[] = [...OPPONENT_ORDER, "all"];

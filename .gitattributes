@@ -4,3 +4,4 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+*.json.gz binary

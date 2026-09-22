@@ -114,16 +114,18 @@ describe("report", () => {
   });
 
   it("builds a result file name from startedAt and the matchup", () => {
-    expect(resultFileName(mk({}), null)).toBe("2026-09-19T00-00-00-000Z-random-hu.json");
+    expect(resultFileName(mk({}), null)).toBe("2026-09-19T00-00-00-000Z-random-hu.json.gz");
     expect(resultFileName(mk({ opponent: "rules", format: "6max" }), null)).toBe(
-      "2026-09-19T00-00-00-000Z-rules-6max.json",
+      "2026-09-19T00-00-00-000Z-rules-6max.json.gz",
     );
   });
 
   it("keeps the matchup in the name when a label is given", () => {
-    expect(resultFileName(mk({}), "smoke")).toBe("2026-09-19T00-00-00-000Z-smoke-random-hu.json");
+    expect(resultFileName(mk({}), "smoke")).toBe(
+      "2026-09-19T00-00-00-000Z-smoke-random-hu.json.gz",
+    );
     expect(resultFileName(mk({ opponent: "caller" }), "smoke")).toBe(
-      "2026-09-19T00-00-00-000Z-smoke-caller-hu.json",
+      "2026-09-19T00-00-00-000Z-smoke-caller-hu.json.gz",
     );
   });
 });
@@ -382,10 +384,10 @@ describe("report mixed tables", () => {
 
   it("names their result files like any other matchup", () => {
     expect(resultFileName(mk({ opponent: "mixed", format: "6max" }), null)).toBe(
-      "2026-09-19T00-00-00-000Z-mixed-6max.json",
+      "2026-09-19T00-00-00-000Z-mixed-6max.json.gz",
     );
     expect(resultFileName(mk({ opponent: "mixed-jev", format: "6max" }), "types")).toBe(
-      "2026-09-19T00-00-00-000Z-types-mixed-jev-6max.json",
+      "2026-09-19T00-00-00-000Z-types-mixed-jev-6max.json.gz",
     );
   });
 });
