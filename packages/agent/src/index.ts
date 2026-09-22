@@ -27,6 +27,8 @@ export {
   sizingToAmount,
 } from "./decide.js";
 export {
+  // Re-exported so callers who build features from events can name this type without also
+  // depending on @jev-poker/engine; it is the identical type as the engine's own export.
   type ActionTakenEvent,
   type BuildFeaturesInput,
   buildFeatures,

@@ -26,6 +26,6 @@ All notable changes to this project are documented here. The format follows
 - A billing pause with a modal when the upstream answers 402.
 - English and Japanese UI.
 - A benchmark harness against baseline bots and Slumbot, with saved results.
-- The engine and the CPU as npm packages: `@jev-poker/engine` and `@jev-poker/agent` (each has its own changelog under `packages/`).
+- The engine and the CPU as npm packages: `@jev-poker/engine` and `@jev-poker/agent` (Changesets keeps a changelog per package under `packages/` from the first release on).
 
 [Unreleased]: https://github.com/nft-syou/jev-poker/commits/main

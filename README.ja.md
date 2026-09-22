@@ -160,7 +160,8 @@ Node.js 24 と pnpm が必要です。
 - [`@jev-poker/engine`](packages/engine) — 依存ゼロのノーリミットホールデムのエンジン。
 - [`@jev-poker/agent`](packages/agent) — Jev CPU、ベースライン bot、人格、`playHand`。
 
-最小の使い方は各パッケージの README (英語) を参照してください。
+最小の使い方は各パッケージの README (英語) を参照してください。変更は Changesets でリリースします。
+[CONTRIBUTING.md](CONTRIBUTING.md#changes-to-the-published-packages) を参照してください。
 
 ## コントリビュート
 

@@ -56,7 +56,12 @@ export async function playHand(
   }
 }
 
-/** Resolves with the decision, or rejects as soon as the signal fires. */
+/**
+ * Resolves with the decision, or rejects as soon as the signal fires. After an abort, the
+ * `decision` chain is still pending and keeps running, but that is harmless: its `then`
+ * callbacks call `resolve`/`reject` on a promise that this function's caller already settled
+ * (via the abort rejection), so those calls are no-ops. This is not a leak, just an inert chain.
+ */
 function race<T>(decision: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
   if (signal === undefined) return decision;
   if (signal.aborted) return Promise.reject(abortError());

@@ -143,7 +143,8 @@ import { JevAgent, RulesAgent, createTypeSafeBackend, PRESET_PERSONAS, playHand 
 const table = new Table({ format: "cash", blinds: fixedBlinds(1, 2), startingStack: 200,
   seats: [{ id: 0, name: "Jev", kind: "cpu" }, { id: 1, name: "Rules", kind: "cpu" }], seed: 1 });
 const backend = createTypeSafeBackend({ apiKey: process.env.TYPESAFE_API_KEY! });
-const agents = [new JevAgent({ persona: PRESET_PERSONAS[1], backend, seed: 1 }), new RulesAgent()];
+const tag = PRESET_PERSONAS.find((p) => p.id === "tag")!;
+const agents = [new JevAgent({ persona: tag, backend, seed: 1 }), new RulesAgent()];
 for (let i = 0; i < 5; i++) await playHand(table, agents);
 ```
 

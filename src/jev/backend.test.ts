@@ -53,7 +53,7 @@ async function ask(connection: Connection, model?: string): Promise<Call> {
   return call;
 }
 
-describe("createTypeSafeBackend", () => {
+describe("createProxyBackend", () => {
   it("posts to <baseURL>/v1/systemone with the key header and default model", async () => {
     const call = await ask({ route: "typesafe", apiKey: "sk-test" });
     expect(call.url).toBe("http://localhost/api/jev/v1/systemone");

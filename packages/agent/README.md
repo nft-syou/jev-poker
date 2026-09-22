@@ -15,7 +15,8 @@ import { JevAgent, createTypeSafeBackend, PRESET_PERSONAS } from "@jev-poker/age
 import type { PlayerView, LegalActions } from "@jev-poker/engine";
 
 const backend = createTypeSafeBackend({ apiKey: process.env.TYPESAFE_API_KEY! });
-const cpu = new JevAgent({ persona: PRESET_PERSONAS[1], backend, seed: 42 });
+const tag = PRESET_PERSONAS.find((p) => p.id === "tag")!;
+const cpu = new JevAgent({ persona: tag, backend, seed: 42 });
 
 const action = await cpu.decide(view, legal); // view: PlayerView, legal: LegalActions
 ```
@@ -35,7 +36,8 @@ const table = new Table({
   seats: [{ id: 0, name: "Jev", kind: "cpu" }, { id: 1, name: "Rules", kind: "cpu" }],
 });
 const backend = createTypeSafeBackend({ apiKey: process.env.TYPESAFE_API_KEY! });
-const agents = [new JevAgent({ persona: PRESET_PERSONAS[1], backend, seed: 1 }), new RulesAgent()];
+const tag = PRESET_PERSONAS.find((p) => p.id === "tag")!;
+const agents = [new JevAgent({ persona: tag, backend, seed: 1 }), new RulesAgent()];
 for (let i = 0; i < 5; i++) await playHand(table, agents);
 ```
 
