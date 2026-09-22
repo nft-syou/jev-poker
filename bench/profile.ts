@@ -17,7 +17,16 @@ interface Tally {
   /** Postflop actions that answer a bet: a fold, a call or a raise. */
   facedBet: number;
   foldedToBet: number;
+  /** Chips won or lost, in big blinds. */
+  netBB: number;
 }
+
+/**
+ * When to treat a player's tendencies as worth exploiting: only once the player has lost this
+ * much over at least this many hands. Chosen offline before the run (bench/EXPERIMENTS.md, exp10):
+ * the bots that lose 400-500 bb/100 pass it almost always, Jev personas almost never.
+ */
+export const LOSING_PLAYER = { minHands: 100, maxBB100: -150 } as const;
 
 function emptyTally(): Tally {
   return {
@@ -28,6 +37,7 @@ function emptyTally(): Tally {
     postflopAggressive: 0,
     facedBet: 0,
     foldedToBet: 0,
+    netBB: 0,
   };
 }
 
@@ -39,6 +49,7 @@ function addTally(into: Tally, hand: Tally, sign: 1 | -1): void {
   into.postflopAggressive += sign * hand.postflopAggressive;
   into.facedBet += sign * hand.facedBet;
   into.foldedToBet += sign * hand.foldedToBet;
+  into.netBB += sign * hand.netBB;
 }
 
 /**
@@ -62,7 +73,15 @@ export class ProfileTracker {
   constructor(private readonly windowHands?: number) {}
 
   /** Fold one finished hand into the tallies; `players` maps each opponent's seat to its player id. */
-  record(actions: readonly HandAction[], players: ReadonlyMap<number, string>): void {
+  /**
+   * Fold one finished hand into the tallies; `players` maps each opponent's seat to its player
+   * id, `net` is every seat's result in big blinds (omitted by callers that do not track money).
+   */
+  record(
+    actions: readonly HandAction[],
+    players: ReadonlyMap<number, string>,
+    net?: readonly number[],
+  ): void {
     for (const [seat, playerId] of players) {
       const mine = actions.filter((a) => a.seat === seat);
       const pre = mine.filter((a) => a.street === "preflop");
@@ -80,6 +99,7 @@ export class ProfileTracker {
         postflopAggressive: post.filter((a) => aggressive(a.type)).length,
         facedBet: answered.length,
         foldedToBet: answered.filter((a) => a.type === "fold").length,
+        netBB: net?.[seat] ?? 0,
       };
       this.seen.set(playerId, (this.seen.get(playerId) ?? 0) + 1);
       const t = this.tallies.get(playerId) ?? emptyTally();
@@ -115,6 +135,19 @@ export class ProfileTracker {
         t.postflopActions === 0 ? 0 : Math.round((100 * t.postflopAggressive) / t.postflopActions),
       ...(t.facedBet === 0 ? {} : { foldToBetPct: Math.round((100 * t.foldedToBet) / t.facedBet) }),
     };
+  }
+
+  /** The player's result so far in bb/100, or `null` before `minHands`. */
+  resultBB100(playerId: string, minHands = 1): number | null {
+    const t = this.tallies.get(playerId);
+    if (t === undefined || t.hands < minHands) return null;
+    return (100 * t.netBB) / t.hands;
+  }
+
+  /** True once the player has lost enough, for long enough, to be worth adjusting to. */
+  isLosing(playerId: string): boolean {
+    const result = this.resultBB100(playerId, LOSING_PLAYER.minHands);
+    return result !== null && result <= LOSING_PLAYER.maxBB100;
   }
 
   /** The player's type by fixed thresholds over the statistics so far. */

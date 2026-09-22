@@ -111,6 +111,7 @@ async function main(): Promise<void> {
       rangeEquity: opts.rangeEquity,
       profile: opts.profile,
       ...(opts.profileWindow !== null ? { profileWindow: opts.profileWindow } : {}),
+      ...(opts.profileLosingOnly ? { profileLosingOnly: true } : {}),
       onLabelCalls: (calls) => {
         labelCalls = calls;
       },
@@ -155,6 +156,7 @@ async function main(): Promise<void> {
         ...(opts.profile !== false && opts.profileWindow !== null
           ? { profileWindow: opts.profileWindow }
           : {}),
+        ...(opts.profile !== false && opts.profileLosingOnly ? { profileLosingOnly: true } : {}),
         ...(labelCalls > 0 ? { profileLabelCalls: labelCalls } : {}),
         ...(playerTypes !== null ? { profilePlayerTypes: playerTypes } : {}),
       },

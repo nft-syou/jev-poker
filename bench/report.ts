@@ -20,6 +20,8 @@ export interface CliOptions {
   profile: false | ProfileMode;
   /** Only with `--profile`: how many recent hands of each opponent are remembered. */
   profileWindow: number | null;
+  /** Only with `--profile label|jev-label`: types only for players who are losing. */
+  profileLosingOnly: boolean;
 }
 
 export const USAGE = `Usage: pnpm bench [options]
@@ -41,6 +43,7 @@ export const USAGE = `Usage: pnpm bench [options]
                                        numbers (default) = VPIP/PFR/aggression/fold-to-bet, label = a player type
                                        from fixed thresholds, jev-label = a player type Jev itself judges from the numbers
   --profile-window N                   remember only each opponent's most recent N hands (default: the whole matchup)
+  --profile-losing-only                give a player's type only while that player has lost at least 150 bb/100 over 100+ hands
   --range-equity                       add the opt-in equityVsRangePct feature to the state
   --preflop jev|chart                  chart: preflop from the position chart in code, Jev decides postflop only
   --hero jev|heuristic                 who sits in the measured seat: Jev (default) or the fixed heuristic over the same features
@@ -112,6 +115,7 @@ function conditions(r: BenchResult): string {
   const profile = r.config.profile === true ? "numbers" : (r.config.profile ?? false);
   if (profile !== false) parts.push(profile === "numbers" ? "profile" : `profile:${profile}`);
   if (r.config.profileWindow !== undefined) parts.push(`window ${r.config.profileWindow}`);
+  if (r.config.profileLosingOnly === true) parts.push("losing-only");
   if (r.config.variance !== undefined) parts.push(`var ${r.config.variance}`);
   if (r.config.backend === "mock") parts.push("mock");
   if ((r.config.route ?? "typesafe") !== "typesafe") parts.push(r.config.route as string);
@@ -136,6 +140,7 @@ export function configKey(r: BenchResult): string {
     c.rangeEquity ?? false,
     c.profile ?? false,
     c.profileWindow ?? null,
+    c.profileLosingOnly ?? false,
     c.seeds,
     c.baseSeed,
     c.gitCommit,
@@ -257,6 +262,7 @@ export function parseArgs(argv: string[]): CliOptions {
     rangeEquity: false,
     profile: false,
     profileWindow: null,
+    profileLosingOnly: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -273,6 +279,10 @@ export function parseArgs(argv: string[]): CliOptions {
         options.profile = next as ProfileMode;
         i += 1;
       } else options.profile = "numbers";
+      continue;
+    }
+    if (arg === "--profile-losing-only") {
+      options.profileLosingOnly = true;
       continue;
     }
     if (arg === "--range-equity") {

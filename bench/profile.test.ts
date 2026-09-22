@@ -7,7 +7,7 @@ import { createMockBackend } from "../src/jev/mock-backend";
 import type { OpponentStats, OpponentType } from "../src/jev/opponent-type";
 import { personaPrompt } from "../src/jev/personas";
 import { getPersona } from "./backend";
-import { JevTypeLabeler, ProfileTracker } from "./profile";
+import { JevTypeLabeler, LOSING_PLAYER, ProfileTracker } from "./profile";
 import { runMatch } from "./runner";
 import type { HandAction } from "./types";
 
@@ -688,5 +688,47 @@ describe("ProfileTracker window", () => {
     expect(labeler.calls).toBe(2);
     // The sample Jev is shown never exceeds the window.
     expect(backend.requests.map((r) => r.opponent.hands)).toEqual([20, 20]);
+  });
+});
+
+describe("ProfileTracker losing-player gate", () => {
+  const players = new Map([[0, "villain"]]);
+  const netOf = (bb: number) => [bb, -bb];
+
+  it("tracks each player's result in bb/100 and is silent before the minimum sample", () => {
+    const t = new ProfileTracker();
+    for (let i = 0; i < 99; i++) t.record(callsDown(0), players, netOf(-2));
+    expect(t.resultBB100("villain")).toBeCloseTo(-200);
+    expect(t.resultBB100("villain", LOSING_PLAYER.minHands)).toBeNull();
+    expect(t.isLosing("villain")).toBe(false);
+    t.record(callsDown(0), players, netOf(-2));
+    expect(t.isLosing("villain")).toBe(true);
+    expect(t.resultBB100("nobody")).toBeNull();
+  });
+
+  it("opens exactly at the loss threshold and closes again when the player recovers", () => {
+    const t = new ProfileTracker();
+    for (let i = 0; i < 100; i++) t.record(callsDown(0), players, netOf(-1.5));
+    expect(t.resultBB100("villain")).toBeCloseTo(-150);
+    expect(t.isLosing("villain")).toBe(true);
+    for (let i = 0; i < 50; i++) t.record(callsDown(0), players, netOf(3));
+    expect(t.resultBB100("villain")).toBeCloseTo(0);
+    expect(t.isLosing("villain")).toBe(false);
+  });
+
+  it("treats a hand recorded without results as a break-even hand", () => {
+    const t = new ProfileTracker();
+    for (let i = 0; i < 100; i++) t.record(callsDown(0), players);
+    expect(t.resultBB100("villain")).toBe(0);
+    expect(t.isLosing("villain")).toBe(false);
+  });
+
+  it("forgets old results with a window", () => {
+    const t = new ProfileTracker(100);
+    for (let i = 0; i < 100; i++) t.record(callsDown(0), players, netOf(-3));
+    expect(t.isLosing("villain")).toBe(true);
+    for (let i = 0; i < 100; i++) t.record(callsDown(0), players, netOf(0));
+    expect(t.resultBB100("villain")).toBe(0);
+    expect(t.isLosing("villain")).toBe(false);
   });
 });

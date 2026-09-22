@@ -1432,3 +1432,94 @@ describe("a mixed-jev table", () => {
     expect(r.actions?.every((a) => a.type === "fold" || a.type === "check")).toBe(true);
   });
 });
+
+describe("the losing-player gate", () => {
+  const table = {
+    opponent: "mixed" as const,
+    format: "6max" as const,
+    // 40 seeds = 240 hands: every player passes the 100-hand minimum well before the end.
+    seeds: 40,
+    baseSeed: 11,
+    concurrency: 1,
+    persona,
+  };
+
+  /** Replays the match into a tracker and checks every listed type against the gate. */
+  function checkGate(
+    hands: readonly HandRecord[],
+    states: readonly DecisionFeatures[],
+  ): { shown: number; gatedOut: number; memory: ProfileTracker } {
+    const memory = new ProfileTracker();
+    let next = 0;
+    let gatedOut = 0;
+    let shown = 0;
+    for (const hand of hands) {
+      for (let d = 0; d < hand.decisions.length; d++) {
+        const state = states[next] as DecisionFeatures;
+        for (let seat = 0; seat < 6; seat++) {
+          if (seat === hand.jevSeat) continue;
+          const id = hand.players?.[seat] ?? "";
+          const listed = (state.table.opponentTypes ?? []).some((o) => o.seat === seat);
+          if (listed) {
+            expect(memory.isLosing(id)).toBe(true);
+            shown += 1;
+          } else if (memory.typeFor(id) !== null && !memory.isLosing(id)) {
+            gatedOut += 1;
+          }
+        }
+        next += 1;
+      }
+      memory.record(hand.actions ?? [], opponentsOf(hand), hand.net);
+    }
+    expect(next).toBe(states.length);
+    return { shown, gatedOut, memory };
+  }
+
+  it("gives a type only for players who have lost enough over enough hands", async () => {
+    const backend = recordingBackend();
+    const { hands } = await runMatch({
+      ...table,
+      backend,
+      profile: "label",
+      profileLosingOnly: true,
+    });
+    const { shown, gatedOut, memory } = checkGate(hands, backend.states);
+    // Against the mock hero the caller bleeds chips, so the gate opens for it and closes for the rest.
+    expect(shown).toBeGreaterThan(0);
+    expect(gatedOut).toBeGreaterThan(0);
+    expect(memory.isLosing("caller@1")).toBe(true);
+    expect(memory.isLosing("rules@0")).toBe(false);
+  });
+
+  it("applies to Jev's labels too", async () => {
+    const backend = recordingBackend(() => "maniac");
+    const { hands } = await runMatch({
+      ...table,
+      backend,
+      profile: "jev-label",
+      profileLosingOnly: true,
+    });
+    const { shown, gatedOut } = checkGate(hands, backend.states);
+    expect(shown).toBeGreaterThan(0);
+    expect(gatedOut).toBeGreaterThan(0);
+  });
+
+  it("does nothing without the flag", async () => {
+    const backend = recordingBackend();
+    const { hands } = await runMatch({ ...table, seeds: 10, backend, profile: "label" });
+    const memory = new ProfileTracker();
+    let next = 0;
+    let listedWhileNotLosing = 0;
+    for (const hand of hands) {
+      for (let d = 0; d < hand.decisions.length; d++) {
+        const state = backend.states[next] as DecisionFeatures;
+        for (const o of state.table.opponentTypes ?? []) {
+          if (!memory.isLosing(hand.players?.[o.seat] ?? "")) listedWhileNotLosing += 1;
+        }
+        next += 1;
+      }
+      memory.record(hand.actions ?? [], opponentsOf(hand), hand.net);
+    }
+    expect(listedWhileNotLosing).toBeGreaterThan(0);
+  });
+});

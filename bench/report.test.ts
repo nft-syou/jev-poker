@@ -148,6 +148,7 @@ describe("parseArgs", () => {
       rangeEquity: false,
       profile: false,
       profileWindow: null,
+      profileLosingOnly: false,
     }));
 
   it("parses values", () =>

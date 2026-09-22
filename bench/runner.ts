@@ -17,6 +17,7 @@ import {
   Table,
 } from "../src/engine";
 import type { JevBackend } from "../src/jev/backend";
+import type { OpponentType } from "../src/jev/opponent-type";
 import type { Persona } from "../src/jev/personas";
 import type { PromptStyle } from "../src/jev/questions";
 import { getPersona } from "./backend";
@@ -55,6 +56,8 @@ export interface RunOptions {
   /** Reports how many requests the `jev-label` mode spent on player types. */
   /** Remember only each opponent's most recent hands (a realistic session length); unlimited when absent. */
   profileWindow?: number;
+  /** Give the hero a player's type only while that player is losing (`LOSING_PLAYER`). */
+  profileLosingOnly?: boolean;
   onLabelCalls?: (calls: number) => void;
   /** Called once at the end with the player types the hero was given (`label` and `jev-label`). */
   onPlayerTypes?: (types: Record<string, string[]>) => void;
@@ -91,6 +94,8 @@ export interface PlayHandArgs {
   profileMode?: ProfileMode;
   /** Player types as judged by Jev (`jev-label`). */
   labeler?: JevTypeLabeler;
+  /** Types are given only for players the tracker says are losing. */
+  profileLosingOnly?: boolean;
   /** Test seam: observes the table's events for this hand. Production callers leave this unset. */
   onEvent?: (event: GameEvent) => void;
 }
@@ -122,6 +127,11 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
   const players = playersAt(opponent, format, jevSeat);
   const playerAt = (seat: number): string => players[seat] ?? HERO_PLAYER;
   const profileMode = args.profileMode ?? "numbers";
+  // With the gate, a player who is not losing (or has not lost for long enough) gets no type.
+  const gated = (seat: number, type: OpponentType | null): OpponentType | null =>
+    args.profileLosingOnly === true && args.tracker?.isLosing(playerAt(seat)) !== true
+      ? null
+      : type;
 
   const decisions: AgentDecision[] = [];
   const agents: Agent[] = [];
@@ -148,13 +158,13 @@ export async function playHand(args: PlayHandArgs): Promise<HandRecord> {
               ...(args.tracker !== undefined && profileMode === "label"
                 ? {
                     opponentTypeFor: (s: number) =>
-                      s === jevSeat ? null : (args.tracker?.typeFor(playerAt(s)) ?? null),
+                      s === jevSeat ? null : gated(s, args.tracker?.typeFor(playerAt(s)) ?? null),
                   }
                 : {}),
               ...(args.labeler !== undefined && profileMode === "jev-label"
                 ? {
                     opponentTypeFor: (s: number) =>
-                      s === jevSeat ? null : (args.labeler?.typeFor(playerAt(s)) ?? null),
+                      s === jevSeat ? null : gated(s, args.labeler?.typeFor(playerAt(s)) ?? null),
                   }
                 : {}),
             })
@@ -321,6 +331,7 @@ export async function runMatch(
           ...(tracker !== undefined ? { tracker } : {}),
           ...(profileMode !== null ? { profileMode } : {}),
           ...(labeler !== undefined ? { labeler } : {}),
+          ...(opts.profileLosingOnly === true ? { profileLosingOnly: true } : {}),
         });
       } catch (err) {
         failed = true;
@@ -332,7 +343,7 @@ export async function runMatch(
         const players = record.players ?? playersAt(opponent, format, record.jevSeat);
         for (let s = 0; s < seatCount(format); s++)
           if (s !== record.jevSeat) seats.set(s, players[s] ?? opponent);
-        tracker.record(record.actions, seats);
+        tracker.record(record.actions, seats, record.net);
         if (labeler !== undefined) {
           await labeler.refresh();
           opts.onLabelCalls?.(labeler.calls);

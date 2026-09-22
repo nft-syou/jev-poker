@@ -83,6 +83,8 @@ export interface BenchConfig {
   profile?: boolean | ProfileMode;
   /** Opponents' hands remembered by the session memory; absent = the whole matchup. */
   profileWindow?: number;
+  /** Player types were given only while the player was losing (`LOSING_PLAYER`). */
+  profileLosingOnly?: boolean;
   /** Requests spent on asking Jev for player types (`jev-label` only). */
   profileLabelCalls?: number;
   /** Player types the hero was given: the final one for `label`, every one in order for `jev-label`. */
