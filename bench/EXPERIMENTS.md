@@ -284,6 +284,28 @@ per condition timed out and failed open).
 - The gateway is slower than the direct API (mean response 1.8 s against 0.3 s under this load, a
   ceiling of about 27 requests a second shared by two keys), which does not affect the results.
 
+### Stage 3: only adjust to players who are losing (`--profile-losing-only`)
+
+The two tables look alike in tendency statistics (the Jev `station` folds to 18% of bets, the
+`maniac` raises 50% of hands preflop) but not in money: the bots lose 400 to 500 bb/100, the
+personas about nothing, because a Jev persona still reads its hand strength. So what makes a
+tendency worth exploiting is visible in the session too: whether the player is losing. The gate
+gives a player's type only once that player has lost at least 150 bb/100 over 100 or more hands
+(`LOSING_PLAYER` in `bench/profile.ts`). The threshold was chosen offline, before any run, on the
+existing result files: it fires for `caller` always and `random` two thirds of the time, and
+for Jev personas at most 3% of the time (43% for the one `station` that really lost 75 bb/100).
+Code `78cf5ef`, through the Lolipop AI Gateway, 0 fail-open.
+
+| table | condition | paired difference vs none |
+| --- | --- | --- |
+| bots (base 400001, 1,000 seeds) | label, gated | **+138.6 [+90.1, +187.2]** (ungated label: +123.0) |
+| Jev personas (base 600001, fresh, 1,000 seeds) | label, gated | -6.6 [-24.4, +11.1] |
+
+- At the bot table the gate lets the two losers through and costs nothing.
+- At the persona table the gate opened 1 to 6% of the time (short losing streaks of `rock` and
+  `maniac`) and the result is indistinguishable from no profile, as intended: the feature now
+  stays out of the way where it had nothing to win.
+
 ### Verdict
 
 Per-player session tendencies make the CPU stronger when the table has players with real leaks
@@ -292,7 +314,9 @@ a type word plus one line of counter-strategy beats the numbers. Against the gam
 personas the gain is not established: +16 [+0.1, +32.0] for the code label over 1,700 seeds, nothing
 for the Jev label. Whether code or Jev assigns the type made no difference where the effect is
 large, and the code version is free. The feature is for tables with leaky players (humans, most
-likely), not for CPU-only tables. All of it stays opt-in on this branch; the default agent is unchanged.
+likely), not for CPU-only tables, and with the losing-player gate it can be left on: it adjusts
+only to players who are actually losing (+138.6 at the bot table, -6.6 ns at the persona table).
+All of it stays opt-in on this branch; the default agent is unchanged.
 
 問い: セッション中の相手ごとの傾向を CPU に伝えると強くなるか。以前の `--profile` は逆効果でしたが
 (6-max -10.6)、相手が全員同じ `rules` で打ち分ける余地がありませんでした。今回は傾向の違うプレイヤーが
@@ -308,6 +332,12 @@ likely), not for CPU-only tables. All of it stays opt-in on this branch; the def
   合計 1,700 シードでコード判定 +16.1 [+0.1, +32.0]、Jev 判定 +4.8 [-12.1, +21.8] です。人格の個性は統計上は穏やかで、
   極端な相手向けに書いた対策文が効く場面が少ない卓でした。
 - つまりこの機能が効くのは、癖の強いプレイヤー (おそらく人間) がいる卓です。CPU だけの卓では効果はほぼありません。
+- 「癖が強い」は傾向の数値では判定できません (Jev の station はベットに 18% しか降りず、maniac は 50% でプリフロップ
+  レイズします)。違いは収支に出ます。ボットは 400〜500 bb/100 負け、Jev 人格はほぼ収支ゼロです。そこで
+  `--profile-losing-only`: 100 ハンド以上で 150 bb/100 以上負けているプレイヤーにだけタイプを付けます (閾値は計測前に
+  既存データで決定)。ボット卓では **+138.6 [+90.1, +187.2]** (ゲートなしの +123.0 と同等)、未使用シード 600001 の
+  Jev 人格卓では -6.6 [-24.4, +11.1] で「なし」と区別がつきません。つまり、常時オンにしても、搾取できる相手が
+  いるときだけ働きます。
 - すべてこのブランチ上のオプションで、既定の CPU は変えていません。
 
 ## Reproduce / 再現
