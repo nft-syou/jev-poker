@@ -5,7 +5,9 @@
 [![Node.js 24](https://img.shields.io/badge/node-24-339933?logo=nodedotjs&logoColor=white)](.node-version)
 [![pnpm](https://img.shields.io/badge/pnpm-12-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
-[![Deploys to Cloudflare Pages](https://img.shields.io/badge/deploys%20to-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](#deploy-to-cloudflare-pages)
+[![Deploys to Cloudflare Pages](https://img.shields.io/badge/deploys%20to-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://jev-poker.syou.io/)
+
+**Play it now: [https://jev-poker.syou.io/](https://jev-poker.syou.io/)** (bring your own key — nothing is stored server-side).
 
 **日本語版は [README.ja.md](README.ja.md) にあります。**
 
@@ -90,6 +92,8 @@ dev dependency, no separate install needed); `.node-version` pins this project
 to Node 24 for tools that read it.
 
 ## Deploy to Cloudflare Pages
+
+The official instance is [jev-poker.syou.io](https://jev-poker.syou.io/), deployed from `main` through the Cloudflare Pages Git integration. To run your own:
 
 1. Fork or push this repo to GitHub.
 2. Cloudflare dashboard → Workers & Pages → Create → Pages → connect the repo.

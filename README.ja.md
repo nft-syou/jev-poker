@@ -5,7 +5,9 @@
 [![Node.js 24](https://img.shields.io/badge/node-24-339933?logo=nodedotjs&logoColor=white)](.node-version)
 [![pnpm](https://img.shields.io/badge/pnpm-12-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
-[![Deploys to Cloudflare Pages](https://img.shields.io/badge/deploys%20to-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](#cloudflare-pages-へデプロイ)
+[![Deploys to Cloudflare Pages](https://img.shields.io/badge/deploys%20to-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://jev-poker.syou.io/)
+
+**今すぐ遊ぶ: [https://jev-poker.syou.io/](https://jev-poker.syou.io/)**(API キーは自分で用意。サーバーには何も保存されません)
 
 **English version: [README.md](README.md)**
 
@@ -86,6 +88,8 @@ Node.js 24 と pnpm が必要です。
 `.node-version` は、それを読むツール向けに Node 24 を固定しています。
 
 ## Cloudflare Pages へデプロイ
+
+公式インスタンスは [jev-poker.syou.io](https://jev-poker.syou.io/) で、Cloudflare Pages の Git 連携により `main` から自動デプロイされます。自分で動かす場合:
 
 1. このリポジトリを GitHub にフォークまたはプッシュする。
 2. Cloudflare ダッシュボード → Workers & Pages → Create → Pages → リポジトリを接続する。
