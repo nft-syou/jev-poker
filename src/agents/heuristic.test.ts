@@ -1,8 +1,5 @@
+import { createRng, type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { parseCards } from "../engine/cards";
-import { createRng } from "../engine/rng";
-import type { LegalActions } from "../engine/types";
-import type { PlayerView } from "../engine/view";
 import { featuresFromView } from "../jev/features";
 import { chartPreflop, HeuristicAgent } from "./heuristic";
 import { isLegal, randomView } from "./testutil";

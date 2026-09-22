@@ -1,4 +1,4 @@
-import type { SeatKind } from "../engine/types";
+import type { SeatKind } from "@jev-poker/engine";
 import { LANGUAGE_STORAGE_KEY, type Language } from "../i18n";
 import { type Connection, validateConnection } from "../jev/connection";
 import { EMPTY_STATS, type PlayerStats, type StatsKey } from "./stats";

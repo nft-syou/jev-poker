@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createDeck, formatCard, parseCard, parseCards, RANKS, rankChar, sameCard } from "./cards";
+import {
+  createDeck,
+  formatCard,
+  parseCard,
+  parseCards,
+  RANKS,
+  rankChar,
+  sameCard,
+} from "./cards.js";
 
 describe("cards", () => {
   it("creates a 52-card deck without duplicates", () => {

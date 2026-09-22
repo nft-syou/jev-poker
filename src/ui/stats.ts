@@ -1,4 +1,4 @@
-import type { GameEvent, SeatId } from "../engine/types";
+import type { GameEvent, SeatId } from "@jev-poker/engine";
 import type { DecisionRecord } from "../jev/decide";
 
 /** `persona:<id>` for a CPU seat, `human:<name>` for a human one. */

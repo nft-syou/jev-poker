@@ -1,5 +1,5 @@
+import type { SeatId } from "@jev-poker/engine";
 import { useCallback, useMemo, useState } from "react";
-import type { SeatId } from "../engine/types";
 import type { Language } from "../i18n";
 import { createTypeSafeBackend, type JevBackend } from "../jev/backend";
 import { type Connection, modelFor } from "../jev/connection";

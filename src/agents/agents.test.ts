@@ -1,8 +1,11 @@
+import {
+  type ActionTakenEvent,
+  createRng,
+  fixedBlinds,
+  playerView,
+  Table,
+} from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { fixedBlinds } from "../engine/blinds";
-import { createRng } from "../engine/rng";
-import { Table } from "../engine/table";
-import { type ActionTakenEvent, playerView } from "../engine/view";
 import { type Agent, createAgent, HeuristicAgent } from "./index";
 import { isLegal, randomView } from "./testutil";
 

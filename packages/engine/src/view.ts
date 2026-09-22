@@ -1,5 +1,5 @@
-import type { Card } from "./cards";
-import type { Action, GameEvent, HandSnapshot, SeatId, Street } from "./types";
+import type { Card } from "./cards.js";
+import type { Action, GameEvent, HandSnapshot, SeatId, Street } from "./types.js";
 
 export type Position = "BTN" | "SB" | "BB" | "UTG" | "MP" | "CO";
 export type ActionTakenEvent = Extract<GameEvent, { type: "ActionTaken" }>;

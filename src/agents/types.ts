@@ -1,5 +1,4 @@
-import type { Action, LegalActions } from "../engine/types";
-import type { PlayerView } from "../engine/view";
+import type { Action, LegalActions, PlayerView } from "@jev-poker/engine";
 
 /** Anything that can play a seat: a baseline bot, a heuristic, or the Jev CPU. */
 export interface Agent {

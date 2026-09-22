@@ -1,7 +1,17 @@
-import { createDeck } from "../engine/cards";
-import { type Rng, randomInt, shuffle } from "../engine/rng";
-import type { Action, LegalActions, SeatId, Street } from "../engine/types";
-import type { HistoryEntry, PlayerView, Position, SeatState } from "../engine/view";
+import {
+  type Action,
+  createDeck,
+  type HistoryEntry,
+  type LegalActions,
+  type PlayerView,
+  type Position,
+  type Rng,
+  randomInt,
+  type SeatId,
+  type SeatState,
+  type Street,
+  shuffle,
+} from "@jev-poker/engine";
 
 /**
  * Whether the engine would accept `action` from a seat with these legal actions. With the `view`

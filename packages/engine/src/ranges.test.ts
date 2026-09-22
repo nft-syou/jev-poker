@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseCards } from "./cards";
-import { estimateEquity } from "./equity";
-import { PREFLOP_RANKING } from "./preflop-rank";
+import { parseCards } from "./cards.js";
+import { estimateEquity } from "./equity.js";
+import { PREFLOP_RANKING } from "./preflop-rank.js";
 import {
   classOf,
   combosOf,
@@ -9,8 +9,8 @@ import {
   inferRange,
   preflopRangePercent,
   topPercentRange,
-} from "./ranges";
-import type { HistoryEntry } from "./view";
+} from "./ranges.js";
+import type { HistoryEntry } from "./view.js";
 
 describe("preflop ranking", () => {
   it("lists each of the 169 classes once, aces first and the worst offsuit hands last", () => {

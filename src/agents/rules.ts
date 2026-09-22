@@ -1,7 +1,13 @@
-import { HAND_CATEGORIES } from "../engine/evaluator";
-import { detectDraws, madeHand, preflopStrength } from "../engine/strength";
-import type { Action, LegalActions } from "../engine/types";
-import { betOrRaiseTo, type PlayerView } from "../engine/view";
+import {
+  type Action,
+  betOrRaiseTo,
+  detectDraws,
+  HAND_CATEGORIES,
+  type LegalActions,
+  madeHand,
+  type PlayerView,
+  preflopStrength,
+} from "@jev-poker/engine";
 import type { Agent } from "./types";
 
 function clamp(x: number, min: number, max: number): number {

@@ -1,9 +1,6 @@
+import { createRng, type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import { parseCards } from "../engine/cards";
-import { createRng } from "../engine/rng";
-import type { LegalActions } from "../engine/types";
-import type { PlayerView } from "../engine/view";
 import type { JevBackend } from "../jev/backend";
 import {
   type DecisionFeatures,

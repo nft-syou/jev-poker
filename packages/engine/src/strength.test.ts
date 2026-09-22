@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseCards } from "./cards";
-import { detectDraws, madeHand, pairKind, preflopStrength } from "./strength";
+import { parseCards } from "./cards.js";
+import { detectDraws, madeHand, pairKind, preflopStrength } from "./strength.js";
 
 describe("preflopStrength", () => {
   it.each([

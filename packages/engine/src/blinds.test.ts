@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixedBlinds } from "./blinds";
+import { fixedBlinds } from "./blinds.js";
 
 describe("fixedBlinds", () => {
   it("returns the same blinds for every hand", () => {

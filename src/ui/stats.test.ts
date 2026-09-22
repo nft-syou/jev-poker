@@ -1,7 +1,11 @@
+import {
+  fixedBlinds,
+  type GameConfig,
+  type GameEvent,
+  type SeatId,
+  Table,
+} from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { fixedBlinds } from "../engine/blinds";
-import { Table } from "../engine/table";
-import type { GameConfig, GameEvent, SeatId } from "../engine/types";
 import type { DecisionRecord } from "../jev/decide";
 import {
   addStats,

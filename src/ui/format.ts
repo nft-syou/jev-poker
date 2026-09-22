@@ -1,4 +1,4 @@
-import { type Card, formatCard, type Suit } from "../engine/cards";
+import { type Card, formatCard, type Suit } from "@jev-poker/engine";
 
 const SYMBOLS: Record<Suit, string> = { c: "♣", d: "♦", h: "♥", s: "♠" };
 

@@ -1,7 +1,5 @@
+import { type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { parseCards } from "../engine/cards";
-import type { LegalActions } from "../engine/types";
-import type { PlayerView } from "../engine/view";
 import { RulesAgent } from "./rules";
 
 /** Heads-up on the button (which posts the small blind): 50 in, 50 more to call the big blind. */

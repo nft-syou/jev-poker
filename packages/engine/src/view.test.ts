@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { type Card, createDeck, formatCard, parseCards, sameCard } from "./cards";
-import { Hand } from "./hand";
-import type { HandSnapshot, Street } from "./types";
+import { type Card, createDeck, formatCard, parseCards, sameCard } from "./cards.js";
+import { Hand } from "./hand.js";
+import type { HandSnapshot, Street } from "./types.js";
 import {
   type ActionTakenEvent,
   betOrRaiseTo,
@@ -9,7 +9,7 @@ import {
   type Position,
   playerView,
   positionOf,
-} from "./view";
+} from "./view.js";
 
 function riggedDeck(front: string): Card[] {
   const cards = parseCards(front);

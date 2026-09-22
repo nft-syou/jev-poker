@@ -1,17 +1,17 @@
+import type {
+  Action,
+  HandPlayerSnapshot,
+  HandSnapshot,
+  LegalActions,
+  Rng,
+  SeatId,
+} from "@jev-poker/engine";
 import {
   APIError,
   AuthenticationError,
   type EntryType,
   PermissionDeniedError,
 } from "@typesafe-ai/sdk";
-import type { Rng } from "../engine/rng";
-import type {
-  Action,
-  HandPlayerSnapshot,
-  HandSnapshot,
-  LegalActions,
-  SeatId,
-} from "../engine/types";
 import type { JevBackend } from "./backend";
 import type { DecisionFeatures } from "./features";
 import { type ActionLabel, buildQuestions, legalLabels, type PromptStyle } from "./questions";

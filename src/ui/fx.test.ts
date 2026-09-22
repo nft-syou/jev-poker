@@ -1,6 +1,5 @@
+import type { Action, Card, GameEvent } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import type { Card } from "../engine/cards";
-import type { Action, GameEvent } from "../engine/types";
 import { EMPTY_FX, handsPerMinute, MAX_CHIP_MOVES, reduceFx, type TableFx } from "./fx";
 
 const CARD: Card = { rank: 14, suit: "s" };

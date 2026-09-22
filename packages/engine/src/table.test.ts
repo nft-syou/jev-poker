@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fixedBlinds } from "./blinds";
-import { Table } from "./table";
-import type { GameConfig, GameEvent } from "./types";
+import { fixedBlinds } from "./blinds.js";
+import { Table } from "./table.js";
+import type { GameConfig, GameEvent } from "./types.js";
 
 function config(overrides: Partial<GameConfig> = {}): GameConfig {
   return {

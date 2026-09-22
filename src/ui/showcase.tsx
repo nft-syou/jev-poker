@@ -1,5 +1,5 @@
+import type { Action } from "@jev-poker/engine";
 import type { TFunction } from "i18next";
-import type { Action } from "../engine/types";
 import type { DecisionFeatures } from "../jev/features";
 import type { ActionLabel } from "../jev/questions";
 import { SIZING_RUBRIC } from "../jev/questions";

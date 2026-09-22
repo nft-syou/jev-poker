@@ -1,5 +1,4 @@
-import type { Action, LegalActions } from "../engine/types";
-import { betOrRaiseTo, type PlayerView } from "../engine/view";
+import { type Action, betOrRaiseTo, type LegalActions, type PlayerView } from "@jev-poker/engine";
 import { type DecisionFeatures, featuresFromView } from "../jev/features";
 import type { Agent } from "./types";
 

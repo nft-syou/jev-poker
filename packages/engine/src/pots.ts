@@ -1,5 +1,5 @@
-import type { HandValue } from "./evaluator";
-import type { SeatId } from "./types";
+import type { HandValue } from "./evaluator.js";
+import type { SeatId } from "./types.js";
 
 export interface Pot {
   readonly amount: number;

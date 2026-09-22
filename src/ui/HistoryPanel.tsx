@@ -1,6 +1,5 @@
+import type { Card, GameEvent, SeatId } from "@jev-poker/engine";
 import { useTranslation } from "react-i18next";
-import type { Card } from "../engine/cards";
-import type { GameEvent, SeatId } from "../engine/types";
 import type { ActionLabel } from "../jev/questions";
 import { cardText } from "./format";
 import type { DecisionInfo, LogEntry } from "./useGame";

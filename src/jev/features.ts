@@ -1,21 +1,40 @@
-import { type Card, formatCard } from "../engine/cards";
-import { type BoardTexture, boardTexture, estimateEquity, handStrengthPct } from "../engine/equity";
-import { evaluateBest, type HandCategory } from "../engine/evaluator";
-import { estimateEquityVsRanges, inferRange } from "../engine/ranges";
 import {
+  type Action,
+  type ActionTakenEvent,
+  type BoardTexture,
+  boardTexture,
+  type Card,
   type Draw,
   detectDraws,
+  estimateEquity,
+  estimateEquityVsRanges,
+  evaluateBest,
+  formatCard,
+  type HandCategory,
+  type HandSnapshot,
+  handStrengthPct,
+  inferRange,
   type PairKind,
+  type PlayerView,
+  type Position,
   type PreflopStrength,
   pairKind,
+  playerView,
   preflopStrength,
-} from "../engine/strength";
-import type { Action, HandSnapshot, SeatId, Street } from "../engine/types";
-import { type ActionTakenEvent, type PlayerView, type Position, playerView } from "../engine/view";
+  type SeatId,
+  type Street,
+} from "@jev-poker/engine";
 import type { PromptStyle } from "./questions";
 
-export { type Draw, detectDraws, type PreflopStrength, preflopStrength } from "../engine/strength";
-export { type ActionTakenEvent, type Position, positionOf } from "../engine/view";
+export {
+  type ActionTakenEvent,
+  type Draw,
+  detectDraws,
+  type Position,
+  type PreflopStrength,
+  positionOf,
+  preflopStrength,
+} from "@jev-poker/engine";
 
 export type PersonaPrompt = { name: string; description: string };
 

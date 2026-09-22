@@ -1,5 +1,5 @@
+import type { SeatId } from "@jev-poker/engine";
 import { useTranslation } from "react-i18next";
-import type { SeatId } from "../engine/types";
 import { calloutText } from "./CalloutView";
 import type { FeedEntry } from "./fx";
 

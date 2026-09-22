@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseCards } from "./cards";
-import { boardTexture, estimateEquity, handStrengthPct } from "./equity";
+import { parseCards } from "./cards.js";
+import { boardTexture, estimateEquity, handStrengthPct } from "./equity.js";
 
 describe("estimateEquity", () => {
   it("AA heads-up preflop is about 85%", () => {

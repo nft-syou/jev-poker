@@ -1,4 +1,4 @@
-import type { Card, Rank } from "./cards";
+import type { Card, Rank } from "./cards.js";
 
 export type HandCategory =
   | "high_card"

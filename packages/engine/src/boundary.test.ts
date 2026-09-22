@@ -20,7 +20,7 @@ describe("engine boundary", () => {
         [...source.matchAll(pattern)].map((match) => match[1] ?? ""),
       );
       for (const specifier of specifiers) {
-        expect(specifier, `${file} imports ${specifier}`).toMatch(/^\.\/[a-z-]+$/);
+        expect(specifier, `${file} imports ${specifier}`).toMatch(/^\.\/[a-z-]+\.js$/);
       }
     }
   });

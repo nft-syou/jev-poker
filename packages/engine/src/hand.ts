@@ -1,6 +1,6 @@
-import type { Card } from "./cards";
-import { evaluateBest, type HandValue } from "./evaluator";
-import { awardPots, buildPots } from "./pots";
+import type { Card } from "./cards.js";
+import { evaluateBest, type HandValue } from "./evaluator.js";
+import { awardPots, buildPots } from "./pots.js";
 import {
   type Action,
   type Blinds,
@@ -11,7 +11,7 @@ import {
   type SeatId,
   type SeatStack,
   type Street,
-} from "./types";
+} from "./types.js";
 
 export interface HandSeat {
   readonly seat: SeatId;

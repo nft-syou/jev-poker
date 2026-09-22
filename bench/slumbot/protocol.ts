@@ -5,7 +5,7 @@ import {
   type PlayerView,
   parseCard,
   type Street,
-} from "../../src/engine";
+} from "@jev-poker/engine";
 
 /** Slumbot's fixed game: heads-up no-limit hold'em, blinds 50/100, 200 bb stacks that reset every hand. */
 export const SMALL_BLIND = 50;

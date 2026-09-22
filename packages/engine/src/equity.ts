@@ -1,6 +1,6 @@
-import { type Card, createDeck, formatCard } from "./cards";
-import { evaluateBest } from "./evaluator";
-import { createRng, hashSeed, randomInt } from "./rng";
+import { type Card, createDeck, formatCard } from "./cards.js";
+import { evaluateBest } from "./evaluator.js";
+import { createRng, hashSeed, randomInt } from "./rng.js";
 
 /** Card → small integer so a hand can seed the estimate deterministically. */
 function cardCode(c: Card): number {

@@ -1,4 +1,4 @@
-import type { BlindSchedule, Blinds } from "./types";
+import type { BlindSchedule, Blinds } from "./types.js";
 
 /** Cash-game schedule: blinds never change. */
 export function fixedBlinds(small: number, big: number, ante = 0): BlindSchedule {

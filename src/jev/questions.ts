@@ -1,5 +1,5 @@
+import type { LegalActions, Street } from "@jev-poker/engine";
 import { choice, noul, score } from "@typesafe-ai/sdk";
-import type { LegalActions, Street } from "../engine/types";
 
 export const ACTION_LABELS = {
   fold: "Give up the hand.",

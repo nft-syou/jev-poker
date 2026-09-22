@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseCards } from "./cards";
-import { compareHands, evaluate5, evaluateBest } from "./evaluator";
+import { parseCards } from "./cards.js";
+import { compareHands, evaluate5, evaluateBest } from "./evaluator.js";
 
 const v = (text: string) => evaluateBest(parseCards(text));
 

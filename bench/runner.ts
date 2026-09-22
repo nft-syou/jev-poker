@@ -1,11 +1,4 @@
 import {
-  type Agent,
-  type AgentDecision,
-  createAgent,
-  HeuristicAgent,
-  JevAgent,
-} from "../src/agents";
-import {
   type ActionTakenEvent,
   fixedBlinds,
   type GameConfig,
@@ -15,7 +8,14 @@ import {
   playerView,
   type SeatId,
   Table,
-} from "../src/engine";
+} from "@jev-poker/engine";
+import {
+  type Agent,
+  type AgentDecision,
+  createAgent,
+  HeuristicAgent,
+  JevAgent,
+} from "../src/agents";
 import type { JevBackend } from "../src/jev/backend";
 import type { Persona } from "../src/jev/personas";
 import type { PromptStyle } from "../src/jev/questions";

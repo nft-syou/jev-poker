@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { type Card, createDeck, parseCards, sameCard } from "./cards";
-import { Hand, type HandOptions } from "./hand";
-import { createRng } from "./rng";
-import type { Action, GameEvent, LegalActions } from "./types";
+import { type Card, createDeck, parseCards, sameCard } from "./cards.js";
+import { Hand, type HandOptions } from "./hand.js";
+import { createRng } from "./rng.js";
+import type { Action, GameEvent, LegalActions } from "./types.js";
 
 /** Puts the listed cards at the front of a full deck (dealt first), rest in default order. */
 function riggedDeck(front: string): Card[] {

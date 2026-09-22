@@ -1,5 +1,5 @@
+import type { SeatId } from "@jev-poker/engine";
 import type { CSSProperties } from "react";
-import type { SeatId } from "../engine/types";
 import { ChipStack } from "./ChipStack";
 import type { ChipMove } from "./fx";
 

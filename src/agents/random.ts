@@ -1,6 +1,12 @@
-import { createRng, type Rng, randomInt } from "../engine/rng";
-import type { Action, LegalActions } from "../engine/types";
-import { betOrRaiseTo, type PlayerView } from "../engine/view";
+import {
+  type Action,
+  betOrRaiseTo,
+  createRng,
+  type LegalActions,
+  type PlayerView,
+  type Rng,
+  randomInt,
+} from "@jev-poker/engine";
 import type { Agent } from "./types";
 
 function pick<T>(rng: Rng, items: readonly T[]): T {

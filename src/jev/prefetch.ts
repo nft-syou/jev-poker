@@ -1,5 +1,11 @@
-import type { Hand } from "../engine/hand";
-import type { Action, GameEvent, HandSnapshot, LegalActions, SeatId } from "../engine/types";
+import type {
+  Action,
+  GameEvent,
+  Hand,
+  HandSnapshot,
+  LegalActions,
+  SeatId,
+} from "@jev-poker/engine";
 import { type DecisionRecord, sizingToAmount } from "./decide";
 import type { ActionTakenEvent, DecisionFeatures } from "./features";
 import { legalLabels } from "./questions";

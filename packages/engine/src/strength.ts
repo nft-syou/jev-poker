@@ -1,5 +1,5 @@
-import { type Card, RANKS, type Rank, rankChar, SUITS } from "./cards";
-import { evaluateBest, HAND_CATEGORIES, type HandCategory } from "./evaluator";
+import { type Card, RANKS, type Rank, rankChar, SUITS } from "./cards.js";
+import { evaluateBest, HAND_CATEGORIES, type HandCategory } from "./evaluator.js";
 
 export type PreflopStrength = "premium" | "strong" | "medium" | "weak" | "trash";
 

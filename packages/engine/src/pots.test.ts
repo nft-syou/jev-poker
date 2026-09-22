@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseCards } from "./cards";
-import { evaluateBest } from "./evaluator";
-import { awardPots, buildPots } from "./pots";
+import { parseCards } from "./cards.js";
+import { evaluateBest } from "./evaluator.js";
+import { awardPots, buildPots } from "./pots.js";
 
 const hand = (text: string) => evaluateBest(parseCards(text));
 

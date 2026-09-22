@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRng, hashSeed, randomInt, randomSeed, shuffle } from "./rng";
+import { createRng, hashSeed, randomInt, randomSeed, shuffle } from "./rng.js";
 
 describe("rng", () => {
   it("is deterministic for the same seed", () => {

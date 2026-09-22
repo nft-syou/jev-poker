@@ -1,5 +1,5 @@
+import type { LegalActions } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import type { LegalActions } from "../engine/types";
 import {
   ACTION_LABELS,
   buildQuestions,

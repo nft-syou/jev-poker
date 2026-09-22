@@ -1,5 +1,5 @@
-import type { Card } from "./cards";
-import type { HandValue } from "./evaluator";
+import type { Card } from "./cards.js";
+import type { HandValue } from "./evaluator.js";
 
 export type SeatId = number;
 export type SeatKind = "human" | "cpu";

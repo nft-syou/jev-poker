@@ -1,5 +1,5 @@
+import type { Card } from "@jev-poker/engine";
 import { useTranslation } from "react-i18next";
-import type { Card } from "../engine/cards";
 import { cardText, isRedSuit } from "./format";
 
 interface Props {

@@ -1,6 +1,6 @@
-import { createDeck } from "./cards";
-import { Hand } from "./hand";
-import { createRng, type Rng, randomSeed, shuffle } from "./rng";
+import { createDeck } from "./cards.js";
+import { Hand } from "./hand.js";
+import { createRng, type Rng, randomSeed, shuffle } from "./rng.js";
 import {
   type Action,
   type GameConfig,
@@ -10,7 +10,7 @@ import {
   NO_ACTIONS,
   type SeatId,
   type SeatKind,
-} from "./types";
+} from "./types.js";
 
 export interface TableSeat {
   readonly id: SeatId;

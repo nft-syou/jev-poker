@@ -17,8 +17,14 @@ export function createRng(seed: number): Rng {
   };
 }
 
+/** The subset of the Web Crypto API this module needs, typed locally so the
+ * package doesn't depend on DOM or Node ambient lib types. */
+interface RandomValuesCrypto {
+  getRandomValues<T extends ArrayBufferView>(array: T): T;
+}
+
 export function randomSeed(): number {
-  const cryptoApi = globalThis.crypto;
+  const cryptoApi = (globalThis as { crypto?: RandomValuesCrypto }).crypto;
   if (cryptoApi !== undefined && typeof cryptoApi.getRandomValues === "function") {
     const buffer = new Uint32Array(1);
     cryptoApi.getRandomValues(buffer);

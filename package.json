@@ -40,9 +40,11 @@
     "bench:report": "tsx bench/report-cli.ts",
     "bench:slumbot": "tsx bench/slumbot/cli.ts",
     "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "build:packages": "pnpm -r --filter \"./packages/*\" run build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build:packages"
   },
   "dependencies": {
+    "@jev-poker/engine": "workspace:*",
     "@typesafe-ai/sdk": "^0.6.0",
     "i18next": "^26.4.2",
     "react": "^19.3.0",

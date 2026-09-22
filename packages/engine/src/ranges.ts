@@ -1,9 +1,17 @@
-import { type Card, createDeck, formatCard, type Rank, rankChar, SUITS, type Suit } from "./cards";
-import { evaluateBest } from "./evaluator";
-import { PREFLOP_RANKING } from "./preflop-rank";
-import { createRng, hashSeed, randomInt } from "./rng";
-import type { SeatId, Street } from "./types";
-import type { HistoryEntry } from "./view";
+import {
+  type Card,
+  createDeck,
+  formatCard,
+  type Rank,
+  rankChar,
+  SUITS,
+  type Suit,
+} from "./cards.js";
+import { evaluateBest } from "./evaluator.js";
+import { PREFLOP_RANKING } from "./preflop-rank.js";
+import { createRng, hashSeed, randomInt } from "./rng.js";
+import type { SeatId, Street } from "./types.js";
+import type { HistoryEntry } from "./view.js";
 
 /** A concrete two-card holding. */
 export type Combo = readonly [Card, Card];
