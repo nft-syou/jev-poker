@@ -1,6 +1,6 @@
 {
   "name": "@jev-poker/agent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Poker CPU players that think with TypeSafe Jev, plus baseline bots and a play loop, on top of @jev-poker/engine.",
   "license": "MIT",
   "type": "module",

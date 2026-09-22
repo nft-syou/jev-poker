@@ -1,5 +1,13 @@
 # @jev-poker/agent
 
+## 0.2.1
+
+### Patch Changes
+
+- [#6](https://github.com/nft-syou/jev-poker/pull/6) [`dd513fa`](https://github.com/nft-syou/jev-poker/commit/dd513fa9000efcc55f28e367969e385d0021bb72) Thanks [@nft-syou](https://github.com/nft-syou)! - README: link to the live demo at jev-poker.syou.io.
+- Updated dependencies [[`dd513fa`](https://github.com/nft-syou/jev-poker/commit/dd513fa9000efcc55f28e367969e385d0021bb72)]:
+  - @jev-poker/engine@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
