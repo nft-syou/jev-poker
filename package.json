@@ -41,7 +41,8 @@
     "bench:slumbot": "tsx bench/slumbot/cli.ts",
     "bench:slumbot:report": "tsx bench/slumbot/report-cli.ts",
     "build:packages": "pnpm -r --filter \"./packages/*\" run build",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build:packages"
+    "verify:packages": "pnpm build:packages && node scripts/verify-packages.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm verify:packages"
   },
   "dependencies": {
     "@jev-poker/agent": "workspace:*",
@@ -53,6 +54,7 @@
     "react-i18next": "^17.0.14"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.14",
     "@cloudflare/workers-types": "^5.20260916.1",
     "@testing-library/jest-dom": "^7.0.1",
@@ -62,6 +64,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.0.1",
+    "publint": "^0.3.24",
     "tsx": "^4.19.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.0",

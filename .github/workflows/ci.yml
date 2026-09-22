@@ -49,6 +49,25 @@ jobs:
       # and test tooling runs on every contributor's machine and in this workflow.
       - run: pnpm audit --audit-level=high
 
+  packages:
+    name: packages (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The two published packages alone, on the oldest supported Node as well as the current one.
+      - run: pnpm vitest run --project engine --project agent
+      - run: pnpm verify:packages
+
   dependency-review:
     name: dependency review
     if: github.event_name == 'pull_request'
