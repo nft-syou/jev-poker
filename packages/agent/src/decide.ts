@@ -12,9 +12,9 @@ import {
   type EntryType,
   PermissionDeniedError,
 } from "@typesafe-ai/sdk";
-import type { JevBackend } from "./backend";
-import type { DecisionFeatures } from "./features";
-import { type ActionLabel, buildQuestions, legalLabels, type PromptStyle } from "./questions";
+import type { JevBackend } from "./backend.js";
+import type { DecisionFeatures } from "./features.js";
+import { type ActionLabel, buildQuestions, legalLabels, type PromptStyle } from "./questions.js";
 
 export interface DecisionJev {
   readonly chosen: ActionLabel;

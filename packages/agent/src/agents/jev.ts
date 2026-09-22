@@ -8,18 +8,18 @@ import {
   type Rng,
   type Street,
 } from "@jev-poker/engine";
-import type { JevBackend } from "../jev/backend";
-import { decideAction, fallbackAction, type SizingSnapshot } from "../jev/decide";
+import type { JevBackend } from "../backend.js";
+import { decideAction, fallbackAction, type SizingSnapshot } from "../decide.js";
 import {
   type DecisionFeatures,
   type FeatureOptions,
   featuresFromView,
   type OpponentStats,
-} from "../jev/features";
-import { type Persona, personaPrompt } from "../jev/personas";
-import type { ActionLabel, PromptStyle } from "../jev/questions";
-import { chartPreflop } from "./heuristic";
-import type { Agent } from "./types";
+} from "../features.js";
+import { type Persona, personaPrompt } from "../personas.js";
+import type { ActionLabel, PromptStyle } from "../questions.js";
+import { chartPreflop } from "./heuristic.js";
+import type { Agent } from "./types.js";
 
 /** One decision of a `JevAgent`, flat and JSON-friendly so a benchmark can store it. */
 export interface AgentDecision {

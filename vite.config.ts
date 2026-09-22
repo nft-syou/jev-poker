@@ -45,6 +45,7 @@ export default defineConfig({
     passWithNoTests: true,
     projects: [
       { test: { name: "engine", include: ["packages/engine/src/**/*.test.ts"] } },
+      { test: { name: "agent", include: ["packages/agent/src/**/*.test.ts"] } },
       {
         extends: true,
         test: {

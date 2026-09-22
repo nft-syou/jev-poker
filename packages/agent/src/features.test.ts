@@ -18,8 +18,8 @@ import {
   positionOf,
   preflopStrength,
   TASK,
-} from "./features";
-import { PRESET_PERSONAS, personaPrompt } from "./personas";
+} from "./features.js";
+import { PRESET_PERSONAS, personaPrompt } from "./personas.js";
 
 function riggedDeck(front: string): Card[] {
   const cards = parseCards(front);

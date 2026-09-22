@@ -1,9 +1,9 @@
+import type { Persona } from "@jev-poker/agent";
 import type { SeatId } from "@jev-poker/engine";
 import { useCallback, useMemo, useState } from "react";
 import type { Language } from "../i18n";
 import { createTypeSafeBackend, type JevBackend } from "../jev/backend";
 import { type Connection, modelFor } from "../jev/connection";
-import type { Persona } from "../jev/personas";
 import { BillingModal } from "./BillingModal";
 import type { Settings } from "./storage";
 import { TableView } from "./TableView";

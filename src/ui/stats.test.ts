@@ -1,3 +1,4 @@
+import type { DecisionRecord } from "@jev-poker/agent";
 import {
   fixedBlinds,
   type GameConfig,
@@ -6,7 +7,6 @@ import {
   Table,
 } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import type { DecisionRecord } from "../jev/decide";
 import {
   addStats,
   EMPTY_STATS,

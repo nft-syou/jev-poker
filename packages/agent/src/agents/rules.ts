@@ -8,7 +8,7 @@ import {
   type PlayerView,
   preflopStrength,
 } from "@jev-poker/engine";
-import type { Agent } from "./types";
+import type { Agent } from "./types.js";
 
 function clamp(x: number, min: number, max: number): number {
   return Math.min(Math.max(x, min), max);

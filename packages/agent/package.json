@@ -1,0 +1,57 @@
+{
+  "name": "@jev-poker/agent",
+  "version": "0.1.0",
+  "description": "Poker CPU players that think with TypeSafe Jev, plus baseline bots and a play loop, on top of @jev-poker/engine.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nft-syou/jev-poker.git",
+    "directory": "packages/agent"
+  },
+  "homepage": "https://github.com/nft-syou/jev-poker/tree/main/packages/agent#readme",
+  "bugs": {
+    "url": "https://github.com/nft-syou/jev-poker/issues"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "ai",
+    "typesafe",
+    "jev",
+    "bot"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@jev-poker/engine": "workspace:^",
+    "@typesafe-ai/sdk": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "typescript": "~7.0.2"
+  }
+}

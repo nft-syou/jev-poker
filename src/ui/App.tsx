@@ -1,8 +1,8 @@
+import { loadPersonas, type Persona, saveCustomPersonas } from "@jev-poker/agent";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18next, { detectLanguage, initI18n, type Language } from "../i18n";
 import type { Connection } from "../jev/connection";
-import { loadPersonas, type Persona, saveCustomPersonas } from "../jev/personas";
 import { ConnectionModal } from "./ConnectionModal";
 import { GameScreen } from "./GameScreen";
 import { LanguageSwitch } from "./LanguageSwitch";

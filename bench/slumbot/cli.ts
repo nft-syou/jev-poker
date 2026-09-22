@@ -5,10 +5,10 @@ import {
   type Agent,
   type AgentDecision,
   createAgent,
+  createMockBackend,
   HeuristicAgent,
   JevAgent,
-} from "../../src/agents";
-import { createMockBackend } from "../../src/jev/mock-backend";
+} from "@jev-poker/agent";
 import { createNodeBackend, getPersona } from "../backend";
 import { SlumbotClient } from "./client";
 import { runSlumbot, type SlumbotSummary, summarizeSlumbot } from "./runner";

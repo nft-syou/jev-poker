@@ -1,6 +1,6 @@
+import { type Persona, PRESET_PERSONAS } from "@jev-poker/agent";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { JevBackend } from "../src/jev/backend";
-import { type Persona, PRESET_PERSONAS } from "../src/jev/personas";
 
 export interface NodeBackendOptions {
   /** Falls back to `TYPESAFE_API_KEY` in the SDK when omitted. */

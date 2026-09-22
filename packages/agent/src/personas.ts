@@ -1,4 +1,4 @@
-import type { PersonaPrompt } from "./features";
+import type { PersonaPrompt } from "./features.js";
 
 export type LocalizedText = { ja: string; en: string };
 

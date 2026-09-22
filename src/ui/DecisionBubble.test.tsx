@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { DecisionFeatures } from "@jev-poker/agent";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initI18n } from "../i18n";
-import type { DecisionFeatures } from "../jev/features";
 import { DecisionBubble } from "./DecisionBubble";
 import type { DecisionInfo } from "./useGame";
 

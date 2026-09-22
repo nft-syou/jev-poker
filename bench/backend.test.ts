@@ -1,5 +1,5 @@
+import { PRESET_PERSONAS } from "@jev-poker/agent";
 import { describe, expect, it } from "vitest";
-import { PRESET_PERSONAS } from "../src/jev/personas";
 import { createNodeBackend, getPersona } from "./backend";
 
 describe("getPersona", () => {

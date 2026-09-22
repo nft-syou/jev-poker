@@ -1,4 +1,4 @@
-import type { OpponentStats } from "../src/jev/features";
+import type { OpponentStats } from "@jev-poker/agent";
 import type { HandAction } from "./types";
 
 interface Tally {

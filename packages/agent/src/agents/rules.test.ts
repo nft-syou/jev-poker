@@ -1,6 +1,6 @@
 import { type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { RulesAgent } from "./rules";
+import { RulesAgent } from "./rules.js";
 
 /** Heads-up on the button (which posts the small blind): 50 in, 50 more to call the big blind. */
 const base = (o: Partial<PlayerView>): PlayerView => {

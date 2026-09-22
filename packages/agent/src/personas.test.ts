@@ -8,7 +8,7 @@ import {
   PRESET_PERSONAS,
   personaPrompt,
   saveCustomPersonas,
-} from "./personas";
+} from "./personas.js";
 
 function memoryStorage(
   initial: Record<string, string> = {},

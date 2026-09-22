@@ -1,6 +1,6 @@
+import type { ActionLabel } from "@jev-poker/agent";
 import type { Card, GameEvent, SeatId } from "@jev-poker/engine";
 import { useTranslation } from "react-i18next";
-import type { ActionLabel } from "../jev/questions";
 import { cardText } from "./format";
 import type { DecisionInfo, LogEntry } from "./useGame";
 

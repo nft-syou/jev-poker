@@ -1,7 +1,7 @@
+import type { Persona } from "@jev-poker/agent";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { Language } from "../i18n";
-import type { Persona } from "../jev/personas";
 import {
   DEFAULT_SEATS,
   PREFETCH_MAX_IN_FLIGHT_OPTIONS,

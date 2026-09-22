@@ -7,7 +7,7 @@ import {
   type Rng,
   randomInt,
 } from "@jev-poker/engine";
-import type { Agent } from "./types";
+import type { Agent } from "./types.js";
 
 function pick<T>(rng: Rng, items: readonly T[]): T {
   return items[randomInt(rng, items.length)] as T;

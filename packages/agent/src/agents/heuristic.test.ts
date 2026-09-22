@@ -1,8 +1,8 @@
 import { createRng, type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { featuresFromView } from "../jev/features";
-import { chartPreflop, HeuristicAgent } from "./heuristic";
-import { isLegal, randomView } from "./testutil";
+import { featuresFromView } from "../features.js";
+import { chartPreflop, HeuristicAgent } from "./heuristic.js";
+import { isLegal, randomView } from "./testutil.js";
 
 const agent = new HeuristicAgent();
 const seats = (n: number) =>

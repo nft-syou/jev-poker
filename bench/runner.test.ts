@@ -1,10 +1,8 @@
+import { type ActionLabel, type AgentDecision, createMockBackend } from "@jev-poker/agent";
 import { formatCard, type GameEvent } from "@jev-poker/engine";
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import type { AgentDecision } from "../src/agents";
 import type { JevBackend } from "../src/jev/backend";
-import { createMockBackend } from "../src/jev/mock-backend";
-import type { ActionLabel } from "../src/jev/questions";
 import { getPersona } from "./backend";
 import { expandMatchups, rotations, seatCount } from "./matchups";
 import { playHand, runMatch } from "./runner";

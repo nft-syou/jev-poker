@@ -166,6 +166,9 @@ importers:
 
   .:
     dependencies:
+      '@jev-poker/agent':
+        specifier: workspace:*
+        version: link:packages/agent
       '@jev-poker/engine':
         specifier: workspace:*
         version: link:packages/engine
@@ -227,6 +230,22 @@ importers:
       wrangler:
         specifier: ^4.133.0
         version: 4.133.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
+
+  packages/agent:
+    dependencies:
+      '@jev-poker/engine':
+        specifier: workspace:^
+        version: link:../engine
+      '@typesafe-ai/sdk':
+        specifier: ^0.6.0
+        version: 0.6.0
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.1
+        version: 26.6.1
+      typescript:
+        specifier: ~7.0.2
+        version: 7.0.2
 
   packages/engine:
     devDependencies:

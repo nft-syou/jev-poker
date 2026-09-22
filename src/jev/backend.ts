@@ -1,21 +1,8 @@
-import {
-  type Questions,
-  type RequestOptions,
-  type SystemOneRequest,
-  type SystemOneResult,
-  TypeSafeClient,
-} from "@typesafe-ai/sdk";
+import { DEFAULT_MODEL, type JevBackend } from "@jev-poker/agent";
+import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { type Connection, connectionHeaders, modelFor } from "./connection";
 
-export interface JevBackend {
-  readonly kind: "typesafe" | "mock";
-  systemOne<const Q extends Questions>(
-    request: SystemOneRequest<Q>,
-    options?: RequestOptions,
-  ): Promise<SystemOneResult<Q>>;
-}
-
-export const DEFAULT_MODEL = "jev-latest";
+export { DEFAULT_MODEL, type JevBackend };
 
 export interface TypeSafeBackendOptions {
   /** Which service the proxy should forward to, and the credentials for it. */

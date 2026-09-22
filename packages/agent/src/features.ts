@@ -24,7 +24,7 @@ import {
   type SeatId,
   type Street,
 } from "@jev-poker/engine";
-import type { PromptStyle } from "./questions";
+import type { PromptStyle } from "./questions.js";
 
 export {
   type ActionTakenEvent,

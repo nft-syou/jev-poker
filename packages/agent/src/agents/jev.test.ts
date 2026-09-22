@@ -1,19 +1,19 @@
 import { createRng, type LegalActions, type PlayerView, parseCards } from "@jev-poker/engine";
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import type { JevBackend } from "../jev/backend";
+import type { JevBackend } from "../backend.js";
 import {
   type DecisionFeatures,
   type OpponentStats,
   POSTFLOP_TASK,
   PREFLOP_TASK,
   TASK,
-} from "../jev/features";
-import { createMockBackend } from "../jev/mock-backend";
-import { type Persona, PRESET_PERSONAS } from "../jev/personas";
-import { PREFLOP_SIZING_RUBRIC, SIZING_RUBRIC } from "../jev/questions";
-import { type AgentDecision, JevAgent } from "./jev";
-import { isLegal, randomView } from "./testutil";
+} from "../features.js";
+import { createMockBackend } from "../mock-backend.js";
+import { type Persona, PRESET_PERSONAS } from "../personas.js";
+import { PREFLOP_SIZING_RUBRIC, SIZING_RUBRIC } from "../questions.js";
+import { type AgentDecision, JevAgent } from "./jev.js";
+import { isLegal, randomView } from "./testutil.js";
 
 function getPersona(id: string): Persona {
   const persona = PRESET_PERSONAS.find((p) => p.id === id);

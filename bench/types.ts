@@ -1,5 +1,5 @@
+import type { AgentDecision } from "@jev-poker/agent";
 import type { Action, SeatId, Street } from "@jev-poker/engine";
-import type { AgentDecision } from "../src/agents";
 
 export type Opponent = "random" | "caller" | "rules";
 export type Format = "hu" | "6max";

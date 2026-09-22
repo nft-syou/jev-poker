@@ -11,7 +11,7 @@ import {
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
 import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import type { JevBackend } from "./backend";
+import type { JevBackend } from "./backend.js";
 import {
   type DecisionRecord,
   decideAction,
@@ -19,10 +19,10 @@ import {
   type SizingSnapshot,
   sampleLabel,
   sizingToAmount,
-} from "./decide";
-import { buildFeatures, featuresFromView } from "./features";
-import { createMockBackend } from "./mock-backend";
-import { PREFLOP_SIZING_RUBRIC, SIZING_RUBRIC } from "./questions";
+} from "./decide.js";
+import { buildFeatures, featuresFromView } from "./features.js";
+import { createMockBackend } from "./mock-backend.js";
+import { PREFLOP_SIZING_RUBRIC, SIZING_RUBRIC } from "./questions.js";
 
 function riggedDeck(front: string): Card[] {
   const cards = parseCards(front);

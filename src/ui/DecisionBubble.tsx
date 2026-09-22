@@ -1,7 +1,7 @@
+import type { DecisionFeatures } from "@jev-poker/agent";
 import type { SeatId } from "@jev-poker/engine";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { DecisionFeatures } from "../jev/features";
 import { actionText, DecisionCost, ProbabilityBars } from "./showcase";
 import type { Speed } from "./storage";
 import { presentationTimings } from "./timings";

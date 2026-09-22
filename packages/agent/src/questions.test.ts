@@ -7,7 +7,7 @@ import {
   PREFLOP_SIZING_RUBRIC,
   SIZING_RUBRIC,
   sizingRubricFor,
-} from "./questions";
+} from "./questions.js";
 
 describe("questions", () => {
   it("offers fold/call/raise when facing a bet", () => {

@@ -1,6 +1,6 @@
 import { type Action, betOrRaiseTo, type LegalActions, type PlayerView } from "@jev-poker/engine";
-import { type DecisionFeatures, featuresFromView } from "../jev/features";
-import type { Agent } from "./types";
+import { type DecisionFeatures, featuresFromView } from "../features.js";
+import type { Agent } from "./types.js";
 
 /** The rules never read the persona; the features just need one to be built. */
 const NO_PERSONA = { name: "heuristic", description: "" };

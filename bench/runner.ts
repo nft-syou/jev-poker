@@ -1,4 +1,13 @@
 import {
+  type Agent,
+  type AgentDecision,
+  createAgent,
+  HeuristicAgent,
+  JevAgent,
+  type Persona,
+  type PromptStyle,
+} from "@jev-poker/agent";
+import {
   type ActionTakenEvent,
   fixedBlinds,
   type GameConfig,
@@ -9,16 +18,7 @@ import {
   type SeatId,
   Table,
 } from "@jev-poker/engine";
-import {
-  type Agent,
-  type AgentDecision,
-  createAgent,
-  HeuristicAgent,
-  JevAgent,
-} from "../src/agents";
 import type { JevBackend } from "../src/jev/backend";
-import type { Persona } from "../src/jev/personas";
-import type { PromptStyle } from "../src/jev/questions";
 import { rotations, seatCount } from "./matchups";
 import { ProfileTracker } from "./profile";
 import type { Format, HandAction, HandRecord, Opponent } from "./types";

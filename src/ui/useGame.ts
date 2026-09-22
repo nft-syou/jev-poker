@@ -1,4 +1,14 @@
 import {
+  type ActionTakenEvent,
+  buildFeatures,
+  type DecisionFeatures,
+  type DecisionRecord,
+  decideAction,
+  type Persona,
+  PRESET_PERSONAS,
+  personaPrompt,
+} from "@jev-poker/agent";
+import {
   type Action,
   createRng,
   fixedBlinds,
@@ -15,9 +25,6 @@ import {
 } from "@jev-poker/engine";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { JevBackend } from "../jev/backend";
-import { type DecisionRecord, decideAction } from "../jev/decide";
-import { type ActionTakenEvent, buildFeatures, type DecisionFeatures } from "../jev/features";
-import { type Persona, PRESET_PERSONAS, personaPrompt } from "../jev/personas";
 import {
   DecisionCache,
   type DecisionKey,

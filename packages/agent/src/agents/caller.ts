@@ -1,5 +1,5 @@
 import type { Action, LegalActions, PlayerView } from "@jev-poker/engine";
-import type { Agent } from "./types";
+import type { Agent } from "./types.js";
 
 export class CallerAgent implements Agent {
   readonly id = "caller";

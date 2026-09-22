@@ -1,6 +1,6 @@
 import type { Questions, SystemOneRequest, SystemOneResult } from "@typesafe-ai/sdk";
-import type { JevBackend } from "./backend";
-import type { DecisionFeatures } from "./features";
+import type { JevBackend } from "./backend.js";
+import type { DecisionFeatures } from "./features.js";
 
 const STRENGTH: Record<string, number> = {
   premium: 0.9,

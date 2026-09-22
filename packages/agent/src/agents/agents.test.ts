@@ -6,8 +6,8 @@ import {
   Table,
 } from "@jev-poker/engine";
 import { describe, expect, it } from "vitest";
-import { type Agent, createAgent, HeuristicAgent } from "./index";
-import { isLegal, randomView } from "./testutil";
+import { type Agent, createAgent, HeuristicAgent } from "./index.js";
+import { isLegal, randomView } from "./testutil.js";
 
 describe.each(["random", "caller", "rules"] as const)("%s agent", (id) => {
   it("always returns a legal action", async () => {

@@ -1,6 +1,6 @@
+import { clampVariance, duplicatePersona, type Persona } from "@jev-poker/agent";
 import { useTranslation } from "react-i18next";
 import type { Language } from "../i18n";
-import { clampVariance, duplicatePersona, type Persona } from "../jev/personas";
 
 interface Props {
   personas: readonly Persona[];

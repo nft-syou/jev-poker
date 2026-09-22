@@ -1,3 +1,10 @@
+import {
+  type ActionTakenEvent,
+  type DecisionFeatures,
+  type DecisionRecord,
+  legalLabels,
+  sizingToAmount,
+} from "@jev-poker/agent";
 import type {
   Action,
   GameEvent,
@@ -6,9 +13,6 @@ import type {
   LegalActions,
   SeatId,
 } from "@jev-poker/engine";
-import { type DecisionRecord, sizingToAmount } from "./decide";
-import type { ActionTakenEvent, DecisionFeatures } from "./features";
-import { legalLabels } from "./questions";
 
 /** Identifies one decision: the same state asked the same way reuses the same answer. */
 export type DecisionKey = string;

@@ -1,4 +1,4 @@
-import type { Agent, AgentDecision } from "../../src/agents";
+import type { Agent, AgentDecision } from "@jev-poker/agent";
 import type { SlumbotClient, SlumbotResponse } from "./client";
 import { BIG_BLIND, encodeAction, heroView, type Pos } from "./protocol";
 
