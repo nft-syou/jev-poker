@@ -29,4 +29,4 @@ while (!snapshot.complete) {
 `playerView(snapshot, seat, actionsTakenSoFar)` is what a seat is allowed to know — its own
 cards, the board, stacks, the hand's history — and is the input `@jev-poker/agent` decides from.
 
-Part of [jev-poker](https://github.com/nft-syou/jev-poker). MIT.
+Part of [jev-poker](https://github.com/nft-syou/jev-poker) — see it play at [jev-poker.syou.io](https://jev-poker.syou.io/). MIT.

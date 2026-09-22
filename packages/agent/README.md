@@ -57,4 +57,4 @@ In a browser set `browser: true`; the key then belongs to the person at the keyb
 `saveCustomPersonas(personas, storage)` persist custom ones through any
 `{ getItem, setItem }` you pass — the library never reads `localStorage` on its own.
 
-Part of [jev-poker](https://github.com/nft-syou/jev-poker). MIT.
+Part of [jev-poker](https://github.com/nft-syou/jev-poker) — see it play at [jev-poker.syou.io](https://jev-poker.syou.io/). MIT.
