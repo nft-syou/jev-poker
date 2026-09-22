@@ -1,6 +1,6 @@
 {
   "name": "@jev-poker/engine",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "No-Limit Texas Hold'em engine: dealing, betting rules, side pots, hand evaluation, equity. Zero dependencies.",
   "license": "MIT",
   "type": "module",
