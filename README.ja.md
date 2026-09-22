@@ -138,9 +138,9 @@ Node.js 24 と pnpm が必要です。
 
 ## 構成
 
-    src/engine/    依存ゼロの TypeScript ポーカーエンジン (シード付きランダムプレイでテスト)
-    src/jev/       特徴量、質問、人格、判断方針、接続 + TypeSafe バックエンド
-    src/agents/    `Agent` インターフェース: ベースラインボット、ヒューリスティック、エージェントとしての Jev CPU
+    packages/engine/  @jev-poker/engine — 依存ゼロの TypeScript ポーカーエンジン (シード付きランダムプレイでテスト)
+    packages/agent/   @jev-poker/agent — 特徴量、質問、人格、判断方針、JevAgent、ベースライン、playHand
+    src/jev/          アプリ専用: プロキシの経路 (connection) と先読みキャッシュ
     src/ui/        React UI、ゲームループ、Jev の確率付き履歴
     src/i18n/      en / ja 辞書
     src/proxy/     プロキシハンドラと開発サーバー用アダプタ (ユニットテスト済み)
@@ -152,6 +152,15 @@ Node.js 24 と pnpm が必要です。
 
 - トーナメント形式: `BlindSchedule` がブラインドを抽象化済み。`format` が `tournament` のときは飛んだ席をリバイしない。
 - 質問セットのバージョンを各判断に記録する。
+
+## ライブラリとして使う
+
+エンジンと CPU は npm に公開しています。
+
+- [`@jev-poker/engine`](packages/engine) — 依存ゼロのノーリミットホールデムのエンジン。
+- [`@jev-poker/agent`](packages/agent) — Jev CPU、ベースライン bot、人格、`playHand`。
+
+最小の使い方は各パッケージの README (英語) を参照してください。
 
 ## コントリビュート
 

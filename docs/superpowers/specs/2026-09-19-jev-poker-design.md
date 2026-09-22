@@ -124,6 +124,8 @@ jev-poker/
 モノレポにしない理由: Pages デプロイと貢献者の導線を単純にするため。
 境界はフォルダとテスト (`engine` の import グラフ検査) で守る。
 
+2026-09-22: `src/engine` は `packages/engine` (`@jev-poker/engine`)、`src/agents` と `src/jev` の判断部分は `packages/agent` (`@jev-poker/agent`) に移動した。`src/jev` に残るのは `connection.ts`、`prefetch.ts`、プロキシ向けの `backend.ts` ラッパー。詳細は `2026-09-22-library-packages-design.md`。
+
 ## 4. ゲームエンジン (`src/engine`)
 
 ### 4.1 型

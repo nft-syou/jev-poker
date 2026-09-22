@@ -146,9 +146,9 @@ Details: [`bench/README.md`](bench/README.md) (CLI, result format),
 
 ## Project layout
 
-    src/engine/    pure TypeScript poker engine (tested with seeded random play)
-    src/jev/       features, questions, personas, decision policy, connection + TypeSafe backend
-    src/agents/    the `Agent` interface: baseline bots, a heuristic, and the Jev CPU as an agent
+    packages/engine/  @jev-poker/engine — pure TypeScript poker engine (tested with seeded random play)
+    packages/agent/   @jev-poker/agent — features, questions, personas, decision policy, JevAgent, baselines, playHand
+    src/jev/          app-only: proxy routes (connection) and the speculative prefetch cache
     src/ui/        React UI, game loop, history with Jev probabilities
     src/i18n/      en / ja dictionaries
     src/proxy/     the proxy handler and its dev-server adapter (unit-tested)
@@ -160,6 +160,16 @@ Details: [`bench/README.md`](bench/README.md) (CLI, result format),
 
 - Tournament format: `BlindSchedule` already abstracts blinds; busted seats are not rebought when `format` is `tournament`.
 - Versioned question sets recorded on each decision.
+
+## Use it as a library
+
+The engine and the CPU are published on npm:
+
+- [`@jev-poker/engine`](packages/engine) — the No-Limit Hold'em engine, zero dependencies.
+- [`@jev-poker/agent`](packages/agent) — the Jev CPU, baseline bots, personas and `playHand`.
+
+Each package's README shows the minimal usage. Changes are released with Changesets; see
+[CONTRIBUTING.md](CONTRIBUTING.md#changes-to-the-published-packages).
 
 ## Contributing
 
