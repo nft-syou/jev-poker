@@ -1,29 +1,28 @@
-import { type Persona, PRESET_PERSONAS } from "@jev-poker/agent";
-import { TypeSafeClient } from "@typesafe-ai/sdk";
-import type { JevBackend } from "../src/jev/backend";
+import {
+  createTypeSafeBackend,
+  type JevBackend,
+  type Persona,
+  PRESET_PERSONAS,
+} from "@jev-poker/agent";
 
 export interface NodeBackendOptions {
-  /** Falls back to `TYPESAFE_API_KEY` in the SDK when omitted. */
+  /** Falls back to `TYPESAFE_API_KEY` when omitted. */
   apiKey?: string;
   model?: string;
   timeoutMs?: number;
 }
 
-/**
- * Talks to the TypeSafe API directly from Node. The game's own backend goes through the
- * browser proxy; a benchmark has no browser, so it builds the same `JevBackend` on a plain client.
- */
+/** The library backend with the benchmark's key lookup: explicit option first, then the environment. */
 export function createNodeBackend(options: NodeBackendOptions = {}): JevBackend {
-  const client = new TypeSafeClient({
-    timeout: options.timeoutMs ?? 10_000,
-    logLevel: "off",
-    ...(options.apiKey === undefined ? {} : { apiKey: options.apiKey }),
-    ...(options.model === undefined ? {} : { defaultModel: options.model }),
+  const apiKey = options.apiKey ?? process.env.TYPESAFE_API_KEY;
+  if (apiKey === undefined || apiKey === "") {
+    throw new Error("no TypeSafe API key: pass apiKey or set TYPESAFE_API_KEY");
+  }
+  return createTypeSafeBackend({
+    apiKey,
+    ...(options.model === undefined ? {} : { model: options.model }),
+    ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
   });
-  return {
-    kind: "typesafe",
-    systemOne: (request, requestOptions) => client.systemOne(request, requestOptions),
-  };
 }
 
 /** One of the game's preset personas, by id. */

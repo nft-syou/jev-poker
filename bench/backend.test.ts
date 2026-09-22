@@ -27,4 +27,14 @@ describe("createNodeBackend", () => {
     const backend = createNodeBackend({ apiKey: "test", model: "jev-latest", timeoutMs: 1234 });
     expect(backend.kind).toBe("typesafe");
   });
+
+  it("refuses to build without a key", () => {
+    const saved = process.env.TYPESAFE_API_KEY;
+    delete process.env.TYPESAFE_API_KEY;
+    try {
+      expect(() => createNodeBackend()).toThrow("no TypeSafe API key");
+    } finally {
+      if (saved !== undefined) process.env.TYPESAFE_API_KEY = saved;
+    }
+  });
 });

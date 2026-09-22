@@ -1,3 +1,4 @@
+import type { JevBackend } from "@jev-poker/agent";
 import {
   createMockBackend,
   type DecisionFeatures,
@@ -7,7 +8,6 @@ import {
 import { type PlayerView, parseCards } from "@jev-poker/engine";
 import type { Questions, SystemOneRequest } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import type { JevBackend } from "../src/jev/backend";
 import { getPersona } from "./backend";
 import { ProfileTracker } from "./profile";
 import { runMatch } from "./runner";

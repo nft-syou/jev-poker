@@ -1,3 +1,4 @@
+import type { JevBackend } from "@jev-poker/agent";
 import {
   type Agent,
   type AgentDecision,
@@ -18,7 +19,6 @@ import {
   type SeatId,
   Table,
 } from "@jev-poker/engine";
-import type { JevBackend } from "../src/jev/backend";
 import { rotations, seatCount } from "./matchups";
 import { ProfileTracker } from "./profile";
 import type { Format, HandAction, HandRecord, Opponent } from "./types";

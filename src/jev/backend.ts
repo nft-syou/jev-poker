@@ -1,10 +1,9 @@
-import { DEFAULT_MODEL, type JevBackend } from "@jev-poker/agent";
-import { TypeSafeClient } from "@typesafe-ai/sdk";
+import { createTypeSafeBackend, DEFAULT_MODEL, type JevBackend } from "@jev-poker/agent";
 import { type Connection, connectionHeaders, modelFor } from "./connection";
 
 export { DEFAULT_MODEL, type JevBackend };
 
-export interface TypeSafeBackendOptions {
+export interface ProxyBackendOptions {
   /** Which service the proxy should forward to, and the credentials for it. */
   connection: Connection;
   /** e.g. `${location.origin}/api/jev`; the SDK appends `/v1/systemone`. */
@@ -14,20 +13,20 @@ export interface TypeSafeBackendOptions {
   fetch?: typeof fetch;
 }
 
-export function createTypeSafeBackend(options: TypeSafeBackendOptions): JevBackend {
+/**
+ * The game's backend: the library client pointed at this site's proxy, with the route headers
+ * the proxy needs to pick an upstream. The key travels in `X-TypeSafe-Key`, not as a bearer
+ * token, because the proxy turns it into `Authorization` itself.
+ */
+export function createProxyBackend(options: ProxyBackendOptions): JevBackend {
   const { connection } = options;
-  const client = new TypeSafeClient({
+  return createTypeSafeBackend({
     apiKey: connection.apiKey,
     baseURL: options.baseURL,
-    defaultModel: modelFor(connection, options.model ?? DEFAULT_MODEL),
-    dangerouslyAllowBrowser: true,
-    defaultHeaders: connectionHeaders(connection),
-    timeout: options.timeoutMs ?? 10_000,
-    logLevel: "off",
+    model: modelFor(connection, options.model ?? DEFAULT_MODEL),
+    headers: connectionHeaders(connection),
+    browser: true,
+    ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
   });
-  return {
-    kind: "typesafe",
-    systemOne: (request, requestOptions) => client.systemOne(request, requestOptions),
-  };
 }

@@ -1,8 +1,8 @@
-import type { Persona } from "@jev-poker/agent";
+import type { JevBackend, Persona } from "@jev-poker/agent";
 import type { SeatId } from "@jev-poker/engine";
 import { useCallback, useMemo, useState } from "react";
 import type { Language } from "../i18n";
-import { createTypeSafeBackend, type JevBackend } from "../jev/backend";
+import { createProxyBackend } from "../jev/backend";
 import { type Connection, modelFor } from "../jev/connection";
 import { BillingModal } from "./BillingModal";
 import type { Settings } from "./storage";
@@ -32,7 +32,7 @@ export function GameScreen({
     () =>
       connection === null
         ? null
-        : createTypeSafeBackend({
+        : createProxyBackend({
             connection,
             baseURL: `${window.location.origin}/api/jev`,
             model: settings.model,

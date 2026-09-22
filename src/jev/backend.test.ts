@@ -1,6 +1,6 @@
 import { choice } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
-import { createTypeSafeBackend } from "./backend";
+import { createProxyBackend } from "./backend";
 import {
   API_KEY_HEADER,
   CF_ACCOUNT_HEADER,
@@ -36,7 +36,7 @@ function recordingFetch(calls: Call[], model: string): typeof fetch {
 
 async function ask(connection: Connection, model?: string): Promise<Call> {
   const calls: Call[] = [];
-  const backend = createTypeSafeBackend({
+  const backend = createProxyBackend({
     connection,
     baseURL: "http://localhost/api/jev",
     fetch: recordingFetch(calls, "jev-latest"),
