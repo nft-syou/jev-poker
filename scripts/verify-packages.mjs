@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { publint } from "publint";
 import { formatMessage } from "publint/utils";
 
@@ -63,10 +63,21 @@ function checkTypes(tarballPath) {
   }
 }
 
+/** Converts an absolute path under `packs` to a `/`-joined path relative to it, for `tar`. */
+function relativeToPacks(path) {
+  return relative(packs, path).split(sep).join("/");
+}
+
 /** Extracts a `pnpm pack` tarball (its files sit under `package/`) into `dir` and returns that. */
 function extractTarball(tarballPath, dir) {
   mkdirSync(dir, { recursive: true });
-  execFileSync("tar", ["-xzf", tarballPath, "-C", dir]);
+  // Both GNU tar (Git Bash) and bsdtar (Windows' built-in tar.exe) must work from any shell.
+  // GNU tar parses an argument like `C:\...` as a remote `host:path` spec, so every argument
+  // here is relative to `cwd` and uses forward slashes; `--force-local` is not an option because
+  // bsdtar rejects it as unknown.
+  execFileSync("tar", ["-xzf", basename(tarballPath), "-C", relativeToPacks(dir)], {
+    cwd: packs,
+  });
   return join(dir, "package");
 }
 
