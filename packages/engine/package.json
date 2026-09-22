@@ -37,6 +37,10 @@
   },
   "files": [
     "dist",
+    "!dist/.tsbuildinfo",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/__snapshots__",
     "README.md",
     "LICENSE"
   ],
