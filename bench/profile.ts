@@ -1,6 +1,7 @@
 import {
   classifyByThresholds,
   classifyWithJev,
+  isLosingPlayer,
   type JevBackend,
   MIN_HANDS_FOR_TYPE,
   type OpponentStats,
@@ -21,12 +22,7 @@ interface Tally {
   netBB: number;
 }
 
-/**
- * When to treat a player's tendencies as worth exploiting: only once the player has lost this
- * much over at least this many hands. Chosen offline before the run (bench/EXPERIMENTS.md, exp10):
- * the bots that lose 400-500 bb/100 pass it almost always, Jev personas almost never.
- */
-export const LOSING_PLAYER = { minHands: 100, maxBB100: -150 } as const;
+export { LOSING_PLAYER } from "@jev-poker/agent";
 
 function emptyTally(): Tally {
   return {
@@ -145,8 +141,8 @@ export class ProfileTracker {
 
   /** True once the player has lost enough, for long enough, to be worth adjusting to. */
   isLosing(playerId: string): boolean {
-    const result = this.resultBB100(playerId, LOSING_PLAYER.minHands);
-    return result !== null && result <= LOSING_PLAYER.maxBB100;
+    const t = this.tallies.get(playerId);
+    return t !== undefined && t.hands > 0 && isLosingPlayer(t.hands, (100 * t.netBB) / t.hands);
   }
 
   /** The player's type by fixed thresholds over the statistics so far. */

@@ -47,6 +47,8 @@ export {
   buildClassifyQuestions,
   classifyByThresholds,
   classifyWithJev,
+  isLosingPlayer,
+  LOSING_PLAYER,
   MIN_HANDS_FOR_TYPE,
   OPPONENT_TYPE_GUIDANCE,
   OPPONENT_TYPES,

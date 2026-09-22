@@ -184,7 +184,9 @@
     "jevLatency": "Jev ms",
     "fallbacks": "Fallbacks",
     "bluff": "Bluff %",
-    "none": "–"
+    "none": "–",
+    "readAs": "read as {{type}}",
+    "readAsTitle": "The CPUs adjust to this player: losing at least 150 bb/100 over 100+ hands this session"
   },
   "actions": {
     "fold": "Fold",
@@ -278,5 +280,11 @@
     "preset": "Preset",
     "duplicate": "Duplicate",
     "delete": "Delete"
+  },
+  "opponentTypes": {
+    "calling_station": "calling station",
+    "nit": "nit",
+    "maniac": "maniac",
+    "regular": "regular"
   }
 }

@@ -4,6 +4,7 @@ import {
   type DecisionFeatures,
   type DecisionRecord,
   decideAction,
+  type OpponentType,
   type Persona,
   PRESET_PERSONAS,
   personaPrompt,
@@ -37,6 +38,7 @@ import {
   addStats,
   EMPTY_STATS,
   HandStatsTracker,
+  opponentTypeOf,
   type PlayerStats,
   type StatsKey,
   statsKeyFor,
@@ -304,6 +306,19 @@ export function useGame(options: UseGameOptions): GameController {
   }
   const trackerRef = useRef<HandStatsTracker | null>(null);
   if (trackerRef.current === null) trackerRef.current = new HandStatsTracker();
+  // The loop reads the sitting's stats to tell a CPU what kind of player each opponent has been.
+  const sessionStatsRef = useRef(state.stats);
+  sessionStatsRef.current = state.stats;
+  const bigBlindRef = useRef(settings.bigBlind);
+  bigBlindRef.current = settings.bigBlind;
+  const opponentTypeFor = useCallback(
+    (me: SeatId) =>
+      (seat: SeatId): OpponentType | null =>
+        seat === me
+          ? null
+          : opponentTypeOf(sessionStatsRef.current[seat] ?? EMPTY_STATS, bigBlindRef.current),
+    [],
+  );
   const speedRef = useRef<Speed>(settings.speed);
   speedRef.current = settings.speed;
   /** Read mid-loop so a live setting change (from `Setup`/`TableView`) applies immediately. */
@@ -391,6 +406,7 @@ export function useGame(options: UseGameOptions): GameController {
           seat: target.seat,
           actions: target.actions,
           persona: personaPrompt(persona),
+          options: { opponentTypeFor: opponentTypeFor(target.seat) },
         });
         const key = decisionKey(features, target.legal);
         cache.prefetch(key, (signal) =>
@@ -409,7 +425,7 @@ export function useGame(options: UseGameOptions): GameController {
       }
       reportPrefetch();
     },
-    [backend, model, personas, reportPrefetch, rngFor],
+    [backend, model, opponentTypeFor, personas, reportPrefetch, rngFor],
   );
 
   const loop = useCallback(
@@ -455,6 +471,7 @@ export function useGame(options: UseGameOptions): GameController {
             seat,
             actions: actionsRef.current,
             persona: personaPrompt(persona),
+            options: { opponentTypeFor: opponentTypeFor(seat) },
           });
           const key = decisionKey(features, legal);
           const speculated = cache.take(key);
@@ -513,6 +530,7 @@ export function useGame(options: UseGameOptions): GameController {
     [
       backend,
       model,
+      opponentTypeFor,
       onAuthFailed,
       onBillingFailed,
       personas,

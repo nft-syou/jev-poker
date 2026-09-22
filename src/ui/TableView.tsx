@@ -431,6 +431,7 @@ export function TableView({
             cumulative={game.cumulative}
             keys={game.statsKeys}
             startingStack={startingStack}
+            bigBlind={bigBlind}
             onResetCumulative={game.resetCumulative}
             language={language}
           />

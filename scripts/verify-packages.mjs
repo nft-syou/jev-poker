@@ -109,7 +109,7 @@ const SMOKE_SCRIPT = `import assert from "node:assert/strict";
 import * as agent from "@jev-poker/agent";
 import * as engine from "@jev-poker/engine";
 
-assert.equal(Object.keys(agent).length, 33, "expected 33 runtime exports from @jev-poker/agent");
+assert.equal(Object.keys(agent).length, 35, "expected 35 runtime exports from @jev-poker/agent");
 
 const table = new engine.Table({
   format: "cash",
@@ -133,7 +133,7 @@ assert.equal(snapshot.complete, true, "expected the hand to reach completion");
 
 assert.equal(agent.createTypeSafeBackend({ apiKey: "x" }).kind, "typesafe");
 
-console.log("consumer smoke: ok (33 exports, 1 hand)");
+console.log("consumer smoke: ok (35 exports, 1 hand)");
 `;
 
 /**

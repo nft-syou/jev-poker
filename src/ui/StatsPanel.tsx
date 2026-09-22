@@ -2,7 +2,7 @@ import type { SeatId } from "@jev-poker/engine";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Language } from "../i18n";
-import { EMPTY_STATS, type PlayerStats, ratePct, type StatsKey } from "./stats";
+import { EMPTY_STATS, opponentTypeOf, type PlayerStats, ratePct, type StatsKey } from "./stats";
 import type { GameSeat } from "./useGame";
 
 interface Props {
@@ -13,11 +13,24 @@ interface Props {
   cumulative: Record<StatsKey, PlayerStats>;
   keys: Record<SeatId, StatsKey>;
   startingStack: number;
+  bigBlind: number;
   onResetCumulative: () => void;
   language: Language;
 }
 
 type View = "session" | "cumulative";
+
+/** The type the CPUs have read this seat as, once it is losing enough to be worth adjusting to. */
+function ReadAs({ stats, bigBlind }: { stats: PlayerStats; bigBlind: number }) {
+  const { t } = useTranslation();
+  const type = opponentTypeOf(stats, bigBlind);
+  if (type === null) return null;
+  return (
+    <span className="read-as" title={t("stats.readAsTitle")}>
+      {t("stats.readAs", { type: t(`opponentTypes.${type}`) })}
+    </span>
+  );
+}
 
 export function StatsPanel({
   seats,
@@ -25,6 +38,7 @@ export function StatsPanel({
   cumulative,
   keys,
   startingStack,
+  bigBlind,
   onResetCumulative,
   language,
 }: Props) {
@@ -133,7 +147,12 @@ export function StatsPanel({
               const answered = stats.jevDecisions - stats.jevFallbacks;
               return (
                 <tr key={seat.id}>
-                  <td className="name">{seat.name}</td>
+                  <td className="name">
+                    {seat.name}
+                    {view === "session" && (
+                      <ReadAs stats={sessionStats(seat)} bigBlind={bigBlind} />
+                    )}
+                  </td>
                   <td>{stats.handsPlayed}</td>
                   <td>{pct(stats.handsWon, stats.handsPlayed)}</td>
                   <td>{pct(stats.vpipHands, stats.handsPlayed)}</td>

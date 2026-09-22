@@ -40,6 +40,18 @@ export const OPPONENT_TYPES_INTRO =
 /** Below this many hands a percentage is noise, so no type is given. */
 export const MIN_HANDS_FOR_TYPE = 20;
 
+/**
+ * When a player's tendencies are worth adjusting to: only once the player has lost this much
+ * over at least this many hands. Tendency statistics alone do not tell a player whose leaks
+ * cost money from one whose do not; the result does. Measured in bench/EXPERIMENTS.md (exp10).
+ */
+export const LOSING_PLAYER = { minHands: 100, maxBB100: -150 } as const;
+
+/** True once `hands` and the result in bb/100 pass `LOSING_PLAYER`. */
+export function isLosingPlayer(hands: number, bb100: number): boolean {
+  return hands >= LOSING_PLAYER.minHands && bb100 <= LOSING_PLAYER.maxBB100;
+}
+
 /** Fixed thresholds over the session statistics. `null` while too few hands have been seen. */
 export function classifyByThresholds(stats: OpponentStats): OpponentType | null {
   if (stats.hands < MIN_HANDS_FOR_TYPE) return null;

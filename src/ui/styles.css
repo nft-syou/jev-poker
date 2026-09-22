@@ -830,6 +830,17 @@ a {
   text-align: left;
   font-weight: 600;
 }
+.stats .read-as {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 196, 0, 0.18);
+  color: #ffd966;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
 .stats tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.04);
 }

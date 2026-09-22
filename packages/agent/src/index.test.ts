@@ -23,6 +23,8 @@ const PUBLIC_VALUES = [
   "clampVariance",
   "classifyByThresholds",
   "classifyWithJev",
+  "isLosingPlayer",
+  "LOSING_PLAYER",
   "createAgent",
   "createMockBackend",
   "createTypeSafeBackend",

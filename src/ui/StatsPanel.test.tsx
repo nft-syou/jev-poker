@@ -61,14 +61,44 @@ const CUMULATIVE: Record<StatsKey, PlayerStats> = {
   "persona:rock": { ...EMPTY_STATS, handsPlayed: 50, handsWon: 20, netChips: 640 },
 };
 
-function renderPanel(onResetCumulative = () => {}) {
+/**
+ * A sitting in which the human has lost -167 bb/100 over 120 hands (400 chips at a 2-chip
+ * blind) playing like a calling station, while Rocky won the same amount: only one of them is
+ * worth adjusting to.
+ */
+const LOSING_SESSION: Record<SeatId, PlayerStats> = {
+  0: {
+    ...EMPTY_STATS,
+    handsPlayed: 120,
+    handsWon: 20,
+    vpipHands: 72,
+    pfrHands: 6,
+    postflopActions: 200,
+    postflopAggressive: 20,
+    betsFaced: 100,
+    foldsToBet: 10,
+    netChips: -400,
+  },
+  1: {
+    ...EMPTY_STATS,
+    handsPlayed: 120,
+    handsWon: 50,
+    vpipHands: 30,
+    pfrHands: 24,
+    netChips: 400,
+  },
+  2: { ...EMPTY_STATS, handsPlayed: 120 },
+};
+
+function renderPanel(onResetCumulative = () => {}, session = SESSION) {
   return render(
     <StatsPanel
       seats={SEATS}
-      session={SESSION}
+      session={session}
       cumulative={CUMULATIVE}
       keys={KEYS}
       startingStack={200}
+      bigBlind={2}
       onResetCumulative={onResetCumulative}
       language="en"
     />,
@@ -96,6 +126,11 @@ function statsRow(name: string): HTMLElement {
   const row = bodyRows(tableAt(1)).find((r) => cells(r)[0] === name);
   if (row === undefined) throw new Error(`no stats row for ${name}`);
   return row;
+}
+
+/** The "read as" badges of the per-player table, in row order. */
+function badges(): HTMLElement[] {
+  return Array.from(tableAt(1).querySelectorAll<HTMLElement>(".read-as"));
 }
 
 describe("StatsPanel", () => {
@@ -147,5 +182,59 @@ describe("StatsPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "This session" }));
     expect(cells(statsRow("Rocky")).slice(0, 3)).toEqual(["Rocky", "10", "50%"]);
+  });
+
+  it("shows no read-as badge while nobody has lost enough to be read", () => {
+    renderPanel();
+    // Ten hands is far short of the gate, whatever the seat's net.
+    expect(badges()).toEqual([]);
+    expect(screen.queryByText(/read as/)).not.toBeInTheDocument();
+  });
+
+  it("badges the seat the CPUs have read, in the session view only", () => {
+    renderPanel(() => {}, LOSING_SESSION);
+    const shown = badges();
+    expect(shown).toHaveLength(1);
+    const badge = shown[0] as HTMLElement;
+    expect(badge).toHaveTextContent("read as calling station");
+    expect(badge).toHaveAttribute(
+      "title",
+      "The CPUs adjust to this player: losing at least 150 bb/100 over 100+ hands this session",
+    );
+    // The badge sits inside the losing player's name cell, after the name.
+    const row = badge.closest("tr");
+    expect(row).not.toBeNull();
+    const nameCell = within(row as HTMLElement).getAllByRole("cell")[0] as HTMLElement;
+    expect(nameCell).toHaveClass("name");
+    expect(nameCell.textContent?.startsWith("You")).toBe(true);
+    expect(cells(row as HTMLElement).slice(1, 5)).toEqual(["120", "17%", "60%", "5%"]);
+    // The winner and the seat with no result carry none.
+    expect(cells(statsRow("Rocky"))[0]).toBe("Rocky");
+    expect(statsRow("Rocky").querySelector(".read-as")).toBeNull();
+    expect(statsRow("Lars").querySelector(".read-as")).toBeNull();
+
+    // The all-time view reads nobody: the CPUs only adjust to this sitting.
+    fireEvent.click(screen.getByRole("button", { name: "All time" }));
+    expect(badges()).toEqual([]);
+    expect(cells(statsRow("You"))[0]).toBe("You");
+    fireEvent.click(screen.getByRole("button", { name: "This session" }));
+    expect(badges()).toHaveLength(1);
+  });
+
+  it("measures the loss in the table's big blind", () => {
+    // The same -400 chips is only -33 bb/100 at a 10-chip blind: nothing to read.
+    render(
+      <StatsPanel
+        seats={SEATS}
+        session={LOSING_SESSION}
+        cumulative={CUMULATIVE}
+        keys={KEYS}
+        startingStack={200}
+        bigBlind={10}
+        onResetCumulative={() => {}}
+        language="en"
+      />,
+    );
+    expect(badges()).toEqual([]);
   });
 });

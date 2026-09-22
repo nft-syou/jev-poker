@@ -184,7 +184,9 @@
     "jevLatency": "Jev ms",
     "fallbacks": "フォールバック",
     "bluff": "ブラフ",
-    "none": "–"
+    "none": "–",
+    "readAs": "{{type}}と読まれている",
+    "readAsTitle": "CPU がこのプレイヤーに対策中: 今回 100 ハンド以上で 150 bb/100 以上負けている"
   },
   "actions": {
     "fold": "フォールド",
@@ -278,5 +280,11 @@
     "preset": "プリセット",
     "duplicate": "複製",
     "delete": "削除"
+  },
+  "opponentTypes": {
+    "calling_station": "コーリングステーション",
+    "nit": "ニット",
+    "maniac": "マニアック",
+    "regular": "標準"
   }
 }

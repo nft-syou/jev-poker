@@ -1,4 +1,10 @@
-import type { DecisionRecord } from "@jev-poker/agent";
+import {
+  classifyByThresholds,
+  type DecisionRecord,
+  isLosingPlayer,
+  type OpponentStats,
+  type OpponentType,
+} from "@jev-poker/agent";
 import type { GameEvent, SeatId } from "@jev-poker/engine";
 
 /** `persona:<id>` for a CPU seat, `human:<name>` for a human one. */
@@ -18,6 +24,12 @@ export interface PlayerStats {
   showdownsWon: number;
   /** Hands the seat was all in during. */
   allIns: number;
+  /** Postflop actions, and how many of them were bets or raises. */
+  postflopActions: number;
+  postflopAggressive: number;
+  /** Postflop bets the seat faced (answered by a fold, call or raise), and how many it folded to. */
+  betsFaced: number;
+  foldsToBet: number;
   rebuys: number;
   /** Σ(stack at HandEnded − stack at HandStarted) − Σ rebuy amounts. */
   netChips: number;
@@ -41,6 +53,10 @@ export const EMPTY_STATS: PlayerStats = {
   showdowns: 0,
   showdownsWon: 0,
   allIns: 0,
+  postflopActions: 0,
+  postflopAggressive: 0,
+  betsFaced: 0,
+  foldsToBet: 0,
   rebuys: 0,
   netChips: 0,
   jevDecisions: 0,
@@ -76,6 +92,31 @@ export function ratePct(numerator: number, denominator: number): number | null {
   return Math.round((numerator / denominator) * 100);
 }
 
+/** The session statistics in the shape the CPU's features take. */
+export function toOpponentStats(stats: PlayerStats): OpponentStats {
+  const pct = (n: number, d: number) => (d === 0 ? 0 : Math.round((100 * n) / d));
+  return {
+    hands: stats.handsPlayed,
+    vpipPct: pct(stats.vpipHands, stats.handsPlayed),
+    pfrPct: pct(stats.pfrHands, stats.handsPlayed),
+    postflopAggressionPct: pct(stats.postflopAggressive, stats.postflopActions),
+    ...(stats.betsFaced === 0 ? {} : { foldToBetPct: pct(stats.foldsToBet, stats.betsFaced) }),
+  };
+}
+
+/**
+ * What kind of player this seat has been this sitting, or `null` while there is nothing worth
+ * adjusting to: too few hands, or a player who is not losing (`LOSING_PLAYER`). Measured in the
+ * benchmark (exp10): the type plus a line of counter-strategy is worth about +130 bb/100 against
+ * players who really leak, and the losing gate keeps it silent against everyone else.
+ */
+export function opponentTypeOf(stats: PlayerStats, bigBlind: number): OpponentType | null {
+  if (stats.handsPlayed === 0 || bigBlind <= 0) return null;
+  const bb100 = (100 * stats.netChips) / bigBlind / stats.handsPlayed;
+  if (!isLosingPlayer(stats.handsPlayed, bb100)) return null;
+  return classifyByThresholds(toOpponentStats(stats));
+}
+
 /**
  * Accumulates one hand at a time. Feed it every engine event plus the CPU decision records,
  * then call `flush()` once `HandEnded` has been seen to get the per-seat deltas.
@@ -109,6 +150,16 @@ export class HandStatsTracker {
           // Blinds arrive as `BlindsPosted`, so every preflop call here is voluntary.
           if (type === "call" || type === "bet" || type === "raise") this.vpip.add(event.seat);
           if (type === "bet" || type === "raise") this.pfr.add(event.seat);
+        }
+        if (event.street !== "preflop") {
+          const type = event.action.type;
+          stats.postflopActions += 1;
+          if (type === "bet" || type === "raise") stats.postflopAggressive += 1;
+          // A check or a bet means nothing was due; a fold, call or raise answers a bet.
+          if (type === "fold" || type === "call" || type === "raise") {
+            stats.betsFaced += 1;
+            if (type === "fold") stats.foldsToBet += 1;
+          }
         }
         if (event.allIn && !this.allIn.has(event.seat)) {
           this.allIn.add(event.seat);

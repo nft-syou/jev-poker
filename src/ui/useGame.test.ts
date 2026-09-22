@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createMockBackend, PRESET_PERSONAS } from "@jev-poker/agent";
+import {
+  createMockBackend,
+  type DecisionFeatures,
+  OPPONENT_TYPES_INTRO,
+  PRESET_PERSONAS,
+} from "@jev-poker/agent";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { APIError, AuthenticationError } from "@typesafe-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JevBackend } from "../jev/backend";
 import { MAX_CHIP_MOVES } from "./fx";
-import type { PlayerStats } from "./stats";
+import { opponentTypeOf, type PlayerStats } from "./stats";
 import { DEFAULT_SETTINGS, type Settings, STATS_STORAGE_KEY } from "./storage";
 import { useGame } from "./useGame";
 
@@ -52,6 +57,18 @@ function countingBackend(seen: { calls: number }): JevBackend {
     kind: "mock",
     systemOne: (request, options) => {
       seen.calls++;
+      return inner.systemOne(request, options);
+    },
+  };
+}
+
+/** Mock that keeps the state of every request that reaches it (what Jev would have seen). */
+function recordingBackend(seen: { states: DecisionFeatures[] }): JevBackend {
+  const inner = createMockBackend();
+  return {
+    kind: "mock",
+    systemOne: (request, options) => {
+      seen.states.push(request.state as unknown as DecisionFeatures);
       return inner.systemOne(request, options);
     },
   };
@@ -481,6 +498,46 @@ describe("useGame", () => {
       timeout: 5000,
     });
     expect(onBillingFailed).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it("tells Jev no opponent types while nobody has lost enough to be worth reading", async () => {
+    const seen = { states: [] as DecisionFeatures[] };
+    const { result, unmount } = renderHook(() =>
+      useGame({
+        settings: cpuOnly,
+        personas: [...PRESET_PERSONAS],
+        backend: recordingBackend(seen),
+        onAuthFailed: () => {},
+        onBillingFailed: () => {},
+        seed: 3,
+      }),
+    );
+    await waitFor(() => expect(result.current.state.handsPlayed).toBeGreaterThanOrEqual(2), {
+      timeout: 5000,
+    });
+    act(() => result.current.togglePause());
+    await new Promise((r) => setTimeout(r, 80));
+
+    // The gate (100 hands, -150 bb/100) is closed for every seat this early in the sitting...
+    const stats = Object.values(result.current.state.stats);
+    expect(stats.length).toBe(3);
+    for (const seat of stats) {
+      expect(seat.handsPlayed).toBeLessThan(100);
+      expect(opponentTypeOf(seat, cpuOnly.bigBlind)).toBeNull();
+    }
+    // ...so no request, live or speculative, carried a type or the guidance that goes with it.
+    expect(seen.states.length).toBeGreaterThan(0);
+    for (const state of seen.states) {
+      expect("opponentTypes" in state.table).toBe(false);
+      expect("opponentStats" in state.table).toBe(false);
+      expect(state.importantContext).not.toContain(OPPONENT_TYPES_INTRO);
+      // The rest of the features still went out whole.
+      expect(state.task.length).toBeGreaterThan(0);
+      expect(state.hand.holeCards).toMatch(/^[2-9TJQKA][cdhs] [2-9TJQKA][cdhs]$/);
+      expect(state.table.stacksBB.length).toBeGreaterThanOrEqual(2);
+      expect(Array.isArray(state.history)).toBe(true);
+    }
     unmount();
   });
 
