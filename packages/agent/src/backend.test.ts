@@ -74,3 +74,48 @@ describe("createTypeSafeBackend", () => {
     }
   });
 });
+
+describe("createTypeSafeBackend retries", () => {
+  function flakyFetch(failures: number, calls: string[]): typeof fetch {
+    let left = failures;
+    return async (input) => {
+      calls.push(String(input));
+      if (left > 0) {
+        left -= 1;
+        return new Response(JSON.stringify({ error: "service_unavailable" }), { status: 503 });
+      }
+      return new Response(
+        JSON.stringify({
+          model: "jev-latest",
+          answers: { ok: { type: "noul", noul: 0.5 } },
+          usage: { input_tokens: 1, output_tokens: 1 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    };
+  }
+
+  it("retries as many times as asked, then gives up", async () => {
+    const { noul } = await import("@typesafe-ai/sdk");
+    const patient: string[] = [];
+    const backend = createTypeSafeBackend({
+      apiKey: "k",
+      maxRetries: 4,
+      fetch: flakyFetch(3, patient),
+    });
+    const result = await backend.systemOne({ state: { a: 1 }, questions: { ok: noul("ok?") } });
+    expect(result.model).toBe("jev-latest");
+    expect(patient).toHaveLength(4);
+
+    const impatient: string[] = [];
+    const none = createTypeSafeBackend({
+      apiKey: "k",
+      maxRetries: 0,
+      fetch: flakyFetch(1, impatient),
+    });
+    await expect(
+      none.systemOne({ state: { a: 1 }, questions: { ok: noul("ok?") } }),
+    ).rejects.toThrow();
+    expect(impatient).toHaveLength(1);
+  });
+});

@@ -27,6 +27,8 @@ export interface TypeSafeBackendOptions {
   headers?: Record<string, string>;
   /** Per-request timeout; defaults to 10 s. */
   timeoutMs?: number;
+  /** Retries on 429/5xx and network errors before a request fails; the SDK's default when omitted. */
+  maxRetries?: number;
   fetch?: typeof fetch;
   /**
    * The SDK refuses to run in a browser unless told the key is meant to be there (a player's
@@ -43,6 +45,7 @@ export function createTypeSafeBackend(options: TypeSafeBackendOptions): JevBacke
     timeout: options.timeoutMs ?? 10_000,
     logLevel: "off",
     ...(options.baseURL === undefined ? {} : { baseURL: options.baseURL }),
+    ...(options.maxRetries === undefined ? {} : { retry: { maxRetries: options.maxRetries } }),
     ...(options.headers === undefined ? {} : { defaultHeaders: options.headers }),
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     ...(options.browser === true ? { dangerouslyAllowBrowser: true } : {}),

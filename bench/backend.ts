@@ -45,6 +45,8 @@ export function createNodeBackend(options: NodeBackendOptions = {}): JevBackend 
     ...(viaGateway ? { baseURL: LOLIPOP_UPSTREAM } : {}),
     ...(model === undefined ? {} : { model }),
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+    // A gateway adds a hop that can answer 503 in bursts; a long run should ride those out.
+    ...(viaGateway ? { maxRetries: 4 } : {}),
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
   });
 }
