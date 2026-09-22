@@ -44,15 +44,6 @@ export function actionText(
 }
 
 /** The rubric level a sizing score landed on, as the index of `SIZING_RUBRIC`. */
-/**
- * Whether a seat's bubble must stay short. A bubble grows upwards from its seat, and a seat
- * in the top third of the felt (its inward vector points mostly down) has no room above it
- * on a 16:9 recording: the full bubble with bars was cut off by the viewport edge.
- */
-export function compactBubble(inward: { x: number; y: number }): boolean {
-  return inward.y > 0.5;
-}
-
 export function sizingLevel(score: number): number {
   const rounded = Math.round(score);
   return Math.min(SIZING_RUBRIC.length - 1, Math.max(0, rounded));

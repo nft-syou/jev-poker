@@ -103,14 +103,6 @@ describe("DecisionBubble", () => {
     expect(screen.queryByText("⚡ prefetched")).not.toBeInTheDocument();
   });
 
-  it("leaves the bars out of a compact bubble but keeps the action and the meta line", () => {
-    const { container } = renderBubble({ decision: decision(), compact: true });
-    expect(container.querySelector(".showcase-bubble.compact")).not.toBeNull();
-    expect(container.querySelector(".showcase-bars")).toBeNull();
-    expect(screen.getByText("RAISE to 12 BB")).toBeInTheDocument();
-    expect(container.querySelector(".showcase-meta")).not.toBeNull();
-  });
-
   it("badges a prefetched answer instead of its latency", () => {
     renderBubble({ decision: decision({ prefetched: true }) });
     expect(screen.getByText("⚡ prefetched")).toBeInTheDocument();

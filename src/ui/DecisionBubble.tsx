@@ -18,11 +18,6 @@ interface Props {
   visibleUntil: number | null;
   /** Table speed, which sets how long the bubble holds each state. Defaults to `normal`. */
   speed?: Speed;
-  /**
-   * Leave the probability bars out. The bubble grows upwards, and for a seat at the top of
-   * the felt a full one runs off the screen; the panel beside the table shows the same bars.
-   */
-  compact?: boolean;
 }
 
 /** A prefetched answer needs no thinking time; it flashes instead. */
@@ -42,7 +37,6 @@ export function DecisionBubble({
   bigBlind,
   visibleUntil,
   speed = "normal",
-  compact = false,
 }: Props) {
   const { t } = useTranslation();
   const prefetched = decision?.prefetched === true;
@@ -112,10 +106,7 @@ export function DecisionBubble({
   if (decision === null || expired) return null;
 
   return (
-    <div
-      className={compact ? "showcase-bubble decided compact" : "showcase-bubble decided"}
-      data-seat={seat}
-    >
+    <div className="showcase-bubble decided" data-seat={seat}>
       <span className="showcase-persona">{personaName}</span>
       <strong className="showcase-action">
         {actionText(t, decision.action, bigBlind, features)}
@@ -124,7 +115,7 @@ export function DecisionBubble({
         <span className="showcase-unavailable">{t("showcase.unavailable")}</span>
       ) : (
         <>
-          {!compact && <ProbabilityBars record={decision} t={t} />}
+          <ProbabilityBars record={decision} t={t} />
           <div className="showcase-meta">
             <span>
               {t("showcase.bluff")} <b>{Math.round(decision.jev.bluffIntent * 100)}%</b>

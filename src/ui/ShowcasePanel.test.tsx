@@ -67,20 +67,6 @@ const LAST: LastDecision = {
   },
 };
 
-import { compactBubble } from "./showcase";
-
-describe("compactBubble", () => {
-  it("shortens the bubble only for seats whose felt is below them", () => {
-    // Straight down (a seat at 12 o'clock) and the two top seats of a five-handed table.
-    expect(compactBubble({ x: 0, y: 1 })).toBe(true);
-    expect(compactBubble({ x: 0.59, y: 0.81 })).toBe(true);
-    // Side seats and the bottom seat have room above them.
-    expect(compactBubble({ x: 1, y: 0 })).toBe(false);
-    expect(compactBubble({ x: 0.95, y: 0.31 })).toBe(false);
-    expect(compactBubble({ x: 0, y: -1 })).toBe(false);
-  });
-});
-
 describe("ShowcasePanel", () => {
   it("describes the decision Jev just made", () => {
     const { container } = render(
