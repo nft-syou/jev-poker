@@ -1,0 +1,13 @@
+{
+  "name": "jev-poker",
+  "short_name": "jev-poker",
+  "description": "No-Limit Hold'em where the CPUs think with TypeSafe Jev. CPU が TypeSafe Jev で考えるノーリミットホールデム。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1a12",
+  "theme_color": "#123d28",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
