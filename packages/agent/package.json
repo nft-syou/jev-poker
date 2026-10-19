@@ -53,10 +53,10 @@
   },
   "dependencies": {
     "@jev-poker/engine": "workspace:^",
-    "@typesafe-ai/sdk": "^0.6.0"
+    "@typesafe-ai/sdk": "^0.7.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.5",
     "typescript": "~7.0.2"
   }
 }
